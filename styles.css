@@ -1,31 +1,32 @@
 body {
-    font-family: 'Segoe UI', sans-serif;
-    margin: 0;
-    padding: 0;
-    background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #0f2027;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  text-align: center;
 }
 .container {
-    text-align: center;
+  max-width: 500px;
+  padding: 20px;
 }
-.portal-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    margin-top: 2rem;
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 20px;
 }
-.portal {
-    background-color: #1e90ff;
-    padding: 1rem;
-    border-radius: 10px;
-    text-decoration: none;
-    color: white;
-    font-weight: bold;
+.card {
+  background-color: #1e90ff;
+  padding: 20px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: white;
+  font-weight: bold;
 }
-.portal:hover {
-    background-color: #00bfff;
+.card:hover {
+  background-color: #00bfff;
 }
