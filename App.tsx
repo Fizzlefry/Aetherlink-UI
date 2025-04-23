@@ -5,3 +5,4 @@
 <li><a href="askaether.html">Ask Aether (AI Assistant)</a></li>
 <li><a href="saveproject.html">Save My Project</a></li>
 <li><a href="exportbundle.html">Export Project Bundle</a></li>
+<li><a href="saveproject_galactic.html">Save My Project (Galactic)</a></li>
