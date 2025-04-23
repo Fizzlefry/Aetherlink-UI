@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ask Aether (AI Terminal)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 2rem;
+      font-family: 'Orbitron', sans-serif;
+      background: radial-gradient(circle at center, #0e0e20, #050011 80%);
+      color: #0ff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    h1 {
+      font-size: 2rem;
+      text-shadow: 0 0 10px #0ff, 0 0 20px #0ff;
+    }
+
+    #aether-glow {
+      width: 40px;
+      height: 40px;
+      background: radial-gradient(#0ff, #0ff4);
+      border-radius: 50%;
+      margin: 1rem;
+      animation: pulse 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 5px #0ff; transform: scale(1); }
+      50% { box-shadow: 0 0 20px #0ff; transform: scale(1.2); }
+      100% { box-shadow: 0 0 5px #0ff; transform: scale(1); }
+    }
+
+    textarea {
+      width: 90%;
+      max-width: 600px;
+      height: 120px;
+      background: #1e1e3c;
+      color: #0ff;
+      border: 2px solid #0ff;
+      border-radius: 10px;
+      padding: 1rem;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    button {
+      padding: 0.75rem 2rem;
+      background: linear-gradient(145deg, #0ff, #09f);
+      border: none;
+      color: black;
+      font-size: 1rem;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 0 15px #0ff88f;
+      margin-bottom: 2rem;
+    }
+
+    #response {
+      width: 90%;
+      max-width: 600px;
+      background: #09091c;
+      border: 2px solid #00f9ff44;
+      color: #0ff;
+      padding: 1rem;
+      border-radius: 12px;
+      white-space: pre-wrap;
+      text-shadow: 0 0 5px #0ff2;
+    }
+  </style>
+</head>
+<body>
+  <h1>Ask Aether</h1>
+  <div id="aether-glow"></div>
+  <textarea id="userInput" placeholder="Ask Aether anything... Cosmic design, code, guidance..."></textarea>
+  <button onclick="askAether()">Ask</button>
+  <div id="response">The stars await your question...</div>
+
+  <script>
+    function askAether() {
+      const input = document.getElementById('userInput').value;
+      const responseBox = document.getElementById('response');
+
+      responseBox.innerText = 'Aether is thinking...';
+
+      setTimeout(() => {
+        // Simulated response
+        responseBox.innerText = `"${input}" received. Aether's insight:
+
+✨ Consider breaking it into components.
+✨ Use divine proportions and glow accents.
+✨ Remember: Function follows soul.`;
+      }, 1800);
+    }
+  </script>
+</body>
+</html>
