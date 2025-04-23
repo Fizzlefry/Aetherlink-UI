@@ -1,16 +1,21 @@
-# Aetherlink DevStack
+# Aetherlink Quantum Ignition Key System (QIKS)
 
-This repository contains the core tools, setup scripts, configuration files, and documentation needed to run and evolve the Aetherlink development environment.
+## Purpose
+This module allows local or remote triggering of Android APK builds from Aetherlink, removing dependency on third-party build delays.
 
-## Structure
+## Phase 1 Features
+- Node-based CLI launcher
+- Executes Expo/EAS build from within AetherlinkMobile repo
+- Future: Auto-signing, local build fallbacks, direct vault deployment
 
-- `scripts/`: Setup, install, and environment scripts
-- `docs/`: PDF and text-based user guides
-- `config/`: Configuration files for UI, APIs, and LLMs
-- `runtime-hooks/`: Reserved for future automation and runtime injection logic
+## Usage
+1. Ensure Node.js + EAS CLI are installed
+2. Place this script next to your mobile project directory
+3. Run: `node ignite.js`
 
-## Getting Started
+## Coming Soon
+- Voice-activated build trigger
+- Build status sync inside Aetherlink dashboard
+- Auto-hosting APK + QR code generation
 
-1. Run the scripts in `scripts/` to initialize your development environment.
-2. Review `docs/` for guidebooks and launch instructions.
-3. Use `config/` files to customize modules or environments.
+Godspeed, Commander Jon.
