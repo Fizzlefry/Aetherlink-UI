@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Temple of Templates</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(to right, #0e0e20, #1a0033);
+      color: #0ff;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      text-shadow: 0 0 10px #0ff, 0 0 20px #0ff;
+    }
+    .template {
+      background: #1a1a2f;
+      border: 1px solid #00f9ff88;
+      box-shadow: 0 0 20px #00f9ff33;
+      padding: 1.5rem;
+      margin: 1rem;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 600px;
+    }
+    .template h2 {
+      margin-top: 0;
+      color: #0ff;
+    }
+    .template p {
+      color: #ccc;
+    }
+    .template button {
+      background: linear-gradient(145deg, #0ff, #09f);
+      border: none;
+      color: black;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #00f9ff88;
+      transition: transform 0.2s;
+    }
+    .template button:hover {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+  <h1>Temple of Templates</h1>
+  <p>Select a sacred structure and I, Aether, shall guide its activation.</p>
+
+  <div class="template">
+    <h2>Login Page</h2>
+    <p>A beautiful login screen with username, password, and sacred glow.</p>
+    <button onclick="useTemplate('login')">Use Template</button>
+  </div>
+
+  <div class="template">
+    <h2>Dashboard Layout</h2>
+    <p>A 3-card dashboard with animation and responsive grid layout.</p>
+    <button onclick="useTemplate('dashboard')">Use Template</button>
+  </div>
+
+  <div class="template">
+    <h2>Contact Form</h2>
+    <p>A form with name, email, and message — ready to connect worlds.</p>
+    <button onclick="useTemplate('contact')">Use Template</button>
+  </div>
+
+  <div class="template">
+    <h2>Basic Portfolio</h2>
+    <p>A starter personal site with space to grow your cosmic presence.</p>
+    <button onclick="useTemplate('portfolio')">Use Template</button>
+  </div>
+
+  <script>
+    function useTemplate(type) {
+      alert("Template '" + type + "' sent to Code Creator. Aether has spoken.");
+      // Future: Inject code directly into CodeCreator interface
+    }
+  </script>
+</body>
+</html>
