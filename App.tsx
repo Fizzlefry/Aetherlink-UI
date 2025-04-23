@@ -6,3 +6,5 @@
 <li><a href="saveproject.html">Save My Project</a></li>
 <li><a href="exportbundle.html">Export Project Bundle</a></li>
 <li><a href="saveproject_galactic.html">Save My Project (Galactic)</a></li>
+<li><a href="CodeOracle.html">Code Oracle</a></li>
+<li><a href="InfinityStorageMapper.html">Infinity Storage Mapper</a></li>
