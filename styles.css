@@ -1,52 +1,50 @@
 
 body {
     margin: 0;
-    font-family: 'Segoe UI', sans-serif;
-    background: linear-gradient(120deg, #0f0c29, #302b63, #24243e);
-    color: #f0f0f0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    overflow: hidden;
+    font-family: 'Orbitron', sans-serif;
+    background: radial-gradient(circle, #0f0c29, #302b63, #24243e);
+    color: #0ff;
+    text-align: center;
+    padding: 2rem;
 }
 
 .container {
-    text-align: center;
+    border: 2px solid #0ff;
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 480px;
+    margin: auto;
+    box-shadow: 0 0 30px #0ff;
 }
 
-.glow-text {
-    font-size: 2.5rem;
-    color: #fff;
-    text-shadow: 0 0 5px #00f9ff, 0 0 10px #00f9ff, 0 0 20px #00f9ff;
+.title {
+    font-size: 3rem;
+    color: #0ff;
+    text-shadow: 0 0 15px #0ff;
+    margin-bottom: 0.25rem;
 }
 
-.intro {
-    margin-top: -10px;
-    margin-bottom: 30px;
-    font-size: 1.2rem;
+.subtitle {
+    font-size: 1.25rem;
     color: #ccc;
+    margin-bottom: 2rem;
 }
 
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 20px;
-    padding: 0 20px;
-}
-
-.card {
-    background: rgba(255, 255, 255, 0.05);
-    padding: 20px;
+.menu .btn {
+    display: block;
+    margin: 1rem auto;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #0ff;
     border-radius: 12px;
+    color: #0ff;
     text-decoration: none;
-    color: #00f9ff;
-    transition: 0.3s ease;
-    box-shadow: 0 0 10px rgba(0, 249, 255, 0.2);
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
 }
 
-.card:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateY(-5px);
-    box-shadow: 0 0 20px rgba(0, 249, 255, 0.6);
+.menu .btn:hover {
+    background: #0ff;
+    color: #000;
+    box-shadow: 0 0 20px #0ff;
 }

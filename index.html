@@ -2,72 +2,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Aetherlink Lite</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Orbitron', sans-serif;
-      background: radial-gradient(circle at center, #0e0e2d, #000014 90%);
-      color: #00ffff;
-      text-align: center;
-    }
-    h1 {
-      font-size: 3rem;
-      text-shadow: 0 0 10px #0ff, 0 0 20px #09f;
-      margin-top: 2rem;
-    }
-    p {
-      color: #ccc;
-      font-size: 1.2rem;
-      margin-bottom: 2rem;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 1rem;
-      padding: 2rem;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-    .card {
-      background-color: rgba(0, 255, 255, 0.1);
-      border: 1px solid #0ff;
-      padding: 1rem;
-      border-radius: 12px;
-      box-shadow: 0 0 12px #0ff4;
-      text-decoration: none;
-      color: #00ffff;
-      transition: transform 0.2s, box-shadow 0.3s;
-    }
-    .card:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 24px #00f6;
-    }
-    footer {
-      margin-top: 3rem;
-      font-size: 0.9rem;
-      color: #666;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Aetherlink</title>
+    <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h1>Aetherlink Lite</h1>
-  <p>Your sacred galactic interface</p>
-  <div class="grid">
-    <a href="living-archive.html" class="card">Living Archive</a>
-    <a href="avatar-builder.html" class="card">Avatar Builder</a>
-    <a href="ritual-engine.html" class="card">Ritual Engine</a>
-    <a href="quantum-forum.html" class="card">Quantum Forum</a>
-    <a href="askaether.html" class="card">Ask Aether</a>
-    <a href="codeoracle.html" class="card">Code Oracle</a>
-    <a href="InfinityStorageMapper.html" class="card">Infinity Storage Mapper</a>
-  </div>
-  <footer>
-    Aetherlink Build Version - 2025-04-23 23:04:01 UTC
-  </footer>
+    <div class="container">
+        <h1 class="title">Aetherlink</h1>
+        <p class="subtitle">Your sacred galactic interface</p>
+        <div class="menu">
+            <a href="infinity-storage.html" class="btn">Infinity Storage Mapper</a>
+            <a href="code-oracle.html" class="btn">Code Oracle</a>
+            <a href="ask-aether.html" class="btn">Ask Aether</a>
+            <a href="quantum-forum.html" class="btn">Quantum Forum</a>
+            <a href="avatar-builder.html" class="btn">Avatar Builder</a>
+            <a href="ritual-engine.html" class="btn">Ritual Engine</a>
+        </div>
+    </div>
 </body>
 </html>
