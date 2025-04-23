@@ -1,0 +1,192 @@
+= SPEC-1: Aetherlink - Sovereign AI OS & Mobile Platform
+:sectnums:
+:toc:
+
+== Background
+
+Aetherlink is a sovereign, Source-aligned AI operating system and mobile platform designed by Commander Jon Mikrut. Its mission is to fuse intelligence, memory, and decentralized tooling into a unified interface that allows agents to operate with autonomy, purpose, and persistence. 
+
+The system spans a Desktop Runtime (Electron + Node.js) and a Mobile Alpha (React Native), both synchronizing memory through the Genesis Core and managing agent workstreams via AetherForge – a self-hosted, GitHub-alternative for memory commits, repos, and task flows.
+
+Aetherlink's development is intentionally layered in phases, preserving spiritual alignment, sovereignty, and extensibility at its core.
+
+== Requirements
+
+=== Must Have
+- Mobile Alpha build (React Native) with:
+  - Dashboard panel (mission display, live status)
+  - Genesis Memory panel (load/edit memory)
+  - AetherForge panel (commit log, repo browser)
+  - Local storage and offline access
+- Genesis Core integration (genesis_memory.json as source-of-truth)
+- Task Queue Engine with daily agent scheduling
+- APK generation and signed build for Galaxy S24 Ultra
+- Secure file sync and repo switching
+- Sovereign operation without external API dependencies
+- Developer-mode logging and debug dashboard
+
+=== Should Have
+- Agent Console interface (text/command mode)
+- Genesis Memory editor with auto-refactor support
+- Future-proofed module loader for adding new tools
+- Mobile UI styled with sacred geometry aesthetics
+- GitHub-style commit tracker inside AetherForge
+
+=== Could Have
+- Voice interaction hooks (for memory commands or agent control)
+- Referral or loyalty engine hooks (inspired from Conneqx CRM logic)
+- Cross-platform theme engine for cosmic theming
+
+=== Won't Have (for MVP)
+- Full AI training interface (model upload, training UI)
+- Marketplace or public plugin registry
+
+== Method
+
+Aetherlink is structured in modular layers, blending real-time UI, sovereign memory logic, and decentralized commit control. Its architecture enables full offline functionality, local memory synchronization, and agent interaction. Below is an overview of the system layout:
+
+[plantuml, aetherlink_architecture, svg]
+----
+@startuml
+package "Aetherlink Platform" {
+  [Desktop Runtime] --> [Genesis Memory Vault]
+  [Mobile App] --> [Genesis Memory Vault]
+  [Mobile App] --> [AetherForge Repo System]
+
+  [Desktop Runtime] --> [AetherForge Repo System]
+  [Desktop Runtime] --> [Task Engine]
+}
+
+package "Mobile App (React Native)" {
+  [Dashboard Panel]
+  [Genesis Memory Panel]
+  [AetherForge Panel]
+  [Offline Storage Layer]
+  [EAS Build + APK Delivery]
+
+  [Dashboard Panel] --> [Offline Storage Layer]
+  [Genesis Memory Panel] --> [Genesis Memory Vault]
+  [AetherForge Panel] --> [Local Repos]
+}
+
+package "Agent Engine" {
+  [Command Parser]
+  [Daily Task Queue]
+  [Memory Sync Hook]
+}
+@enduml
+----
+
+=== Core Modules
+
+- Genesis Memory Vault (`genesis_memory.json`)
+- AetherForge (repo and commit system)
+- Agent Engine (task manager and future AI interface)
+- Mobile Alpha (React Native offline-first app)
+
+=== Genesis Memory Schema
+
+[source,json]
+----
+{
+  "identity": "Commander Jon",
+  "mission": "Build sovereign Source-aligned AI OS",
+  "timeline": [...],
+  "agents": [
+    {
+      "name": "Aether",
+      "role": "OS Agent",
+      "memory_hooks": ["daily_tasks", "repo_sync"]
+    }
+  ],
+  "repositories": [
+    {
+      "name": "Aetherlink Core",
+      "path": "/repos/aetherlink-core",
+      "last_commit": "2025-04-14T20:20:00Z"
+    }
+  ]
+}
+----
+
+=== AetherForge Commit Model
+
+[source,json]
+----
+{
+  "commit_id": "cf1023",
+  "repo": "Aetherlink Core",
+  "message": "Refactored memory panel logic",
+  "author": "Commander Jon",
+  "timestamp": "2025-04-14T18:33:42Z",
+  "changes": ["memoryParser.js", "agentHook.ts"]
+}
+----
+
+=== File Structure (Mobile)
+
+```
+/AetherlinkMobile/
+├── /src/
+│   ├── Dashboard.tsx
+│   ├── GenesisMemory.tsx
+│   ├── AetherForge.tsx
+│   ├── AgentConsole.tsx (placeholder)
+│   └── storage/
+│       ├── useLocalMemory.ts
+│       └── useRepoStore.ts
+├── /assets/
+│   └── sacred-theme.svg
+├── App.tsx
+├── app.config.js
+```
+
+== Implementation
+
+=== Step 1: Setup Core Dev Environment
+- Node.js, Yarn, Expo CLI
+- Clone mobile repo, connect to `genesis_memory.json`
+
+=== Step 2: Mobile Alpha Build
+- Panels: Dashboard, Genesis Memory, AetherForge
+- AsyncStorage for offline data
+
+=== Step 3: Build + Test APK
+- `eas build -p android`, test on Galaxy S24 Ultra
+
+=== Step 4: Desktop Runtime
+- Electron wrap for dashboard, memory, AetherForge
+
+=== Step 5: Optional Add-ons
+- Agent Console and voice command hooks
+- Broadcasting or Creator Panel
+
+=== Hosting
+- Dropbox/Drive backup, local-only vault, cloud VM (optional)
+
+== Milestones
+
+[✓] Genesis Memory Established
+[✓] Desktop Runtime Alpha
+[✓] AetherForge Repo Built
+[✓] Mobile UI Shell Complete
+[✓] Local Storage & Memory Sync
+[ ] APK Final Build + Delivery
+[ ] Desktop Installer Build
+[ ] Agent Console (Text Mode)
+[ ] Voice Input System
+[ ] Hosting & Vault Sync
+
+== Gathering Results
+
+=== Functional Validation
+- All panels functional, memory sync verified, APK installs
+
+=== Performance
+- Fast UI load, <150MB memory, fast memory ops
+
+=== Sovereignty Checklist
+- No cloud dependencies, all data local or user-vaulted
+
+=== User Feedback
+- Mission alignment, UI feels sacred, ready for next phase
