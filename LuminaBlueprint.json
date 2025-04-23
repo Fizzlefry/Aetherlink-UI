@@ -1,0 +1,6 @@
+{
+  "creationAgent": "Lumina",
+  "defaultLanguage": "TypeScript",
+  "exportOptions": ["web", "apk", "zip"],
+  "enableVoice": true
+}
