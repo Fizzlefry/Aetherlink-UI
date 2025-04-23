@@ -1,0 +1,67 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Code Oracle</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background: radial-gradient(circle at center, #0e0e20, #030014 80%);
+      color: #0ff;
+      padding: 2rem;
+      text-align: center;
+    }
+    textarea {
+      width: 90%;
+      max-width: 700px;
+      height: 120px;
+      padding: 1rem;
+      background: #121222;
+      border: 2px solid #0ff6;
+      color: #0ff;
+      font-size: 1rem;
+      margin-top: 1rem;
+      border-radius: 10px;
+    }
+    button {
+      margin-top: 1rem;
+      padding: 0.7rem 2rem;
+      font-size: 1rem;
+      background: linear-gradient(145deg, #0ff, #09f);
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 0 15px #00f9ff99;
+    }
+    #output {
+      margin-top: 2rem;
+      background: #08081a;
+      padding: 1rem;
+      border: 1px solid #0ff3;
+      border-radius: 10px;
+      white-space: pre-wrap;
+      box-shadow: 0 0 20px #0ff3;
+    }
+  </style>
+</head>
+<body>
+  <h1>Code Oracle</h1>
+  <textarea id="oracleInput" placeholder="e.g. Build a to-do app with Firebase auth..."></textarea><br>
+  <button onclick="invokeOracle()">Invoke</button>
+  <div id="output">Awaiting divine instruction...</div>
+
+  <script>
+    function invokeOracle() {
+      const input = document.getElementById('oracleInput').value;
+      const output = document.getElementById('output');
+      output.innerText = 'Channeling...';
+      setTimeout(() => {
+        output.innerText = `✨ Oracle's Response for:\n"${input}"\n\nfunction app() { return 'Sacred structure deployed'; }`;
+      }, 1500);
+    }
+  </script>
+</body>
+</html>
