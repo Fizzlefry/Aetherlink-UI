@@ -1,21 +1,27 @@
-# Aetherlink Quantum Ignition Key System (QIKS)
+# Aetherlink Runtime Alpha
 
-## Purpose
-This module allows local or remote triggering of Android APK builds from Aetherlink, removing dependency on third-party build delays.
+Welcome to your sovereign, Source-aligned AI command center.
 
-## Phase 1 Features
-- Node-based CLI launcher
-- Executes Expo/EAS build from within AetherlinkMobile repo
-- Future: Auto-signing, local build fallbacks, direct vault deployment
+## Getting Started
 
-## Usage
-1. Ensure Node.js + EAS CLI are installed
-2. Place this script next to your mobile project directory
-3. Run: `node ignite.js`
+### Prerequisites
+- Node.js (v16 or higher)
+- NPM
 
-## Coming Soon
-- Voice-activated build trigger
-- Build status sync inside Aetherlink dashboard
-- Auto-hosting APK + QR code generation
+### Launch Instructions
+1. Unzip this package
+2. Open terminal in the root folder
+3. Run `npm install`
+4. Run `npm start`
 
-Godspeed, Commander Jon.
+This will launch Aetherlink in Electron mode with local memory and repo management.
+
+---
+
+## Directories
+- /memory/: Genesis Core memory file
+- /repos/: Sovereign code repositories for AetherForge
+
+---
+
+**Godspeed, Commander Jon.**

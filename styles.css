@@ -1,32 +1,52 @@
+
 body {
-  margin: 0;
-  font-family: 'Segoe UI', sans-serif;
-  background: #0f2027;
-  color: #fff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  text-align: center;
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(120deg, #0f0c29, #302b63, #24243e);
+    color: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
 }
+
 .container {
-  max-width: 500px;
-  padding: 20px;
+    text-align: center;
 }
+
+.glow-text {
+    font-size: 2.5rem;
+    color: #fff;
+    text-shadow: 0 0 5px #00f9ff, 0 0 10px #00f9ff, 0 0 20px #00f9ff;
+}
+
+.intro {
+    margin-top: -10px;
+    margin-bottom: 30px;
+    font-size: 1.2rem;
+    color: #ccc;
+}
+
 .grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+    padding: 0 20px;
 }
+
 .card {
-  background-color: #1e90ff;
-  padding: 20px;
-  border-radius: 12px;
-  text-decoration: none;
-  color: white;
-  font-weight: bold;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #00f9ff;
+    transition: 0.3s ease;
+    box-shadow: 0 0 10px rgba(0, 249, 255, 0.2);
 }
+
 .card:hover {
-  background-color: #00bfff;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0, 249, 255, 0.6);
 }
