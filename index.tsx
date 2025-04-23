@@ -1,17 +1,11 @@
-import Head from 'next/head';
 import Link from 'next/link';
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 text-white flex items-center justify-center">
-      <Head>
-        <title>Aetherlink OS</title>
-      </Head>
-      <div className="text-center">
-        <h1 className="text-5xl font-bold mb-4">Welcome to Aetherlink</h1>
-        <p className="mb-8">Source-aligned Quantum OS for Sovereign Living</p>
-        <Link href="/dashboard" className="text-blue-400 underline">Enter Command Dashboard</Link>
-      </div>
+    <div className="min-h-screen bg-gradient-to-tr from-indigo-900 via-purple-800 to-blue-900 text-white flex flex-col items-center justify-center">
+      <h1 className="text-5xl font-bold mb-6">Welcome to Aetherlink</h1>
+      <p className="mb-4">The Source-Aligned Operating System for Sovereign Living</p>
+      <Link href="/dashboard" className="px-4 py-2 bg-purple-700 hover:bg-purple-800 rounded">Enter Dashboard</Link>
     </div>
   );
 }
