@@ -1,0 +1,26 @@
+FROM python:3.11-slim
+
+# Set working directory inside the container
+WORKDIR /app
+
+# Install dependencies needed for building Python packages
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+# Copy dependency list and install Python packages
+COPY ./requirements.txt /app/requirements.txt
+RUN pip install --upgrade pip && pip install -r /app/requirements.txt
+
+# Copy the app source code into the container
+COPY ./api /app/api
+# Place handlers inside the api package so relative imports from api work
+COPY ./handlers /app/api/handlers
+
+
+# Expose the FastAPI port
+EXPOSE 8000
+
+# Launch the app
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

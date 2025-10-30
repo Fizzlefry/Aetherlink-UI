@@ -1,0 +1,70 @@
+version: "3.9"
+
+services:
+  db:
+    image: ankane/pgvector
+    container_name: aetherlink-db
+    environment:
+      POSTGRES_USER: aether
+      POSTGRES_PASSWORD: devpass
+      POSTGRES_DB: aetherlink
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aether -d aetherlink"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    container_name: aetherlink-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio
+    container_name: aetherlink-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: miniopass
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ../pods/customer-ops
+      dockerfile: api/Dockerfile
+    container_name: aetherlink-customerops-api
+    env_file:
+      - ../.env
+    depends_on:
+      - db
+      - redis
+      - minio
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana
+    container_name: aetherlink-grafana
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: aetherlink-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - api
+    restart: unless-stopped

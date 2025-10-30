@@ -1,0 +1,55 @@
+# Python virtual environments
+.venv/
+venv/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# VS Code
+.vscode/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Docker
+.deploy/
+*.pem
+.docker/
+
+# Database
+*.db
+*.sqlite3
+
+# OneDrive
+*.tmp
+~$*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Poetry
+dist/
+*.egg-info/
+poetry.lock
+
+# FastAPI/Uvicorn
+.uvicorn/

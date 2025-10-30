@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: 'aetherlink-api'
+    static_configs:
+      - targets: ['api:8000']
+        labels:
+          service: 'customer-ops'
+
+# Optionally scrape other services (redis exporter, postgres exporter) if added

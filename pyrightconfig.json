@@ -1,0 +1,19 @@
+{
+    "include": [
+        "pods/customer-ops/api",
+        "pods/customer-ops/handlers"
+    ],
+    "exclude": [
+        "**/__pycache__",
+        "**/.venv"
+    ],
+    "strict": [
+        "pods/customer-ops/api"
+    ],
+    "typeCheckingMode": "strict",
+    "reportMissingTypeStubs": false,
+    "reportUnknownMemberType": false,
+    "pythonVersion": "3.11",
+    "venvPath": ".",
+    "venv": ".venv"
+}

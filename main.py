@@ -1,0 +1,1 @@
+print("AetherLink Core initialized ⚡")
