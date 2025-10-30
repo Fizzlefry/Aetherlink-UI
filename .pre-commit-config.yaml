@@ -19,3 +19,11 @@ repos:
     rev: '1.7.0'
     hooks:
     -   id: poetry-check
+
+-   repo: local
+    hooks:
+    -   id: pyright
+        name: pyright type check
+        entry: python -m pyright
+        language: system
+        types: [python]
