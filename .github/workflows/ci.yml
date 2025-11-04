@@ -308,7 +308,7 @@ jobs:
         run: |
           echo "Waiting for services to start..."
           sleep 10
-          
+
           # Check Command Center
           for i in {1..30}; do
             if curl -f http://localhost:8010/ops/ping > /dev/null 2>&1; then
@@ -318,7 +318,7 @@ jobs:
             echo "Waiting for Command Center... ($i/30)"
             sleep 2
           done
-          
+
           # Check AI Orchestrator
           for i in {1..30}; do
             if curl -f http://localhost:8011/ping > /dev/null 2>&1; then
@@ -328,7 +328,7 @@ jobs:
             echo "Waiting for AI Orchestrator... ($i/30)"
             sleep 2
           done
-          
+
           # Check Auto-Heal
           for i in {1..30}; do
             if curl -f http://localhost:8012/ping > /dev/null 2>&1; then

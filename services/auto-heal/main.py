@@ -12,9 +12,9 @@ from typing import Any
 
 import docker
 import httpx
+from audit import audit_middleware, get_audit_stats
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from audit import audit_middleware, get_audit_stats
 
 app = FastAPI(title="AetherLink Auto-Heal", version="0.1.0")
 
@@ -48,6 +48,10 @@ HEALTH_ENDPOINTS: dict[str, str] = json.loads(
 # Check interval in seconds
 INTERVAL = int(os.getenv("AUTOHEAL_INTERVAL_SECONDS", "30"))
 
+# Phase V: Registry-driven service discovery
+COMMAND_CENTER_URL = os.getenv("COMMAND_CENTER_URL", "http://aether-command-center:8010")
+PULL_FROM_REGISTRY = os.getenv("AUTOHEAL_PULL_FROM_REGISTRY", "true").lower() == "true"
+
 # Docker client for container management
 docker_client = docker.from_env()
 
@@ -60,6 +64,37 @@ last_report: dict[str, Any] = {
 # History of healing attempts (keep last 50)
 healing_history: list[dict[str, Any]] = []
 MAX_HISTORY = 50
+
+
+async def fetch_registered_services() -> list[dict]:
+    """
+    Fetch services from Command Center registry.
+
+    Phase V: Pull dynamically registered services instead of hardcoding.
+
+    Returns:
+        List of service dictionaries with name, url, health_url
+    """
+    if not PULL_FROM_REGISTRY:
+        return []
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            res = await client.get(
+                f"{COMMAND_CENTER_URL}/ops/services",
+                headers={"X-User-Roles": "operator"},  # AetherLink protocol
+            )
+            if res.status_code == 200:
+                data = res.json()
+                services = data.get("services", [])
+                print(f"[auto-heal] fetched {len(services)} services from registry")
+                return services
+            else:
+                print(f"[auto-heal] registry returned {res.status_code}")
+                return []
+    except Exception as e:
+        print(f"[auto-heal] failed to fetch registered services: {e}")
+        return []
 
 
 def check_service(name: str) -> bool:
@@ -188,7 +223,7 @@ def autoheal_stats():
 async def audit_stats():
     """
     Get audit statistics for security monitoring.
-    
+
     Phase III M6: Returns request counts, auth failures, and usage patterns.
     """
     return get_audit_stats()
@@ -210,16 +245,33 @@ def health():
     return {"status": "up", "service": "auto-heal"}
 
 
-def loop_once():
+async def loop_once():
     """
     Run one iteration of health checks and healing attempts.
 
+    Phase V: Merges configured services + registry services.
     Checks all watched services and restarts any that are down.
     Updates last_report with results and maintains history.
     """
     attempts = []
 
-    for svc in WATCH:
+    # Start with configured services
+    services_to_check = set(WATCH)
+
+    # Phase V: Merge in services from registry
+    if PULL_FROM_REGISTRY:
+        registered = await fetch_registered_services()
+        for svc in registered:
+            name = svc.get("name")
+            health_url = svc.get("health_url")
+            if name and health_url:
+                services_to_check.add(name)
+                # Add to HEALTH_ENDPOINTS if not already there
+                if name not in HEALTH_ENDPOINTS:
+                    HEALTH_ENDPOINTS[name] = health_url
+                    print(f"[auto-heal] added registry service: {name} -> {health_url}")
+
+    for svc in services_to_check:
         ok = check_service(svc)
         if not ok:
             print(f"Service {svc} is down, attempting restart...")
@@ -253,10 +305,19 @@ def loop_once():
 
 # Background loop for standalone execution
 if __name__ == "__main__":
+    import asyncio
+
     print("🏥 AetherLink Auto-Heal starting...")
     print(f"📋 Watching services: {WATCH}")
     print(f"⏱️  Check interval: {INTERVAL}s")
+    if PULL_FROM_REGISTRY:
+        print(f"🔗 Registry integration: enabled (pulling from {COMMAND_CENTER_URL})")
+    else:
+        print("🔗 Registry integration: disabled")
 
-    while True:
-        loop_once()
-        time.sleep(INTERVAL)
+    async def run_loop():
+        while True:
+            await loop_once()
+            await asyncio.sleep(INTERVAL)
+
+    asyncio.run(run_loop())

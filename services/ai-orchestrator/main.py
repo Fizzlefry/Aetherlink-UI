@@ -4,16 +4,22 @@ from datetime import datetime
 from typing import Any
 
 import httpx
+from audit import audit_middleware, get_audit_stats
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from rbac import require_roles
-from audit import audit_middleware, get_audit_stats
 
 app = FastAPI(title="AetherLink AI Orchestrator v2", version="2.0.0")
 
 # Phase III M6: Security Audit Logging
 app.middleware("http")(audit_middleware)
+
+# Phase V: Service registry configuration
+COMMAND_CENTER_URL = os.getenv("COMMAND_CENTER_URL", "http://aether-command-center:8010")
+SERVICE_NAME = os.getenv("SERVICE_NAME", "aether-ai-orchestrator")
+SERVICE_URL = os.getenv("SERVICE_URL", "http://aether-ai-orchestrator:8011")
+SERVICE_VERSION = "v1.10.0"
 
 # RBAC: Agents, operators, and admins can use AI orchestration
 ai_allowed = require_roles(["agent", "operator", "admin"])
@@ -227,7 +233,7 @@ def health():
 async def audit_stats():
     """
     Get audit statistics for security monitoring.
-    
+
     Phase III M6: Returns request counts, auth failures, and usage patterns.
     Requires: agent, operator, or admin role
     """
@@ -242,3 +248,44 @@ async def providers_health():
     Used by Command Center for operational visibility.
     """
     return provider_health
+
+
+# Phase V: Self-registration with Command Center on startup
+async def _register_with_command_center():
+    """
+    Register this service with Command Center on startup.
+
+    Follows AetherLink Protocols v1.0 for service registration.
+    Uses operator role to POST to /ops/register endpoint.
+    """
+    async with httpx.AsyncClient(timeout=5) as client:
+        try:
+            await client.post(
+                f"{COMMAND_CENTER_URL}/ops/register",
+                headers={"X-User-Roles": "operator"},  # AetherLink protocol
+                json={
+                    "name": SERVICE_NAME,
+                    "url": SERVICE_URL,
+                    "health_url": f"{SERVICE_URL}/ping",
+                    "version": SERVICE_VERSION,
+                    "roles_required": ["agent", "operator", "admin"],
+                    "tags": ["ai", "orchestrator", "phase-ii"],
+                },
+            )
+            print(f"[ai-orchestrator] ✅ registered with command center: {SERVICE_NAME}")
+        except Exception as e:
+            print(f"[ai-orchestrator] ⚠️  failed to register with command center: {e}")
+            # Don't crash startup if registry is unavailable
+
+
+@app.on_event("startup")
+async def startup_event():
+    """
+    FastAPI startup event handler.
+
+    Phase V: Self-register with Command Center for dynamic service discovery.
+    """
+    print(f"[ai-orchestrator] 🚀 Starting {SERVICE_NAME} v{SERVICE_VERSION}")
+    print(f"[ai-orchestrator] 🔗 Command Center: {COMMAND_CENTER_URL}")
+    print(f"[ai-orchestrator] 🤖 Provider order: {PROVIDER_ORDER}")
+    await _register_with_command_center()

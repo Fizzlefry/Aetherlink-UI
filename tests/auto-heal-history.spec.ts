@@ -2,11 +2,11 @@ import { test, expect } from "@playwright/test";
 
 /**
  * Phase III M4: Auto-Heal History & Statistics Tests
- * 
+ *
  * These tests validate the new operational intelligence endpoints added in v1.9.0:
  * - GET /autoheal/history?limit=N - Recent healing attempts with configurable limit
  * - GET /autoheal/stats - Success rate, service counts, and most healed service
- * 
+ *
  * Tests ensure backward compatibility and protect the new observability features.
  */
 

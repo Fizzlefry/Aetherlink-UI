@@ -908,6 +908,117 @@ Services can now join the mesh dynamically. Protocol docs ensure new services in
 **Phase V Foundation:**
 This release completes the "protocol layer" - the standardization that makes AetherLink ready to scale from 4 services to dozens without breaking existing patterns.
 
+### v1.14.0 - Phase V Part 2: Registry-Driven Ops Loop
+**Released:** November 2025
+**Focus:** Living registry with self-registration and dynamic discovery
+
+**Problem Solved:**
+v1.13.0 created the registry infrastructure, but services didn't use it yet. This release wires the protocol layer into actual service behavior, creating a full ops loop.
+
+**Quote:**
+> "The biggest win now is to wire the protocol we just created into the services we already have so you don't end up with 'nice doc, nobody uses it.'"
+
+**Features:**
+
+**1. Auto-Heal Registry Integration** (`services/auto-heal/main.py`)
+- `fetch_registered_services()` - Async function pulls GET `/ops/services` from Command Center
+- **Service Merge Logic:** Configured services (env) + Registry services (dynamic API fetch)
+- **Async Conversion:** `loop_once()` converted from sync to async for non-blocking registry fetch
+- **Auto-Population:** Registry `health_url` automatically added to `HEALTH_ENDPOINTS` dict
+- **Configuration:** `AUTOHEAL_PULL_FROM_REGISTRY` env var (default: `"true"`)
+- **Main Loop:** Converted to `asyncio.run()` with `asyncio.sleep()`
+
+**2. AI Orchestrator Self-Registration** (`services/ai-orchestrator/main.py`)
+- `_register_with_command_center()` - Async function POSTs to `/ops/register` on startup
+- **Startup Event Handler:** `@app.on_event("startup")` triggers registration
+- **Protocol-Compliant:** Uses `X-User-Roles: operator` header per AetherLink Protocols v1.0
+- **Non-Blocking:** Registration failure doesn't crash service startup
+- **Comprehensive Metadata:** Sends name, url, health_url, version, roles_required, tags
+
+**3. Integration Testing** (`tests/registry-driven-autoheal.spec.ts`)
+- 6 comprehensive tests covering full loop:
+  1. Auto-Heal can fetch services from registry without errors
+  2. Auto-Heal history endpoint works with registry integration
+  3. Auto-Heal stats endpoint works with registry integration
+  4. AI Orchestrator registers itself and appears in Command Center
+  5. Registry services have valid health URLs for Auto-Heal
+  6. Command Center provides registry and auto-heal data for reconciliation
+
+**Reconciliation View:** Test demonstrates operational visibility - shows registered vs monitored services to identify gaps
+
+**Architecture:**
+
+```
+AI Orchestrator Startup
+  ↓
+POST /ops/register → Command Center
+  ↓
+Stored in registry (in-memory dict)
+  ↓
+Auto-Heal fetches GET /ops/services
+  ↓
+Merged into services_to_check set
+  ↓
+health_url added to HEALTH_ENDPOINTS
+  ↓
+Automatic health monitoring begins
+  ↓
+If unhealthy → restart (existing logic)
+  ↓
+Healing logged in /autoheal/history
+```
+
+**Design Decisions:**
+1. **Additive, Not Replacement:** Registry services merge with env-configured services (backward compatible)
+2. **Async Conversion:** Auto-Heal loop converted to async/await for non-blocking registry fetch
+3. **Protocol Compliance:** All registry calls use `X-User-Roles: operator` header
+4. **Graceful Degradation:** Registry fetch failure returns empty list, healing continues
+5. **Automatic Health Mapping:** health_url from registry auto-populates HEALTH_ENDPOINTS
+
+**Live Verification:**
+AI Orchestrator successfully self-registered and appears in GET `/ops/services`:
+```json
+{
+  "name": "aether-ai-orchestrator",
+  "url": "http://aether-ai-orchestrator:8011",
+  "health_url": "http://aether-ai-orchestrator:8011/ping",
+  "version": "v1.10.0",
+  "roles_required": ["agent", "operator", "admin"],
+  "tags": ["ai", "orchestrator", "phase-ii"],
+  "last_seen": "2025-11-04T22:56:37.420702+00:00"
+}
+```
+
+**Benefits:**
+- **Dynamic Discovery:** Services appear without editing configs
+- **Automatic Monitoring:** Auto-Heal picks up registered services automatically
+- **Living Registry:** Real-time service mesh state visible via GET `/ops/services`
+- **Self-Organizing:** Services join mesh on startup
+- **Backward Compatible:** Env-configured services still work
+- **Operational Visibility:** Reconciliation view shows registered vs monitored gaps
+- **Protocol Adoption:** Actual usage of AetherLink Protocols v1.0 (not just documentation)
+
+**User Impact:**
+> "Make these 3 things true:
+> 1. If a service shows up → Command Center knows. ✅
+> 2. If Command Center knows → Auto-heal can monitor. ✅
+> 3. If Auto-heal heals → it gets logged and visible in Command Center. ✅"
+
+**Testing:** +6 tests (all passing)
+
+**Phase V Complete:**
+Protocol layer is now CONSUMED, not just documented:
+- **Registry Provider:** Command Center ✅
+- **Registry Publishers:** AI Orchestrator ✅
+- **Registry Consumers:** Auto-Heal ✅
+- **Full Loop:** Operational ✅
+
+**Future Work:**
+- Add self-registration to Command Center, UI, Auto-Heal itself
+- Create UI reconciliation panel (show registered vs monitored comparison)
+- Fix COMMAND_CENTER_URL port config (8000 → 8010)
+- Migrate from deprecated `@app.on_event("startup")` to lifespan event handlers
+
 ---
 
 ## Release Tag Timeline
@@ -921,11 +1032,11 @@ v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ─�
 ## Release Tag Timeline
 
 ```
-v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0 ──► v1.10.0 ──► v1.11.0 ──► v1.12.0 ──► v1.13.0
-  │          │          │          │          │          │          │          │          │          │          │          │          │          │
-Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III Phase III Phase III Phase IV  Phase V
-Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr  AI Orch v2 Security Production Service
-            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment  Fallback   Audit   Packaging Registry
+v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0 ──► v1.10.0 ──► v1.11.0 ──► v1.12.0 ──► v1.13.0 ──► v1.14.0
+  │          │          │          │          │          │          │          │          │          │          │          │          │          │          │
+Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III Phase III Phase III Phase IV  Phase V  Phase V
+Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr  AI Orch v2 Security Production Service  Registry
+            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment  Fallback   Audit   Packaging Registry  Loop
 ```
 
 ---
@@ -948,6 +1059,7 @@ Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centraliz
 | v1.11.0  | +8 audit    | ~60        | Security audit logging |
 | v1.12.0  | +0 packaging| ~60        | Production deployment (no new tests) |
 | v1.13.0  | +12 registry| ~72        | Service registry & protocols |
+| v1.14.0  | +6 reg-loop | ~78        | Registry-driven ops loop |
 
 ---
 
