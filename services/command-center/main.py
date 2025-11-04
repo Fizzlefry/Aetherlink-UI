@@ -7,8 +7,21 @@ import httpx
 import os
 from rbac import require_roles
 from audit import audit_middleware, get_audit_stats
+import event_store
+from routers import events
 
 app = FastAPI(title="AetherLink Command Center", version="0.1.0")
+
+# Phase VI: Initialize event store on startup
+@app.on_event("startup")
+def startup_event():
+    """Initialize event control plane."""
+    print("[command-center] 🚀 Starting Command Center")
+    event_store.init_db()
+    print("[command-center] ✅ Event Control Plane ready")
+
+# Phase VI: Mount events router
+app.include_router(events.router)
 
 # Phase III M6: Security Audit Logging
 app.middleware("http")(audit_middleware)
@@ -179,5 +192,9 @@ def root():
             "/ops/register": "Register a service (POST)",
             "/ops/services": "List registered services",
             "/audit/stats": "Security audit statistics",
+            "/events/publish": "Publish an event (POST)",
+            "/events/schema": "List event schemas",
+            "/events/recent": "Query recent events",
+            "/events/stream": "Live event stream (SSE)",
         }
     }

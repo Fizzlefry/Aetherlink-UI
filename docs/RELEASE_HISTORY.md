@@ -1019,6 +1019,97 @@ Protocol layer is now CONSUMED, not just documented:
 - Fix COMMAND_CENTER_URL port config (8000 → 8010)
 - Migrate from deprecated `@app.on_event("startup")` to lifespan event handlers
 
+### v1.15.0 - Phase VI M1+M2: Event Control Plane
+**Released:** November 2025  
+**Focus:** Unified event pipeline with persistent storage and live streaming
+
+**Problem Solved:**
+Platform events were scattered across logs, Kafka topics, and ad-hoc implementations. No unified way to publish, query, or stream operational events. No historical event analytics.
+
+**Features:**
+
+**1. Event Schema Registry** (`docs/EVENT_CONTROL_PLANE.md`)
+- Standardized event envelope: event_type, source, timestamp, payload, tenant_id, severity
+- 6 registered event types:
+  - `service.registered` - Service joins registry
+  - `service.health.failed` - Health check failure
+  - `autoheal.attempted` - Container restart attempt
+  - `autoheal.succeeded` - Restart successful
+  - `autoheal.failed` - Restart failed
+  - `ai.fallback.used` - AI provider fallback
+
+**2. Event Publish API** (`services/command-center/routers/events.py`)
+- `POST /events/publish` - Publish event with schema validation
+- `GET /events/schema` - List all event schemas
+- `GET /events/schema/{event_type}` - Get specific schema
+- Event normalization (timestamp, event_id auto-generation)
+- Protocol-compliant (X-User-Roles RBAC)
+
+**3. Persistent Event Storage** (`services/command-center/event_store.py`)
+- SQLite database (`/app/data/events.db`)
+- Indexed by event_type, source, tenant_id, timestamp
+- Survives container restarts (Docker volume)
+- Queryable event history
+
+**4. Event Query API**
+- `GET /events/recent` - Retrieve recent events
+- Optional filters: event_type, source, limit
+- Returns events with full metadata and audit trail
+
+**5. Live Event Streaming** (Server-Sent Events)
+- `GET /events/stream` - Real-time SSE endpoint
+- Fan-out architecture (asyncio.Queue per subscriber)
+- UI can connect for live operational visibility
+- Auto-cleanup on client disconnect
+
+**Architecture:**
+```
+Service → POST /events/publish
+          ↓
+    Command Center:
+    1. Validate schema
+    2. Normalize (timestamp, event_id, defaults)
+    3. Save to SQLite
+    4. Broadcast to SSE subscribers
+          ↓
+    Consumers:
+    - UI Event Viewer (SSE stream)
+    - Historical queries (GET /events/recent)
+    - Audit trail
+    - Future: Anomaly detection, ML
+```
+
+**Docker Changes:**
+- Added `command-center-data` volume for event persistence
+- Set `EVENT_DB_PATH=/app/data/events.db` environment variable
+
+**Benefits:**
+- **Unified Pipeline**: Single endpoint for all platform events
+- **Schema Enforcement**: Consistent event structure across services
+- **Persistent History**: Events survive restarts, queryable for debugging
+- **Real-Time Visibility**: Live event stream for operators
+- **Operational Intelligence**: Foundation for anomaly detection, ML
+- **Audit Trail**: All events timestamped with client IP and received_at
+- **Multi-Tenant Ready**: tenant_id field for future isolation
+
+**Testing:**
+- Manual testing via PowerShell/curl
+- Event publish: 200 OK with event_id
+- Event fetch: Returns persisted events
+- Event stream: SSE connection working
+
+**Future Work (M3+M4):**
+- React EventStream UI component
+- Tenant-aware filtering (X-Tenant-ID header)
+- Time-range queries
+- Event aggregation and analytics
+- Auto-Heal and AI Orchestrator event integration
+
+**Command Center is now a true Control Plane:**
+- Service registry (Phase V) ✅
+- Event pipeline (Phase VI M1+M2) ✅
+- Live operational visibility ✅
+
 ---
 
 ## Release Tag Timeline
@@ -1032,11 +1123,11 @@ v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ─�
 ## Release Tag Timeline
 
 ```
-v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0 ──► v1.10.0 ──► v1.11.0 ──► v1.12.0 ──► v1.13.0 ──► v1.14.0
-  │          │          │          │          │          │          │          │          │          │          │          │          │          │          │
-Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III Phase III Phase III Phase IV  Phase V  Phase V
-Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr  AI Orch v2 Security Production Service  Registry
-            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment  Fallback   Audit   Packaging Registry  Loop
+v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0 ──► v1.10.0 ──► v1.11.0 ──► v1.12.0 ──► v1.13.0 ──► v1.14.0 ──► v1.15.0
+  │          │          │          │          │          │          │          │          │          │          │          │          │          │          │          │
+Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III Phase III Phase III Phase IV  Phase V  Phase V  Phase VI
+Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr  AI Orch v2 Security Production Service  Registry   Event
+            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment  Fallback   Audit   Packaging Registry  Loop    Control
 ```
 
 ---
@@ -1060,6 +1151,7 @@ Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centraliz
 | v1.12.0  | +0 packaging| ~60        | Production deployment (no new tests) |
 | v1.13.0  | +12 registry| ~72        | Service registry & protocols |
 | v1.14.0  | +6 reg-loop | ~78        | Registry-driven ops loop |
+| v1.15.0  | +0 events   | ~78        | Event control plane (manual testing) |
 
 ---
 

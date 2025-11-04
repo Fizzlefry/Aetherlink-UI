@@ -6,6 +6,8 @@ WORKDIR /app
 COPY ./main.py /app/main.py
 COPY ./rbac.py /app/rbac.py
 COPY ./audit.py /app/audit.py
+COPY ./event_store.py /app/event_store.py
+COPY ./routers /app/routers
 
 # Install dependencies
 RUN pip install --no-cache-dir fastapi uvicorn[standard] httpx

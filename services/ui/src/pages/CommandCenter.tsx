@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { EventStream } from "../components/EventStream";
 
 type ServiceStatus = {
     status: string;
@@ -502,9 +503,12 @@ const CommandCenter: React.FC = () => {
                     while red badges show services that need attention.
                 </p>
                 <div style={{ marginTop: "1rem", fontSize: "0.75rem", color: "#9ca3af" }}>
-                    Phase III M5 - AI Orchestrator v2 with Provider Fallback (v1.10.0)
+                    Phase VI M3 - Event Control Plane with Live Streaming (v1.15.0)
                 </div>
             </div>
+
+            {/* Phase VI: Live Event Stream */}
+            <EventStream />
         </div>
     );
 };
