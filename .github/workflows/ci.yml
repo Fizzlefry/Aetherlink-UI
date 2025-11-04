@@ -355,6 +355,10 @@ jobs:
         run: npx playwright test tests/auto-heal.spec.ts --reporter=list
         continue-on-error: false
 
+      - name: Run Auto-Heal History tests (M4 - v1.9.0)
+        run: npx playwright test tests/auto-heal-history.spec.ts --reporter=list
+        continue-on-error: false
+
       - name: Show service logs on failure
         if: failure()
         run: |

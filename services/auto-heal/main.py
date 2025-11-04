@@ -53,6 +53,10 @@ last_report: Dict[str, Any] = {
     "attempts": [],
 }
 
+# History of healing attempts (keep last 50)
+healing_history: List[Dict[str, Any]] = []
+MAX_HISTORY = 50
+
 
 def check_service(name: str) -> bool:
     """
@@ -115,6 +119,65 @@ def autoheal_status():
     }
 
 
+@app.get("/autoheal/history")
+def autoheal_history(limit: int = 10):
+    """
+    Get history of healing attempts.
+    
+    Args:
+        limit: Number of recent attempts to return (default: 10, max: 50)
+        
+    Returns:
+        List of recent healing attempts, newest first
+    """
+    # Limit to MAX_HISTORY
+    actual_limit = min(limit, MAX_HISTORY)
+    
+    # Return newest first
+    return {
+        "history": list(reversed(healing_history[-actual_limit:])),
+        "total_in_history": len(healing_history),
+        "limit": actual_limit,
+    }
+
+
+@app.get("/autoheal/stats")
+def autoheal_stats():
+    """
+    Get statistics about healing attempts.
+    
+    Returns:
+        Statistics including success rate, most healed service, etc.
+    """
+    if not healing_history:
+        return {
+            "total_attempts": 0,
+            "successful": 0,
+            "failed": 0,
+            "success_rate": 0.0,
+            "services": {},
+        }
+    
+    total = len(healing_history)
+    successful = sum(1 for h in healing_history if h["success"])
+    failed = total - successful
+    
+    # Count by service
+    service_counts: Dict[str, int] = {}
+    for h in healing_history:
+        svc = h["service"]
+        service_counts[svc] = service_counts.get(svc, 0) + 1
+    
+    return {
+        "total_attempts": total,
+        "successful": successful,
+        "failed": failed,
+        "success_rate": round(successful / total * 100, 2) if total > 0 else 0.0,
+        "services": service_counts,
+        "most_healed": max(service_counts.items(), key=lambda x: x[1])[0] if service_counts else None,
+    }
+
+
 @app.get("/ping")
 def ping():
     """
@@ -136,7 +199,7 @@ def loop_once():
     Run one iteration of health checks and healing attempts.
     
     Checks all watched services and restarts any that are down.
-    Updates last_report with results.
+    Updates last_report with results and maintains history.
     """
     attempts = []
     
@@ -145,13 +208,21 @@ def loop_once():
         if not ok:
             print(f"Service {svc} is down, attempting restart...")
             success, msg = restart_service(svc)
-            attempts.append({
+            attempt = {
                 "service": svc,
                 "action": "restart",
                 "success": success,
                 "msg": msg,
                 "timestamp": time.time(),
-            })
+            }
+            attempts.append(attempt)
+            
+            # Add to history
+            healing_history.append(attempt)
+            # Keep only last MAX_HISTORY items
+            if len(healing_history) > MAX_HISTORY:
+                healing_history.pop(0)
+            
             if success:
                 print(f"✅ Successfully restarted {svc}")
             else:

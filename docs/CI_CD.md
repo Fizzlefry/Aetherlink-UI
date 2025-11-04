@@ -84,7 +84,13 @@ AetherLink uses GitHub Actions for continuous integration and deployment. The pi
   - Service monitoring
   - Healing attempt structure
 
-**Total: 23 Playwright tests + comprehensive pytest suite**
+- ✅ Auto-Heal History (v1.9.0) - 13 tests
+  - History endpoint structure (5 tests)
+  - Statistics endpoint validation (5 tests)
+  - Backward compatibility (1 test)
+  - Data integrity checks (2 tests)
+
+**Total: 36 Playwright tests + comprehensive pytest suite**
 
 ## Workflow Triggers
 

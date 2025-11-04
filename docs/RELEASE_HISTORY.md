@@ -204,31 +204,222 @@ AetherLink's evolution from basic CRM backend to production-ready, self-healing 
 - Automated on every push
 - PR checks before merge
 
+### v1.7.0 - M2: Centralized Configuration
+**Released:** November 2025  
+**Focus:** Environment portability & deployment flexibility
+
+**Features:**
+- Centralized environment files
+- Three deployment targets: dev, docker, ci
+- Standardized 22 environment variables
+- Docker Compose integration
+- CI/CD integration
+
+**Configuration Files:**
+- `config/.env.dev` - localhost URLs (Windows/VS Code)
+- `config/.env.docker` - container networking (Docker Compose)
+- `config/.env.ci` - 127.0.0.1 URLs (GitHub Actions)
+
+**Standardized Variables:**
+- Service URLs (6 variables)
+- Auth configuration (3 variables)
+- Database & storage (4 variables)
+- Auto-heal configuration (3 variables)
+- UI health endpoint (1 variable)
+- Monitoring & logging (5 variables)
+
+**Docker Integration:**
+```yaml
+env_file:
+  - ../config/.env.docker
+```
+
+**CI Integration:**
+```bash
+cp config/.env.ci config/.env.docker
+```
+
+**Documentation:**
+- `docs/DEPLOYMENT.md` - 600+ line deployment guide
+- Environment scenarios
+- Troubleshooting guide
+- Best practices
+
+**Benefits:**
+- Single source of truth for configuration
+- No hardcoded URLs in docker-compose
+- Easy environment switching
+- Portable deployments
+- Consistent variable naming
+
+### v1.8.0 - M3: UI Health Endpoint
+**Released:** November 2025  
+**Focus:** Complete self-healing coverage
+
+**Features:**
+- Static health endpoint for UI
+- Auto-heal monitoring of UI service
+- 100% service coverage (UI + APIs)
+- Health endpoint testing
+
+**Implementation:**
+- `services/ui/public/health.json` - Static JSON health response
+- Updated `AUTOHEAL_HEALTH_ENDPOINTS` to include UI
+- UI_HEALTH_URL in all 3 environment files
+
+**Health Response:**
+```json
+{
+  "status": "ok",
+  "service": "aetherlink-ui",
+  "version": "1.0.0"
+}
+```
+
+**Auto-Heal Coverage:**
+- ✅ aether-crm-ui → /health.json
+- ✅ aether-command-center → /ops/ping
+- ✅ aether-ai-orchestrator → /ping
+
+**Testing:**
+- `tests/ui-health.spec.ts` - 4 comprehensive tests
+- HTTP 200 validation
+- JSON structure verification
+- Content-Type header check
+- Browser accessibility test
+
+**Benefits:**
+- Complete self-healing loop
+- UI failures detected and recovered
+- Prevents "green backend, white page" problem
+- Consistent health check pattern
+
+### v1.9.0 - M4: Command Center Enrichment
+**Released:** November 2025  
+**Focus:** Operational intelligence & history tracking
+
+**Features:**
+- Auto-heal history tracking (50-item buffer)
+- Statistics calculation & aggregation
+- Enhanced Command Center UI
+- New observability endpoints
+
+**Backend Enhancements:**
+
+**History Tracking:**
+- In-memory circular buffer (MAX_HISTORY: 50)
+- Maintains recent healing attempts
+- Automatic pruning on overflow
+- Newest-first ordering
+
+**New Endpoints:**
+
+`GET /autoheal/history?limit=10`
+- Returns recent healing attempts
+- Configurable limit (default: 10, max: 50)
+- Newest first ordering
+- Response structure:
+  ```json
+  {
+    "history": [...],
+    "total_in_history": 0,
+    "limit": 10
+  }
+  ```
+
+`GET /autoheal/stats`
+- Success rate calculation
+- Per-service attempt counts
+- Most healed service identification
+- Response structure:
+  ```json
+  {
+    "total_attempts": 0,
+    "successful": 0,
+    "failed": 0,
+    "success_rate": 0.0,
+    "services": {},
+    "most_healed": "service-name"
+  }
+  ```
+
+**Backward Compatibility:**
+- `GET /autoheal/status` - Unchanged existing endpoint
+
+**Frontend Enhancements:**
+
+**Statistics Dashboard:**
+- 4-card grid: Total Attempts, Success Rate, Successful, Failed
+- Color-coded metrics (green for success, red for failures)
+- Responsive auto-fit layout
+
+**Configuration Panel:**
+- Monitored services list
+- Check interval display
+- Last check timestamp
+- Service count summary
+
+**Healing Activity Timeline:**
+- Recent attempts (10 items)
+- Chronological display (newest first)
+- Color-coded borders (green/red)
+- Service name, action, message
+- Full timestamps
+- Success/failure icons (✅/❌)
+- Empty state: "All Systems Healthy"
+
+**Auto-Refresh:**
+- All data refreshes every 15 seconds
+- 4 concurrent fetch operations
+- Proper interval cleanup
+
+**Testing:**
+- `tests/auto-heal-history.spec.ts` - 13 comprehensive tests
+- History endpoint structure (5 tests)
+- Statistics calculation (5 tests)
+- Backward compatibility (1 test)
+- Data integrity checks (2 tests)
+
+**CI Integration:**
+- Added to GitHub Actions workflow
+- 36 total Playwright tests (23 → 36)
+
+**Benefits:**
+- "What's it been doing?" visibility
+- Identify flapping services
+- Operational intelligence over time
+- Real-time ops console
+- History for troubleshooting
+- Success rate trends
+
 ---
 
 ## Release Tag Timeline
 
 ```
-v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0
-  │          │          │          │          │          │          │
-Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III
-Backend     UI      Command     AI       RBAC     Auto-Heal    CI/CD
-            Auth    Center   Orchestrator          Self-Heal   Pipeline
+v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0
+  │          │          │          │          │          │          │          │          │          │
+Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III
+Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr
+            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment
 ```
 
 ---
 
 ## Test Coverage by Version
 
-| Version | Tests Added | Cumulative |
-|---------|-------------|------------|
-| v1.0.0  | Backend E2E | ~10        |
-| v1.1.0  | Auth flows  | ~13        |
-| v1.2.0  | +3 (M1)     | ~16        |
-| v1.3.0  | +4 (M2)     | ~20        |
-| v1.4.0  | +11 (M3)    | ~31        |
-| v1.5.0  | +5 (M4)     | ~36        |
-| v1.6.0  | CI guards   | ~36 (automated) |
+| Version | Tests Added | Cumulative | Notes |
+|---------|-------------|------------|-------|
+| v1.0.0  | Backend E2E | ~10        | Initial backend validation |
+| v1.1.0  | Auth flows  | ~13        | UI authentication |
+| v1.2.0  | +3 (M1)     | ~16        | Command Center |
+| v1.3.0  | +4 (M2)     | ~20        | AI Orchestrator |
+| v1.4.0  | +11 (M3)    | ~31        | RBAC enforcement |
+| v1.5.0  | +5 (M4)     | ~36        | Auto-Heal self-healing |
+| v1.6.0  | CI guards   | ~36        | Automated in CI |
+| v1.7.0  | Config docs | ~36        | Deployment guide |
+| v1.8.0  | +4 UI health| ~40        | UI health endpoint |
+| v1.9.0  | +13 history | ~49        | Auto-heal history & stats |
 
 ---
 
