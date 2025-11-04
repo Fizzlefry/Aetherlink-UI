@@ -1,0 +1,50 @@
+# AetherLink notifications rules
+# Each rule can match on fields from the event payload.
+# First matching rule wins. If none match, fallback is to notify=true.
+
+rules:
+  # 1. High-signal pipeline moves
+  - name: "notify-on-qualified"
+    match:
+      event_type: "lead.status_changed"
+      new_status: "qualified"
+    notify: true
+    channel: "sales"
+    template: "[{tenant_id}] 🎉 Lead #{lead_id} moved to QUALIFIED by {actor}"
+
+  # 2. Notify on won deals!
+  - name: "notify-on-won"
+    match:
+      event_type: "lead.status_changed"
+      new_status: "won"
+    notify: true
+    channel: "sales"
+    template: "[{tenant_id}] 💰 DEAL WON! Lead #{lead_id} closed by {actor}"
+
+  # 3. New lead for a specific tenant
+  - name: "acme-new-leads"
+    match:
+      event_type: "lead.created"
+      tenant_id: "acme"
+    notify: true
+    channel: "acme-leads"
+    template: "[{tenant_id}] New lead: {name} ({email}) created by {actor}"
+
+  # 4. High-value assignments
+  - name: "notify-on-assignment"
+    match:
+      event_type: "lead.assigned"
+    notify: true
+    channel: "assignments"
+    template: "[{tenant_id}] 👤 Lead #{lead_id} assigned to new owner by {actor}"
+
+  # 5. Default noise guard: do NOT alert on notes
+  - name: "suppress-notes"
+    match:
+      event_type: "lead.note_added"
+    notify: false
+
+# If no rule matches, this is used:
+default:
+  notify: true
+  template: "[{tenant_id}] {event_type} on lead #{lead_id}"

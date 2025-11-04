@@ -1,0 +1,13 @@
+pre-commit
+ruff>=0.5
+black
+isort
+mypy>=1.10
+requests>=2.32.0
+types-requests>=2.32.0.20241016
+types-redis
+types-PyYAML
+sqlalchemy-stubs
+psycopg2-binary
+alembic
+pytest>=8.3

@@ -1,0 +1,15 @@
+# Docker Compose Healthcheck Reference
+# Add to your API service in docker-compose.yml for `docker compose up --wait`
+
+services:
+  api:
+    # ... existing config ...
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8000/healthz" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+# Then use:
+# docker compose up --wait    # blocks until healthcheck passes

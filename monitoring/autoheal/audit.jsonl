@@ -1,0 +1,8 @@
+{"kind":"webhook_received","alerts":1,"ts":1762135095.189919}
+{"kind":"action_dry_run","alertname":"TcpEndpointDownFast","cmd":"docker restart crm-api","ts":1762135095.1919265}
+{"kind":"webhook_received","alerts":1,"ts":1762135141.0829065}
+{"kind":"decision_skip","reason":"cooldown","alertname":"TcpEndpointDownFast","ts":1762135141.0845256}
+{"kind":"webhook_received","alerts":1,"ts":1762135732.730188}
+{"kind":"decision_skip","reason":"not_annotated","alertname":"AutohealNoEvents15m","ts":1762135732.7321105}
+{"kind":"webhook_received","alerts":1,"ts":1762136501.7215097}
+{"kind":"decision_skip","reason":"not_annotated","alertname":"TcpEndpointDownFast","ts":1762136501.7230878}

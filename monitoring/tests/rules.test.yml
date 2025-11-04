@@ -1,0 +1,126 @@
+rule_files:
+  - ../prometheus-recording-rules.yml
+  - ../prometheus-alerts.yml
+
+evaluation_interval: 30s
+
+tests:
+  # ============================================================================
+  # Test: SLO Recording Rules - tcp:probe_success:ratio_5m
+  # ============================================================================
+  - interval: 1m
+    input_series:
+      - series: 'probe_success{job="blackbox_tcp",instance="test:8080"}'
+        values: "1 1 0 1 1 1"
+        # 5/6 success = ~0.833
+
+    promql_expr_test:
+      - expr: tcp:probe_success:ratio_5m{instance="test:8080"}
+        eval_time: 6m
+        exp_samples:
+          - labels: 'tcp:probe_success:ratio_5m{instance="test:8080",job="blackbox_tcp",layer="tcp"}'
+            value: 0.8 # 4/5 success rate over 5m window
+
+  # ============================================================================
+  # Test: PaymentRateErrorBudgetCritical at 25% threshold
+  # ============================================================================
+  - interval: 5m
+    input_series:
+      - series: 'slo:payment_rate:error_budget_remaining{service="crm",component="slo"}'
+        values: "0.50 0.40 0.30 0.24 0.24 0.24 0.24 0.24 0.24 0.24"
+        # Time:     0    5m   10m  15m  20m  25m  30m  35m  40m  45m
+        #                         ^-- Below 25% for 30m+ --^
+
+    alert_rule_test:
+      # Should NOT alert before 30m duration
+      - eval_time: 20m
+        alertname: PaymentRateErrorBudgetCritical
+        exp_alerts: []
+
+      # SHOULD alert after 30m below critical threshold
+      - eval_time: 45m
+        alertname: PaymentRateErrorBudgetCritical
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              service: crm
+              layer: slo
+              component: slo
+            exp_annotations:
+              summary: "Error budget remaining is below 25% (critical)"
+              description: "EBR < 25% over the last 30d window."
+              impact: "SLO breach imminent; declare/continue incident response."
+              tips: "Limit risky deploys, focus on recovery, apply rate limits/backoff."
+              runbook_url: "docs/runbooks/ALERTS_CRM_FINANCE.md#error-budget-critical"
+
+  # ============================================================================
+  # Test: TcpEndpointDownFast triggers quickly (2m)
+  # ============================================================================
+  - interval: 1m
+    input_series:
+      - series: 'probe_success{job="blackbox_tcp",instance="crm-api:8080"}'
+        values: "1 1 0 0 0 1 1"
+        # Time:     0  1m 2m 3m 4m 5m 6m
+        #                 ^-- Down for 3m --^
+
+    alert_rule_test:
+      # Should NOT alert before 2m
+      - eval_time: 1m
+        alertname: TcpEndpointDownFast
+        exp_alerts: []
+
+      # SHOULD alert after 2m continuous failure
+      - eval_time: 4m
+        alertname: TcpEndpointDownFast
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              service: network
+              layer: tcp
+              instance: "crm-api:8080"
+              job: "blackbox_tcp"
+            exp_annotations:
+              summary: "TCP down: crm-api:8080"
+              description: "Blackbox tcp_connect cannot reach crm-api:8080 (job=blackbox_tcp) for 2m."
+              impact: "Service on crm-api:8080 likely unreachable."
+              tips: "Check container health, ports, firewall, Docker network, security groups."
+              runbook_url: "docs/runbooks/ALERTS_CRM_FINANCE.md#tcp-endpoint-down"
+              autoheal: "true"
+
+      # Should resolve when probe succeeds
+      - eval_time: 6m
+        alertname: TcpEndpointDownFast
+        exp_alerts: []
+
+  # ============================================================================
+  # Test: Recording rule - tcp:probe_success:ratio_5m
+  # ============================================================================
+  - interval: 1m
+    input_series:
+      - series: 'probe_success{job="blackbox_tcp",instance="test:8080"}'
+        values: "1 1 0 1 1 1"
+        # 5/6 success = ~0.833
+
+    promql_expr_test:
+      - expr: tcp:probe_success:ratio_5m{instance="test:8080"}
+        eval_time: 6m
+        exp_samples:
+          - labels: 'tcp:probe_success:ratio_5m{instance="test:8080",job="blackbox_tcp",layer="tcp"}'
+            value: 0.8 # 4/5 success rate over 5m window
+
+  # ============================================================================
+  # Test: AetherVision TCP rollup - aethervision:probes_tcp_up
+  # ============================================================================
+  - interval: 1m
+    input_series:
+      - series: 'probe_success{job="blackbox_tcp",instance="grafana:3000"}'
+        values: "1 1 1 1 1 1 1 1 1 1"
+      - series: 'probe_success{job="blackbox_tcp",instance="crm-api:8080"}'
+        values: "1 1 1 1 1 1 1 1 1 1"
+
+    promql_expr_test:
+      - expr: aethervision:probes_tcp_up
+        eval_time: 10m
+        exp_samples:
+          - labels: "aethervision:probes_tcp_up{}"
+            value: 2

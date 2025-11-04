@@ -1,0 +1,17 @@
+# Bandit security scan configuration
+# See: https://bandit.readthedocs.io/
+
+skips:
+  # B101: Test for use of assert - we use assert in tests
+  - B101
+  # B601: shell=True usage - we have controlled shell usage
+  # - B601
+
+exclude_dirs:
+  - /tests/
+  - /.venv/
+  - /.pytest_cache/
+  - /__pycache__/
+
+# Set severity level (LOW, MEDIUM, HIGH)
+# Set confidence level (LOW, MEDIUM, HIGH)

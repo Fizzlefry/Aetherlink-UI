@@ -1,0 +1,390 @@
+{
+    "id": null,
+    "uid": "aetherlink_rag_tenant_metrics_enhanced",
+    "title": "AetherLink RAG – Tenant Metrics (Enhanced)",
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "version": 1,
+    "editable": true,
+    "style": "dark",
+    "refresh": "30s",
+    "time": {
+        "from": "now-6h",
+        "to": "now"
+    },
+    "timepicker": {
+        "refresh_intervals": [
+            "10s",
+            "30s",
+            "1m",
+            "5m"
+        ]
+    },
+    "templating": {
+        "list": [
+            {
+                "name": "tenant",
+                "label": "Tenant",
+                "type": "query",
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "Prometheus"
+                },
+                "query": "label_values(aether_rag_answers_total, tenant)",
+                "refresh": 1,
+                "includeAll": true,
+                "allValue": ".*",
+                "multi": false,
+                "hide": 0
+            }
+        ]
+    },
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": "-- Grafana --",
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "panels": [
+        {
+            "type": "gauge",
+            "title": "Cache Hit Ratio (5m)",
+            "gridPos": {
+                "h": 6,
+                "w": 8,
+                "x": 0,
+                "y": 0
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "expr": "aether:cache_hit_ratio:5m{tenant=~\"$tenant\"}"
+                }
+            ],
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "values": false
+                },
+                "showThresholdLabels": false,
+                "showThresholdMarkers": true
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent",
+                    "decimals": 0,
+                    "min": 0,
+                    "max": 100,
+                    "mappings": [
+                        {
+                            "type": "special",
+                            "options": {
+                                "match": "null"
+                            },
+                            "display": "No recent traffic"
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red"
+                            },
+                            {
+                                "value": 30,
+                                "color": "yellow"
+                            },
+                            {
+                                "value": 60,
+                                "color": "green"
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            }
+        },
+        {
+            "type": "gauge",
+            "title": "Rerank Utilization % (15m)",
+            "gridPos": {
+                "h": 6,
+                "w": 8,
+                "x": 8,
+                "y": 0
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "expr": "aether:rerank_utilization_pct:15m{tenant=~\"$tenant\"}"
+                }
+            ],
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "values": false
+                },
+                "showThresholdLabels": false,
+                "showThresholdMarkers": true
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent",
+                    "decimals": 0,
+                    "min": 0,
+                    "max": 100,
+                    "mappings": [
+                        {
+                            "type": "special",
+                            "options": {
+                                "match": "null"
+                            },
+                            "display": "No recent traffic"
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green"
+                            },
+                            {
+                                "value": 30,
+                                "color": "yellow"
+                            },
+                            {
+                                "value": 60,
+                                "color": "red"
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            }
+        },
+        {
+            "type": "gauge",
+            "title": "Low-Confidence Share % (15m)",
+            "gridPos": {
+                "h": 6,
+                "w": 8,
+                "x": 16,
+                "y": 0
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "expr": "aether:lowconfidence_pct:15m{tenant=~\"$tenant\"}"
+                }
+            ],
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "values": false
+                },
+                "showThresholdLabels": false,
+                "showThresholdMarkers": true
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent",
+                    "decimals": 0,
+                    "min": 0,
+                    "max": 100,
+                    "mappings": [
+                        {
+                            "type": "special",
+                            "options": {
+                                "match": "null"
+                            },
+                            "display": "No recent traffic"
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green"
+                            },
+                            {
+                                "value": 10,
+                                "color": "yellow"
+                            },
+                            {
+                                "value": 20,
+                                "color": "red"
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            }
+        },
+        {
+            "type": "row",
+            "title": "Business KPIs",
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 6
+            },
+            "collapsed": false,
+            "panels": []
+        },
+        {
+            "type": "stat",
+            "title": "30-Day Estimated Cost (USD)",
+            "gridPos": {
+                "h": 6,
+                "w": 12,
+                "x": 0,
+                "y": 7
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "expr": "aether:estimated_cost_30d_usd"
+                }
+            ],
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "values": false
+                },
+                "orientation": "horizontal",
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "center",
+                "textMode": "auto"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "currencyUSD",
+                    "decimals": 2,
+                    "mappings": [
+                        {
+                            "type": "special",
+                            "options": {
+                                "match": "null"
+                            },
+                            "display": "No recent traffic"
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green"
+                            },
+                            {
+                                "value": 50,
+                                "color": "yellow"
+                            },
+                            {
+                                "value": 200,
+                                "color": "red"
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            }
+        },
+        {
+            "type": "gauge",
+            "title": "System Health Score (0–100)",
+            "gridPos": {
+                "h": 6,
+                "w": 12,
+                "x": 12,
+                "y": 7
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "expr": "aether:health_score:15m"
+                }
+            ],
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "values": false
+                },
+                "showThresholdLabels": false,
+                "showThresholdMarkers": true
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent",
+                    "decimals": 0,
+                    "min": 0,
+                    "max": 100,
+                    "mappings": [
+                        {
+                            "type": "special",
+                            "options": {
+                                "match": "null"
+                            },
+                            "display": "No recent traffic"
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red"
+                            },
+                            {
+                                "value": 60,
+                                "color": "yellow"
+                            },
+                            {
+                                "value": 80,
+                                "color": "green"
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            }
+        }
+    ]
+}

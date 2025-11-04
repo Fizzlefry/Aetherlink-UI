@@ -1,0 +1,233 @@
+# Prometheus Configuration for AetherLink RAG Metrics
+# This is the main config file for the monitoring stack
+
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+  external_labels:
+    cluster: "aetherlink-local"
+    environment: "development"
+
+# Load alert and recording rules
+rule_files:
+  - "/etc/prometheus/alerts.yml"
+  - "/etc/prometheus/recording-rules.yml"
+  - "/etc/prometheus/crm-events-rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # AetherLink API metrics
+  - job_name: "aetherlink_api"
+    metrics_path: "/metrics"
+    scheme: http
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    static_configs:
+      # Use host.docker.internal on Windows/Mac to reach host machine
+      # On Linux, use your host IP (e.g., 192.168.1.100:8000) or bridge network
+      - targets: ["host.docker.internal:8000"]
+        labels:
+          service: "aetherlink-api"
+          component: "customer-ops"
+          env: "local"
+
+    # Optional: Basic auth if /metrics is protected
+    # basic_auth:
+    #   username: 'prometheus'
+    #   password: 'your-password'
+
+    # Optional: Relabel to add more metadata
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - source_labels: [__address__]
+        regex: '([^:]+)(?::\d+)?'
+        target_label: hostname
+        replacement: "$1"
+
+  # Optional: If you have multiple API instances (load balanced)
+  # - job_name: 'aetherlink_api_cluster'
+  #   metrics_path: '/metrics'
+  #   scheme: http
+  #   static_configs:
+  #     - targets:
+  #       - 'api-1.aetherlink.local:8000'
+  #       - 'api-2.aetherlink.local:8000'
+  #       - 'api-3.aetherlink.local:8000'
+  #       labels:
+  #         service: 'aetherlink-api'
+  #         environment: 'production'
+
+  # AetherLink Command AI Agent metrics
+  - job_name: "aether_agent"
+    metrics_path: "/metrics"
+    scheme: http
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    static_configs:
+      - targets: ["aether-agent:8080"]
+        labels:
+          service: "aether-agent"
+          component: "agent"
+          env: "local"
+
+  # PeakPro CRM API metrics
+  - job_name: "crm_api"
+    metrics_path: "/metrics"
+    scheme: http
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    static_configs:
+      - targets: ["crm-api:8080"]
+        labels:
+          service: "crm-api"
+          component: "crm"
+          env: "local"
+
+  # Blackbox Exporter HTTP probes
+  - job_name: "blackbox_http"
+    metrics_path: /probe
+    params: { module: [http_2xx] }
+    static_configs:
+      - targets:
+          - http://crm-api:8080/metrics
+          - http://crm-api:8080/qbo/status
+          - http://prometheus:9090/-/ready
+          - http://alertmanager:9093/api/v2/status
+          - http://grafana:3000/api/health
+    relabel_configs:
+      - source_labels: [__address__] # target URL → __param_target
+        target_label: __param_target
+      - source_labels: [__param_target] # label it as instance
+        target_label: instance
+      - target_label: __address__ # send to blackbox
+        replacement: blackbox:9115
+
+  # Blackbox Exporter TCP probes
+  - job_name: "blackbox_tcp"
+    metrics_path: /probe
+    scheme: http
+    params:
+      module: [tcp_connect]
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - crm-api:8080
+          - prometheus:9090
+          - alertmanager:9093
+          - grafana:3000
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115
+
+  # Autoheal service metrics
+  - job_name: "autoheal"
+    metrics_path: /metrics
+    scheme: http
+    scrape_interval: 10s
+    static_configs:
+      - targets: ["autoheal:9009"]
+        labels:
+          service: "autoheal"
+          component: "ops"
+          project: "Aetherlink"
+          module: "Autoheal"
+          app: "peakpro-crm"
+
+  # CRM Events SSE service metrics
+  - job_name: "crm-events"
+    metrics_path: /metrics
+    scheme: http
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["crm-events:9010"]
+        labels:
+          service: "crm-events"
+          component: "events"
+          project: "Aetherlink"
+          module: "CRM-Events"
+
+  # Kafka Exporter (consumer lag metrics)
+  - job_name: "kafka-exporter"
+    static_configs:
+      - targets: ["kafka-exporter:9308"]
+        labels:
+          project: "Aetherlink"
+          module: "Kafka"
+
+  # Aetherlink Core Services (Identity + Gateway + Tenancy)
+  - job_name: "aether-core"
+    metrics_path: /metrics
+    scheme: http
+    scrape_interval: 10s
+    static_configs:
+      - targets:
+          - "gateway:8000"
+          - "tenancy:8001"
+        labels:
+          project: "Aetherlink"
+          module: "Core"
+          component: "platform"
+
+  # ApexFlow CRM (Leads/Jobs/Appointments)
+  - job_name: "apexflow"
+    metrics_path: /metrics
+    scheme: http
+    scrape_interval: 10s
+    static_configs:
+      - targets:
+          - "apexflow:8080"
+        labels:
+          project: "Aetherlink"
+          module: "CRM"
+          component: "business"
+
+  # CRM Events Sink (Event Consumer + Materialized View)
+  - job_name: "crm-events-sink"
+    metrics_path: /metrics
+    scheme: http
+    scrape_interval: 10s
+    static_configs:
+      - targets:
+          - "aether-crm-events-sink:9105"
+        labels:
+          project: "Aetherlink"
+          module: "Events"
+          component: "consumer"
+
+  # Optional: Service discovery for Kubernetes/Docker
+  # - job_name: 'aetherlink_api_k8s'
+  #   kubernetes_sd_configs:
+  #     - role: pod
+  #   relabel_configs:
+  #     - source_labels: [__meta_kubernetes_pod_label_app]
+  #       action: keep
+  #       regex: aetherlink-api
+  #     - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+  #       action: keep
+  #       regex: true
+  #     - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+  #       action: replace
+  #       regex: ([^:]+)(?::\d+)?;(\d+)
+  #       replacement: $1:$2
+  #       target_label: __address__
+  #     - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+  #       action: replace
+  #       target_label: __metrics_path__
+# Optional: Remote write for long-term storage
+# remote_write:
+#   - url: "https://prometheus-remote-write.example.com/api/v1/write"
+#     basic_auth:
+#       username: "your-username"
+#       password: "your-password"
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - "alertmanager:9093"

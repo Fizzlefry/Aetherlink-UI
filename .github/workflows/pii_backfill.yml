@@ -1,0 +1,49 @@
+name: weekly-pii-backfill
+
+# Run weekly on Sundays at 02:00 UTC (low traffic)
+on:
+  schedule:
+    - cron: "0 2 * * 0"  # Every Sunday at 02:00 UTC
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  scrub-history:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      
+      - name: Install dependencies
+        run: |
+          cd pods/customer_ops
+          pip install redis transformers
+      
+      - name: Dry-run backfill (staging)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          REDIS_URL: ${{ secrets.REDIS_URL_STAGING }}
+        run: |
+          cd pods/customer_ops
+          python scripts/scrub_history.py --dry-run
+      
+      - name: Run backfill (production)
+        if: github.event_name == 'schedule'
+        env:
+          REDIS_URL: ${{ secrets.REDIS_URL_PROD }}
+        run: |
+          cd pods/customer_ops
+          python scripts/scrub_history.py
+      
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pii-backfill-logs-${{ github.run_number }}
+          path: pods/customer_ops/*.log
+          retention-days: 30

@@ -1,0 +1,152 @@
+name: Monitoring Smoke Test
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "monitoring/**"
+      - "pods/crm/**"
+      - "scripts/test_monitoring_stack.ps1"
+      - ".github/workflows/monitoring-smoke.yml"
+
+concurrency:
+  group: monitoring-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+
+    env:
+      # If you add this secret in your repo/org → it enables Slack test alerts
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Docker & PowerShell versions
+        run: |
+          docker --version
+          docker compose version || true
+          pwsh --version
+
+      - name: Install promtool
+        run: |
+          curl -fsSL https://github.com/prometheus/prometheus/releases/download/v2.55.1/prometheus-2.55.1.linux-amd64.tar.gz -o prom.tar.gz
+          tar -xzf prom.tar.gz
+          sudo mv prometheus-2.55.1.linux-amd64/promtool /usr/local/bin/promtool
+          promtool --version
+
+      - name: Lint Prometheus configuration
+        working-directory: monitoring
+        run: |
+          echo "Checking Prometheus config..."
+          promtool check config prometheus-config.yml
+          echo "Checking alert rules..."
+          promtool check rules prometheus-alerts.yml
+          echo "Checking recording rules..."
+          promtool check rules prometheus-recording-rules.yml
+          echo "✅ All Prometheus configs valid"
+
+      - name: Build & start monitoring stack
+        working-directory: monitoring
+        run: |
+          docker compose pull || true
+          docker compose up -d prometheus alertmanager grafana crm-api postgres-crm
+
+      - name: Wait for Prometheus (9090)
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://localhost:9090/-/ready >/dev/null; then
+              echo "Prometheus is ready"; exit 0
+            fi
+            echo "Waiting for Prometheus... ($i/60)"
+            sleep 2
+          done
+          echo "Prometheus NOT ready in time" >&2
+          exit 1
+
+      - name: Wait for Grafana (3000)
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://localhost:3000/api/health >/dev/null; then
+              echo "Grafana is ready"; exit 0
+            fi
+            echo "Waiting for Grafana... ($i/60)"
+            sleep 2
+          done
+          echo "Grafana NOT ready in time" >&2
+          exit 1
+
+      - name: Wait for Alertmanager (9093)
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://localhost:9093/api/v2/status >/dev/null; then
+              echo "Alertmanager is ready"; exit 0
+            fi
+            echo "Waiting for Alertmanager... ($i/60)"
+            sleep 2
+          done
+          echo "Alertmanager NOT ready in time" >&2
+          exit 1
+
+      - name: Wait for CRM API (8089)
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://localhost:8089/health >/dev/null 2>&1 || curl -fsS http://localhost:8089/metrics >/dev/null 2>&1; then
+              echo "CRM API is ready"; exit 0
+            fi
+            echo "Waiting for CRM API... ($i/60)"
+            sleep 2
+          done
+          echo "CRM API NOT ready in time" >&2
+          exit 1
+
+      - name: Run monitoring smoke test (no Slack)
+        if: env.SLACK_WEBHOOK_URL == ''
+        shell: pwsh
+        run: |
+          pwsh -ExecutionPolicy Bypass -File ./scripts/test_monitoring_stack.ps1
+
+      - name: Run monitoring smoke test (with Slack)
+        if: env.SLACK_WEBHOOK_URL != ''
+        shell: pwsh
+        run: |
+          pwsh -ExecutionPolicy Bypass -File ./scripts/test_monitoring_stack.ps1 -FireSlack
+
+      - name: Show brief Prometheus status
+        if: always()
+        run: |
+          echo "=== Prometheus Rule Groups ==="
+          curl -s http://localhost:9090/api/v1/rules | jq '.data.groups[] | {name:.name, rules:(.rules | length)}' || true
+          echo ""
+          echo "=== Active Alerts ==="
+          curl -s http://localhost:9090/api/v1/alerts | jq '.data.alerts[] | {name:.labels.alertname, state:.state}' || true
+          echo ""
+          echo "=== CRM Scrape Health ==="
+          curl -s 'http://localhost:9090/api/v1/query?query=up{job=~"crm.*"}' | jq '.data.result[] | {job:.metric.job, up:.value[1]}' || true
+
+      - name: Collect Docker logs on failure
+        if: failure()
+        working-directory: monitoring
+        run: |
+          mkdir -p artifacts
+          docker compose logs --no-color prometheus > artifacts/prometheus.log 2>&1 || true
+          docker compose logs --no-color alertmanager > artifacts/alertmanager.log 2>&1 || true
+          docker compose logs --no-color grafana > artifacts/grafana.log 2>&1 || true
+          docker compose logs --no-color crm-api > artifacts/crm-api.log 2>&1 || true
+          docker compose logs --no-color postgres-crm > artifacts/postgres-crm.log 2>&1 || true
+
+      - name: Upload logs (failure only)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: monitoring-logs
+          path: monitoring/artifacts
+
+      - name: Tear down stack
+        if: always()
+        working-directory: monitoring
+        run: |
+          docker compose down -v

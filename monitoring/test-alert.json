@@ -1,0 +1,13 @@
+[
+    {
+        "labels": {
+            "alertname": "SyntheticTest",
+            "severity": "warning",
+            "tenant": "demo"
+        },
+        "annotations": {
+            "summary": "Synthetic alert to test agent webhook"
+        },
+        "startsAt": "2025-11-02T20:15:00Z"
+    }
+]

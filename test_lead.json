@@ -1,0 +1,12 @@
+{
+    "name": "Jane Smith",
+    "email": "jane.smith@example.com",
+    "phone": "+1-555-0102",
+    "source": "referral",
+    "status": "qualified",
+    "assigned_to": "sarah@acme.com",
+    "tags": [
+        "enterprise",
+        "hot-lead"
+    ]
+}

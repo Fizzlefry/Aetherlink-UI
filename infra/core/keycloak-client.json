@@ -1,0 +1,21 @@
+{
+    "clientId": "aetherlink-crm-ui",
+    "enabled": true,
+    "publicClient": true,
+    "protocol": "openid-connect",
+    "standardFlowEnabled": true,
+    "implicitFlowEnabled": true,
+    "directAccessGrantsEnabled": true,
+    "baseUrl": "http://localhost:5173",
+    "rootUrl": "http://localhost:5173",
+    "redirectUris": [
+        "http://localhost:5173/*",
+        "http://localhost:5173"
+    ],
+    "webOrigins": [
+        "*"
+    ],
+    "attributes": {
+        "post.logout.redirect.uris": "http://localhost:5173/*"
+    }
+}

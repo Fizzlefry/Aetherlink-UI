@@ -1,3 +1,55 @@
+[project]
+name = "aetherlink"
+requires-python = ">=3.11"
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+exclude = """
+/(\
+  \.venv
+  | build
+  | dist
+  | alembic/versions
+)/
+"""
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip_glob = ["alembic/versions/*", ".venv/*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["alembic/versions", ".venv"]
+lint.select = [
+  "E", "F",         # pycodestyle / pyflakes
+  "I",              # import sorting
+  "UP",             # pyupgrade
+  "B",              # bugbear
+  "C4",             # comprehensions
+  "SIM",            # flake8-simplify
+]
+lint.ignore = [
+  "E501",           # line length (Black handles)
+]
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unreachable = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+strict_equality = true
+ignore_missing_imports = true
+plugins = []
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
 [tool.poetry]
 name = "aetherlink"
 version = "0.1.0"
@@ -13,16 +65,15 @@ psycopg2-binary = "^2.9.9"
 prometheus-client = "^0.19.0"
 sentry-sdk = "^1.32.0"
 structlog = "^23.2.0"
+sentence-transformers = "^2.2.2"
+pgvector = "^0.2.3"
+scikit-learn = "^1.4.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"
 ruff = "^0.1.6"
 pyright = "^1.1.335"
 pre-commit = "^3.5.0"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 target-version = "py311"
@@ -64,3 +115,22 @@ extend-exclude = '''
     | __pycache__
 )
 '''
+
+[tool.pyright]
+pythonVersion = "3.11"
+typeCheckingMode = "basic"
+reportMissingImports = true
+reportUnknownMemberType = false
+
+[tool.coverage.run]
+source = ["pods/customer_ops/api"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

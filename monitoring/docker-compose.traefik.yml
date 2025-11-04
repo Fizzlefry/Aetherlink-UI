@@ -1,0 +1,109 @@
+# Traefik Reverse Proxy with TLS + Let's Encrypt
+# For remote/public deployments
+# Deploy with: docker compose -f docker-compose.traefik.yml up -d
+
+version: "3.9"
+
+services:
+  traefik:
+    image: traefik:v3.1
+    container_name: aether-traefik
+    restart: unless-stopped
+    command:
+      - "--api.dashboard=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.le.acme.tlschallenge=true"
+      - "--certificatesresolvers.le.acme.email=ops@aetherlink.com"
+      - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    networks:
+      - aether-monitoring
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: aether-grafana
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      - GF_SERVER_ROOT_URL=https://grafana.aetherlink.com
+      - GF_SERVER_DOMAIN=grafana.aetherlink.com
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.graf.rule=Host(`grafana.aetherlink.com`)"
+      - "traefik.http.routers.graf.entrypoints=websecure"
+      - "traefik.http.routers.graf.tls.certresolver=le"
+      - "traefik.http.services.graf.loadbalancer.server.port=3000"
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: aether-alertmanager
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    environment:
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.am.rule=Host(`am.aetherlink.com`)"
+      - "traefik.http.routers.am.entrypoints=websecure"
+      - "traefik.http.routers.am.tls.certresolver=le"
+      - "traefik.http.services.am.loadbalancer.server.port=9093"
+      # Basic Auth middleware
+      # Generate with: htpasswd -nb aether YourPassword
+      # Replace $$ with $$$$ for docker-compose escaping
+      - "traefik.http.middlewares.am-auth.basicauth.users=aether:$$apr1$$bQf12345$$REPLACE_WITH_YOUR_HTPASSWD_HASH"
+      - "traefik.http.routers.am.middlewares=am-auth"
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: aether-prometheus
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus-crm-events-rules.yml:/etc/prometheus/rules/crm-events.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.external-url=https://prometheus.aetherlink.com'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prom.rule=Host(`prometheus.aetherlink.com`)"
+      - "traefik.http.routers.prom.entrypoints=websecure"
+      - "traefik.http.routers.prom.tls.certresolver=le"
+      - "traefik.http.services.prom.loadbalancer.server.port=9090"
+      # Basic Auth (optional - recommended for production)
+      # - "traefik.http.middlewares.prom-auth.basicauth.users=aether:$$apr1$$..."
+      # - "traefik.http.routers.prom.middlewares=prom-auth"
+
+networks:
+  aether-monitoring:
+    driver: bridge
+
+volumes:
+  grafana-data:
+  alertmanager-data:
+  prometheus-data:

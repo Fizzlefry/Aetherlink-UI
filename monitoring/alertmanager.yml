@@ -1,0 +1,234 @@
+# --- Global Configuration ---
+# ✅ PRODUCTION: Set external_url to make Slack buttons work from anywhere
+# Internal/VPN: http://alertmanager.aetherlink.local
+# Remote/TLS:   https://am.aetherlink.com
+global:
+  resolve_timeout: 5m
+  external_url: "http://alertmanager.aetherlink.local" # ✅ Updated for nginx proxy
+  # slack_api_url: 'https://slack.com/api/'  # Default Slack API
+
+# --- Templates for richer Slack messages ---
+templates:
+  - "alert-templates.tmpl"
+
+route:
+  receiver: slack_default
+  group_by: ["service", "product"] # ✅ Enhanced: Group by service AND product
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    # Autoheal health/ops alerts → dedicated notification channel
+    - matchers:
+        - alertname=~"Autoheal.*"
+      receiver: autoheal-notify
+      repeat_interval: 1h
+      continue: false
+
+    # CRM Events alerts → dedicated Slack channel (team=crm routing)
+    # Smart grouping: All service alerts in one clean message (thread-like behavior)
+    - matchers:
+        - team="crm"
+        - service="crm-events-sse"
+      receiver: slack_crm
+      group_by: ["service"] # ✅ Groups ALL CRM Events alerts together
+      group_wait: 30s # Wait 30s to collect simultaneous alerts
+      group_interval: 5m # Send updates every 5m if new alerts arrive
+      repeat_interval: 4h # Repeat reminder every 4h (reduced spam)
+      continue: true # Also send to agent for learning
+
+    # General CRM service alerts (finance, etc.)
+    - matchers:
+        - team="crm"
+      receiver: slack_crm
+      repeat_interval: 2h
+      continue: true
+
+    # TCP layer alerts → dedicated routing
+    - matchers:
+        - layer="tcp"
+      receiver: slack_crm
+      group_interval: 2m
+      repeat_interval: 2h
+      group_wait: 15s
+      continue: true
+
+    # Mirror all alerts to AetherLink Agent for learning/analysis
+    - receiver: agent
+      matchers:
+        - alertname=~".*"
+      continue: true
+
+    # Dev auto-heal route (evaluated after specific ones, opt-in via AUTOHEAL_URL)
+    - receiver: autoheal
+      continue: false
+
+receivers:
+  # Default receiver - uses webhook if SLACK_WEBHOOK_URL is set, otherwise no-op
+  - name: slack_default
+    webhook_configs:
+      - url: http://aether-agent:8080/alertmanager
+        send_resolved: true
+
+  # CRM-specific receiver (Slack notifications)
+  # To enable: Set SLACK_WEBHOOK_URL environment variable
+  - name: slack_crm
+    slack_configs:
+      - channel: "#crm-events-alerts"
+        api_url: "${SLACK_WEBHOOK_URL}"
+        send_resolved: true
+
+        # Enhanced title for grouped alerts (thread-like display)
+        title: |-
+          {{ if eq .Status "firing" }}🚨{{ else }}✅{{ end }} {{ .CommonLabels.service | default "CRM" }} Pipeline {{ if eq .Status "firing" }}{{ if gt (len .Alerts.Firing) 1 }}Issues ({{ len .Alerts.Firing }} alerts){{ else }}Issue{{ end }}{{ else }}Resolved{{ end }}
+
+        # Enhanced text for clean multi-alert display
+        text: |-
+          *Service*: {{ .CommonLabels.service | default "unknown" }}
+          *Team*: {{ .CommonLabels.team | default "unknown" }}
+          *Product*: {{ .CommonLabels.product | default "aetherlink" }}
+          *Status*: {{ .Status | upper }}
+          {{ if gt (len .Alerts.Firing) 1 }}
+
+          :warning: *Multiple alerts detected - grouped for clean feed*
+          {{ end }}
+
+          {{ range .Alerts -}}
+          {{ if eq .Status "firing" }}🔥{{ else }}✅{{ end }} *{{ .Labels.severity | upper }}* — **{{ .Labels.alertname }}**
+
+          {{ .Annotations.summary }}
+          {{ .Annotations.description }}
+
+          {{ if .Annotations.runbook_url }}📖 *Runbook*: {{ .Annotations.runbook_url }}{{ end }}
+          {{ if .Annotations.dashboard_url }}📊 *Dashboard*: {{ .Annotations.dashboard_url }}{{ end }}
+
+          ---
+          {{ end }}
+
+          *Firing*: {{ .Alerts.Firing | len }} | *Resolved*: {{ .Alerts.Resolved | len }}
+          *Grouped by*: service ({{ .CommonLabels.service | default "unknown" }})
+
+        # Rich Slack formatting
+        color: |-
+          {{ if eq .Status "firing" }}{{ if eq .CommonLabels.severity "critical" }}danger{{ else }}warning{{ end }}{{ else }}good{{ end }}
+
+        # Additional fields for structured display
+        fields:
+          - title: "Alert Name"
+            value: "{{ .CommonLabels.alertname }}"
+            short: true
+          - title: "Service"
+            value: "{{ .CommonLabels.service | default 'unknown' }}"
+            short: true
+          - title: "Consumer Group"
+            value: "{{ .CommonLabels.consumergroup | default 'N/A' }}"
+            short: true
+          - title: "Severity"
+            value: "{{ .CommonLabels.severity | upper }}"
+            short: true
+
+        # ✅ Interactive action buttons (one-click access)
+        # ✅ HARDENED: Using internal hostnames (work from anywhere on VPN/LAN)
+        # For remote/public: Change to https://grafana.aetherlink.com, https://am.aetherlink.com
+        actions:
+          - type: button
+            text: "📊 View Dashboard"
+            url: "http://grafana.aetherlink.local/d/crm-events-pipeline"
+            style: "primary"
+
+          - type: button
+            text: "🔍 Prometheus Alerts"
+            url: "http://alertmanager.aetherlink.local/#/alerts"
+
+          - type: button
+            text: "🔕 Silence 1h"
+            # ✅ Tighter filter: service + team for precision
+            # ✅ Nginx proxy: Auth required (username/password prompt)
+            # Duration hint: 1h = working on it, 4h = planned maintenance
+            url: "http://alertmanager.aetherlink.local/#/silences/new?filter=%7Bservice%3D%22{{ .CommonLabels.service }}%22%2Cteam%3D%22{{ .CommonLabels.team }}%22%7D"
+            style: "danger"
+
+    # Fallback webhook if Slack is unavailable
+    webhook_configs:
+      - url: http://aether-agent:8080/alertmanager
+        send_resolved: true
+
+  # AetherLink Agent for alert learning/analysis
+  - name: agent
+    webhook_configs:
+      - url: http://aether-agent:8080/alertmanager
+        send_resolved: true
+
+  # Auto-remediation webhook (dev only, requires AUTOHEAL_URL env var)
+  # Default: http://autoheal:9009/alert (set AUTOHEAL_URL to override)
+  - name: autoheal
+    webhook_configs:
+      - url: http://autoheal:9009/alert
+        send_resolved: true
+
+  # Autoheal health/ops alerts → notify ops team
+  - name: autoheal-notify
+    webhook_configs:
+      - url: http://aether-agent:8080/alertmanager
+        send_resolved: true
+
+# Alert storm control: inhibit derivative alerts when root cause is firing
+inhibit_rules:
+  # CRM Events: When service is down, inhibit under-replication (redundant)
+  - source_matchers:
+      - alertname="CrmEventsServiceDown"
+    target_matchers:
+      - alertname="CrmEventsUnderReplicatedConsumers"
+    equal:
+      - consumergroup
+
+  # If the API is down, mute derivative finance alerts to avoid noise.
+  - source_match:
+      alertname: CrmApiDown
+    target_match_re:
+      alertname: ^(RevenueZeroStreak|InvoiceGenerationStalled|RevenueFlatlineFast|RevenueFlatlineSlow|PaymentRateSLOBurnFast|PaymentRateSLOBurnSlow)$
+    equal: [service]
+
+  # If the blackbox probe is failing for an endpoint, mute other alerts for that endpoint.
+  - source_match:
+      alertname: UptimeProbeFailing
+    target_match_re:
+      alertname: ^(RevenueZeroStreak|InvoiceGenerationStalled|CrmMetricsScrapeStale|CrmRecordingRulesStale)$
+    equal: [instance, service]
+
+  # If TCP endpoint is down, mute downstream symptom alerts for that instance
+  - source_matchers:
+      - alertname="TcpEndpointDownFast"
+    target_matchers:
+      - alertname=~"Crm.*|Revenue.*|Invoice.*|UptimeProbeFailing"
+    equal: [instance]
+# To enable Slack notifications, uncomment below and comment out the webhook_configs above:
+# receivers:
+#   - name: slack_default
+#     slack_configs:
+#       - channel: "#ops-alerts"
+#         api_url: "${SLACK_WEBHOOK_URL}"
+#         title: "{{ .CommonLabels.alertname }}"
+#         text: |-
+#           *{{ .CommonLabels.alertname }}* ({{ .CommonLabels.service | default "unknown" }})
+#           {{ range .Alerts -}}
+#           • *{{ .Labels.severity | upper }}* — {{ .Annotations.summary }}
+#             {{ .Annotations.description }}
+#             {{ if .Annotations.runbook_url }}📖 Runbook: {{ .Annotations.runbook_url }}{{ end }}
+#           {{ end }}
+#         send_resolved: true
+#
+#   - name: slack_crm
+#     slack_configs:
+#       - channel: "#crm-alerts"
+#         api_url: "${SLACK_WEBHOOK_URL}"
+#         title: "🚨 {{ .CommonLabels.alertname }} (CRM)"
+#         text: |-
+#           *{{ .CommonLabels.alertname }}* — {{ .CommonLabels.component | default "finance" }}
+#           {{ range .Alerts -}}
+#           • *{{ .Labels.severity | upper }}* — {{ .Annotations.summary }}
+#           {{ .Annotations.description }}
+#           {{ if .Annotations.impact }}_Impact:_ {{ .Annotations.impact }}{{ end }}
+#           📖 Runbook: `docs/runbooks/ALERTS_CRM_FINANCE.md`
+#           {{ end }}
+#         send_resolved: true

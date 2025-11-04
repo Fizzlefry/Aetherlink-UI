@@ -1,0 +1,62 @@
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: pods/customer_ops/Dockerfile
+    image: aether/customer-ops:dev
+    container_name: aether-customer-ops
+    working_dir: /app
+    env_file:
+      - .env
+    command: [ "python", "-m", "uvicorn", "pods.customer_ops.api.main:app", "--host", "0.0.0.0", "--port", "8000" ]
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../..:/app
+      - ./data:/app/data
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 15s
+  redis:
+    image: redis:7-alpine
+    container_name: aether-redis
+    # Redis doesn't need to publish a host port for local compose; keep it internal to the compose network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 3s
+      timeout: 2s
+      retries: 30
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: pods/customer_ops/Dockerfile
+    image: aether/customer-ops:dev
+    container_name: aether-customer-ops-worker
+    working_dir: /app
+    depends_on:
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - WORKER_METRICS_PORT=9100
+    command: [ "python", "-m", "pods.customer_ops.worker" ]
+    ports:
+      - "9100:9100"
+    volumes:
+      - ../..:/app
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import redis; r=redis.Redis.from_url('redis://redis:6379/0'); r.ping()" ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s

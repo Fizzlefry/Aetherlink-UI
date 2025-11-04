@@ -1,0 +1,82 @@
+version: "3.9"
+
+# Production overrides for Aetherlink + PeakPro CRM
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  peakpro-api:
+    environment:
+      - ASPNETCORE_URLS=http://0.0.0.0:8080
+      - DOTNET_ReadyToRun=1
+      - DOTNET_TieredPGO=1
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "2.0", memory: 1G }
+
+  autoheal:
+    environment:
+      - AUTOHEAL_ENABLED=true
+      - AUTOHEAL_DRY_RUN=false              # Set to true for canary mode
+      - AUTOHEAL_AUDIT_PATH=/data/audit.jsonl
+      - OIDC_ENABLED=${OIDC_ENABLED:-false} # Set to true to enable OIDC protection
+      - OIDC_ISSUER=${OIDC_ISSUER}
+      - OIDC_AUDIENCE=${OIDC_AUDIENCE}
+      - OIDC_JWKS_URI=${OIDC_JWKS_URI:-}
+    volumes:
+      - ./monitoring/data/autoheal:/data
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 512M }
+
+  prometheus:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 1G }
+
+  alertmanager:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
+
+  grafana:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 512M }
+
+  redis:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
+
+  postgres:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "2.0", memory: 2G }
+
+  kafka:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "2.0", memory: 2G }
+
+  # Logrotate sidecar for audit trail rotation
+  autoheal-logrotate:
+    image: alpine:3.20
+    command: ["/bin/sh","-c","crond -f -l 8"]
+    volumes:
+      - ./monitoring/data/autoheal:/data
+      - ./monitoring/logrotate/audit.conf:/etc/logrotate.d/audit.conf:ro
+      - ./monitoring/logrotate/crontab:/etc/crontabs/root:ro
+    depends_on:
+      - autoheal
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "0.1", memory: 64M }

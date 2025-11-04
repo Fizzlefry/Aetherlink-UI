@@ -1,0 +1,101 @@
+# Production overrides for Aetherlink Monitoring Stack
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Canary rollout strategy:
+#   1. Deploy with AUTOHEAL_DRY_RUN=true for 24h
+#   2. Monitor AutohealNoEvents15m, AutohealActionFailureSpike alerts
+#   3. Review audit trail for false positives
+#   4. Flip AUTOHEAL_DRY_RUN=false for full production
+
+version: "3.8"
+
+services:
+  autoheal:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    environment:
+      # Production configuration
+      AUTOHEAL_ENABLED: "true"                      # Enable auto-remediation
+      AUTOHEAL_DRY_RUN: "true"                      # CANARY: Keep true for 24h, then flip to false
+      AUTOHEAL_AUDIT_PATH: "/data/audit.jsonl"      # Persistent audit trail
+      AUTOHEAL_DEFAULT_COOLDOWN_SEC: "600"          # 10 minutes default cooldown
+      
+      # Production URLs
+      ALERTMANAGER_URL: "http://alertmanager:9093"
+      AUTOHEAL_PUBLIC_URL: "https://autoheal.aetherlink.io"  # Update with your domain
+      
+      # Per-alert cooldowns (production tuned)
+      COOLDOWN_TCP_DOWN_SEC: "300"                  # 5 minutes for TCP endpoint issues
+      COOLDOWN_UPTIME_FAIL_SEC: "600"               # 10 minutes for uptime probe failures
+      COOLDOWN_SCRAPE_STALE_SEC: "900"              # 15 minutes for scrape staleness
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:9009/').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Logrotate sidecar for audit trail management
+  autoheal-logrotate:
+    image: alpine:3.18
+    container_name: aether-autoheal-logrotate
+    profiles: ["prod"]
+    restart: unless-stopped
+    volumes:
+      - ./data/autoheal:/data                       # Shared audit trail volume
+      - ./logrotate/audit.conf:/etc/logrotate.d/autoheal:ro
+    command: >
+      sh -c "
+      apk add --no-cache logrotate tzdata &&
+      while true; do
+        echo '[$(date)] Running logrotate...' &&
+        logrotate -f /etc/logrotate.d/autoheal &&
+        sleep 86400;
+      done
+      "
+    networks:
+      - aether-monitoring
+
+  prometheus:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+  grafana:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  alertmanager:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+networks:
+  aether-monitoring:
+    driver: bridge

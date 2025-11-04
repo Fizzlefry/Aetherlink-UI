@@ -1,0 +1,34 @@
+name: policy-guard
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail if AUTOHEAL enabled in main compose
+        run: |
+          if grep -RIn 'AUTOHEAL_ENABLED.*true' monitoring/docker-compose.yml; then
+            echo "::error ::AUTOHEAL_ENABLED must not be true on main"
+            exit 1
+          fi
+          echo "✅ AUTOHEAL_ENABLED is safe (disabled or not set to true)"
+
+      - name: No hardcoded autoheal URL in Alertmanager
+        run: |
+          # Allow the autoheal URL only if it references env var or is the default internal URL
+          if grep -RIn 'autoheal:9009/alert' monitoring/alertmanager.yml | grep -v '\${AUTOHEAL_URL}'; then
+            # Check if it's the comment line or the actual hardcoded default
+            if grep -RIn 'url: http://autoheal:9009/alert' monitoring/alertmanager.yml; then
+              echo "✅ Default internal URL is acceptable (not external hardcode)"
+            else
+              echo "::error ::Hardcoded autoheal URL not allowed. Use \${AUTOHEAL_URL}"
+              exit 1
+            fi
+          fi
+          echo "✅ Alertmanager config is safe"

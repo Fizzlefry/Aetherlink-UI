@@ -1,0 +1,36 @@
+{{ define "aether.slack.title" -}}
+[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }} {{- if .CommonLabels.severity }} · {{ .CommonLabels.severity | toUpper }}{{ end }}
+{{- end }}
+
+{{ define "aether.slack.text" -}}
+*Service:* {{ or .CommonLabels.service "n/a" }}  |  *Layer:* {{ or .CommonLabels.layer "n/a" }}
+*Instances:* {{ range .Alerts }}`{{ .Labels.instance }}` {{ end }}
+
+*Summary:* {{ (index .Alerts 0).Annotations.summary }}
+*Description:* {{ (index .Alerts 0).Annotations.description }}
+{{- if (index .Alerts 0).Annotations.runway_days }}
+*Runway:* {{ (index .Alerts 0).Annotations.runway_days }}
+{{- end }}
+
+*Runbook:* {{ or (index .Alerts 0).Annotations.runbook "N/A" }}
+*Impact:* {{ or (index .Alerts 0).Annotations.impact "N/A" }}
+*Tips:* {{ or (index .Alerts 0).Annotations.tips "N/A" }}
+
+{{- if .CommonLabels.alertname }}
+*Acknowledge:*
+• <http://localhost:9009/ack?labels=%7B%22alertname%22%3A%22{{ .CommonLabels.alertname }}%22%7D&duration=30m|30m>
+• <http://localhost:9009/ack?labels=%7B%22alertname%22%3A%22{{ .CommonLabels.alertname }}%22%7D&duration=2h|2h>
+• <http://localhost:9009/ack?labels=%7B%22alertname%22%3A%22{{ .CommonLabels.alertname }}%22%7D&duration=24h|24h>
+{{- end }}
+{{- end }}
+
+{{ define "aether.slack.footer" -}}
+AetherLink · Alertmanager · {{ .ExternalURL }}
+{{- end }}
+
+{{ define "autoheal.text" -}}
+*Autoheal Summary*:
+{{- range .Alerts }}
+• *{{ .Labels.alertname }}*: {{ if .Status }}{{ .Status | toUpper }}{{ end }}
+{{- end }}
+{{- end }}

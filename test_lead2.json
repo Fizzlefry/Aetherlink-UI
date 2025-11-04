@@ -1,0 +1,12 @@
+{
+    "name": "Michael Chen",
+    "email": "michael.chen@techcorp.com",
+    "phone": "+1-555-0199",
+    "source": "website",
+    "status": "new",
+    "assigned_to": "sarah@acme.com",
+    "tags": [
+        "tech-industry",
+        "inbound"
+    ]
+}

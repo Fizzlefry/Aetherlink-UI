@@ -1,0 +1,4 @@
+{"q": "storm collar installation", "must": ["storm", "collar"], "avoid": []}
+{"q": "account number format", "must": ["account"], "avoid": ["[SSN]", "[CARD]"]}
+{"q": "emergency repair pricing", "must": ["repair", "price", "emergency"], "avoid": []}
+{"q": "roofing warranty details", "must": ["warranty"], "avoid": []}

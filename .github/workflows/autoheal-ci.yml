@@ -1,0 +1,203 @@
+name: Autoheal CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "monitoring/autoheal/**"
+      - "monitoring/docker-compose*.yml"
+      - "monitoring/prometheus-*.yml"
+      - ".github/workflows/autoheal-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "monitoring/autoheal/**"
+
+env:
+  AUTOHEAL_ENABLED: "false"
+  AUTOHEAL_DRY_RUN: "true"
+  SLACK_WEBHOOK_URL: ""
+
+jobs:
+  test:
+    name: Run Autoheal Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start monitoring stack
+        working-directory: monitoring
+        run: |
+          docker compose --profile dev up -d autoheal prometheus alertmanager
+          echo "Waiting for services to start..."
+          sleep 15
+
+      - name: Check service health
+        working-directory: monitoring
+        run: |
+          # Test autoheal health endpoint
+          curl -f http://localhost:9009/ || exit 1
+
+          # Test Prometheus is up
+          curl -f http://localhost:9090/-/healthy || exit 1
+
+          # Test Alertmanager is up
+          curl -f http://localhost:9093/-/healthy || exit 1
+
+      - name: Install PowerShell
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y powershell
+
+      - name: Run event stream smoke tests
+        working-directory: monitoring
+        shell: pwsh
+        run: |
+          ./scripts/event-stream-smoke.ps1
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Smoke tests failed"
+            exit 1
+          }
+
+      - name: Validate Prometheus configuration
+        working-directory: monitoring
+        run: |
+          docker run --rm --network monitoring_aether-monitoring \
+            -v $(pwd)/prometheus-config.yml:/prometheus.yml \
+            prom/prometheus:latest \
+            promtool check config /prometheus.yml
+
+      - name: Validate alert rules
+        working-directory: monitoring
+        run: |
+          docker run --rm \
+            -v $(pwd)/prometheus-alerts.yml:/alerts.yml \
+            -v $(pwd)/prometheus-recording-rules.yml:/rules.yml \
+            prom/prometheus:latest \
+            promtool check rules /alerts.yml /rules.yml
+
+      - name: Check for AutohealNoEvents alert (should NOT be firing)
+        working-directory: monitoring
+        run: |
+          # Query Prometheus for firing AutohealNoEvents alert
+          ALERTS=$(curl -s 'http://localhost:9090/api/v1/query?query=ALERTS{alertname="AutohealNoEvents15m",alertstate="firing"}' | jq -r '.data.result | length')
+
+          if [ "$ALERTS" -gt 0 ]; then
+            echo "❌ AutohealNoEvents15m is firing - autoheal may be broken"
+            exit 1
+          else
+            echo "✅ No AutohealNoEvents15m alerts firing"
+          fi
+
+      - name: Test audit endpoint filtering
+        working-directory: monitoring
+        run: |
+          # Generate test alert
+          curl -X POST http://localhost:9009/alert \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "alerts": [{
+                "status": "firing",
+                "labels": {"alertname": "TestAlert", "service": "test"},
+                "annotations": {"autoheal_action": "echo test"}
+              }]
+            }'
+
+          sleep 2
+
+          # Test filtered audit endpoint
+          EVENTS=$(curl -s 'http://localhost:9009/audit?kind=webhook_received' | jq -r '.count')
+          if [ "$EVENTS" -lt 1 ]; then
+            echo "❌ Audit endpoint filtering not working"
+            exit 1
+          else
+            echo "✅ Audit filtering working: $EVENTS events"
+          fi
+
+      - name: Check audit write latency metric
+        working-directory: monitoring
+        run: |
+          # Verify audit write latency metric is exposed
+          METRIC=$(curl -s http://localhost:9009/metrics | grep 'autoheal_audit_write_seconds' | head -1)
+          if [ -z "$METRIC" ]; then
+            echo "❌ Audit write latency metric not found"
+            exit 1
+          else
+            echo "✅ Audit write latency metric exposed"
+          fi
+
+      - name: Dump logs on failure
+        if: failure()
+        working-directory: monitoring
+        run: |
+          echo "=== Autoheal Logs ==="
+          docker logs aether-autoheal --tail 100
+          echo ""
+          echo "=== Prometheus Logs ==="
+          docker logs aether-prometheus --tail 50
+          echo ""
+          echo "=== Container Status ==="
+          docker ps -a
+
+      - name: Cleanup
+        if: always()
+        working-directory: monitoring
+        run: |
+          docker compose --profile dev down -v
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "monitoring/autoheal"
+          severity: "HIGH,CRITICAL"
+          format: "sarif"
+          output: "trivy-results.sarif"
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+  canary-gate:
+    name: Canary Deployment Gate
+    runs-on: ubuntu-latest
+    needs: [test, security-scan]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Check production Prometheus for alert health
+        run: |
+          # Query production Prometheus (replace with your URL)
+          # PROD_PROM_URL="${{ secrets.PROD_PROMETHEUS_URL }}"
+
+          # For now, just pass (implement when prod is live)
+          echo "✅ Canary gate check passed (placeholder)"
+          echo "TODO: Implement actual production health check"
+
+          # Example check:
+          # ALERTS=$(curl -s "$PROD_PROM_URL/api/v1/query?query=ALERTS{alertname='AutohealNoEvents15m',alertstate='firing'}" | jq -r '.data.result | length')
+          # if [ "$ALERTS" -gt 0 ]; then
+          #   echo "❌ Production autoheal health check failed"
+          #   exit 1
+          # fi
+
+      - name: Notify deployment ready
+        run: |
+          echo "🚀 Autoheal CI/CD pipeline passed"
+          echo "Ready for canary deployment to production"

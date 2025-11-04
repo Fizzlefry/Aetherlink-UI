@@ -1,0 +1,78 @@
+# Caddy Reverse Proxy Compose File
+# Simplest TLS setup with automatic Let's Encrypt
+# Deploy with: docker compose -f docker-compose.caddy.yml up -d
+
+version: "3.9"
+
+services:
+  caddy:
+    image: caddy:latest
+    container_name: aether-caddy
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - grafana
+      - alertmanager
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: aether-grafana
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      - GF_SERVER_ROOT_URL=https://grafana.aetherlink.com
+      - GF_SERVER_DOMAIN=grafana.aetherlink.com
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: aether-alertmanager
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    environment:
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: aether-prometheus
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus-crm-events-rules.yml:/etc/prometheus/rules/crm-events.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.external-url=https://prometheus.aetherlink.com'
+
+networks:
+  aether-monitoring:
+    driver: bridge
+
+volumes:
+  caddy-data:
+  caddy-config:
+  grafana-data:
+  alertmanager-data:
+  prometheus-data:

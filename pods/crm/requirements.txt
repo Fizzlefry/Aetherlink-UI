@@ -1,0 +1,22 @@
+# === PeakPro CRM Requirements (Auth-Fixed) ===
+fastapi==0.115.0
+uvicorn[standard]==0.30.3
+sqlalchemy==2.0.34
+psycopg[binary]==3.1.14
+alembic==1.13.2
+pydantic==2.9.2
+pydantic-settings==2.5.2
+prometheus-client==0.20.0
+email-validator==2.1.0
+python-multipart==0.0.6
+boto3==1.34.20
+pgvector==0.2.5
+pyjwt==2.9.0
+passlib==1.7.4
+bcrypt==4.0.1
+jinja2==3.1.4
+minio==7.2.7
+reportlab==4.2.5
+stripe==13.1.1
+Authlib==1.3.1
+requests==2.32.3

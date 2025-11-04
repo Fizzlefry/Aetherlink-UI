@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: "AetherLink Dashboards"
+    orgId: 1
+    folder: "AetherLink"
+    type: file
+    options:
+      path: /etc/grafana/provisioning/dashboards
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true

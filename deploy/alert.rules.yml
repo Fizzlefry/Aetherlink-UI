@@ -1,0 +1,11 @@
+groups:
+- name: aetherlink_alerts
+  rules:
+  - alert: ZeroTenants
+    expr: api_tenants_count == 0
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "No active tenants"
+      description: "api_tenants_count has been 0 for 10 minutes."

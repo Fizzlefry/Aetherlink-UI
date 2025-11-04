@@ -1,0 +1,147 @@
+"""
+Aetherlink Gateway (Edge API)
+- JWT authentication
+- Multi-tenant support
+- Prometheus metrics
+"""
+from fastapi import FastAPI, Header, HTTPException, Request
+from jose import jwt, JWTError
+import os
+from prometheus_client import Counter, Gauge, generate_latest
+from typing import Optional
+
+app = FastAPI(
+    title="Aetherlink Edge API",
+    version="1.0.0",
+    description="Gateway API with JWT authentication and multi-tenant support"
+)
+
+# Configuration
+JWT_ISSUER = os.getenv("JWT_ISSUER", "http://keycloak:8080/realms/aetherlink")
+JWT_AUDIENCE = os.getenv("JWT_AUDIENCE", "aetherlink")
+
+# Prometheus metrics
+req_total = Counter(
+    "edge_requests_total",
+    "Total HTTP requests",
+    ["path", "method", "status_code"]
+)
+tenant_gauge = Gauge(
+    "edge_tenant_present",
+    "Whether tenant header is present (0/1)"
+)
+
+
+def verify_jwt(token: str) -> dict:
+    """
+    Verify JWT token and return claims.
+    
+    In development mode, we skip signature verification.
+    In production, fetch JWKS from Keycloak and verify signature.
+    """
+    try:
+        # Get unverified claims first
+        claims = jwt.get_unverified_claims(token)
+        
+        # Verify issuer
+        if claims.get("iss") != JWT_ISSUER:
+            raise JWTError(f"Invalid issuer: {claims.get('iss')}")
+        
+        # Verify audience
+        aud = claims.get("aud")
+        if isinstance(aud, list):
+            if JWT_AUDIENCE not in aud:
+                raise JWTError(f"Invalid audience: {aud}")
+        elif aud != JWT_AUDIENCE:
+            raise JWTError(f"Invalid audience: {aud}")
+        
+        return claims
+    except Exception as e:
+        raise HTTPException(
+            status_code=401,
+            detail=f"Invalid token: {str(e)}"
+        )
+
+
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    """Record metrics for all requests"""
+    response = await call_next(request)
+    
+    try:
+        req_total.labels(
+            path=request.url.path,
+            method=request.method,
+            status_code=str(response.status_code)
+        ).inc()
+    except Exception:
+        pass  # Don't fail requests if metrics fail
+    
+    return response
+
+
+@app.get("/healthz", tags=["Health"])
+def health_check():
+    """Health check endpoint"""
+    return {"ok": True}
+
+
+@app.get("/metrics", tags=["Metrics"])
+def metrics():
+    """Prometheus metrics endpoint"""
+    return generate_latest()
+
+
+@app.get("/whoami", tags=["Identity"])
+def who_am_i(
+    authorization: Optional[str] = Header(None),
+    x_tenant_id: Optional[str] = Header(None)
+):
+    """
+    Return current user's identity from JWT token.
+    
+    Args:
+        authorization: Bearer token header
+        x_tenant_id: Tenant identifier header
+    
+    Returns:
+        User identity with subject, tenant_id, and roles
+    """
+    # Check authorization header
+    if not authorization:
+        raise HTTPException(
+            status_code=401,
+            detail="Missing authorization header"
+        )
+    
+    if not authorization.lower().startswith("bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authorization header format"
+        )
+    
+    # Extract token
+    token = authorization.split(" ", 1)[1]
+    
+    # Verify JWT
+    claims = verify_jwt(token)
+    
+    # Update tenant metric
+    tenant_gauge.set(1 if x_tenant_id else 0)
+    
+    # Extract roles from realm_access
+    roles = []
+    realm_access = claims.get("realm_access", {})
+    if isinstance(realm_access, dict):
+        roles = realm_access.get("roles", [])
+    
+    return {
+        "sub": claims.get("sub"),
+        "tenant_id": x_tenant_id,
+        "roles": roles
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -1,0 +1,561 @@
+{
+    "uid": "peakpro_crm_slo",
+    "title": "PeakPro CRM — SLO & Uptime",
+    "tags": [
+        "peakpro",
+        "crm",
+        "slo"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+        {
+            "type": "stat",
+            "title": "Payment Rate (30d)",
+            "gridPos": {
+                "x": 0,
+                "y": 0,
+                "w": 6,
+                "h": 4
+            },
+            "targets": [
+                {
+                    "expr": "crm:payment_rate_30d_pct"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": 0
+                            },
+                            {
+                                "color": "orange",
+                                "value": 75
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 80
+                            },
+                            {
+                                "color": "green",
+                                "value": 85
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            }
+        },
+        {
+            "type": "stat",
+            "title": "Revenue (Last 24h)",
+            "gridPos": {
+                "x": 6,
+                "y": 0,
+                "w": 6,
+                "h": 4
+            },
+            "targets": [
+                {
+                    "expr": "sum(crm:revenue_usd)"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "currencyUSD",
+                    "decimals": 2
+                }
+            }
+        },
+        {
+            "type": "timeseries",
+            "title": "Burn-Rate Alerts (Fast & Slow)",
+            "gridPos": {
+                "x": 12,
+                "y": 0,
+                "w": 12,
+                "h": 8
+            },
+            "targets": [
+                {
+                    "expr": "ALERTS{alertname=\"PaymentRateSLOBurnFast\", alertstate=\"firing\"}",
+                    "legendFormat": "Fast"
+                },
+                {
+                    "expr": "ALERTS{alertname=\"PaymentRateSLOBurnSlow\", alertstate=\"firing\"}",
+                    "legendFormat": "Slow"
+                }
+            ]
+        },
+        {
+            "type": "timeseries",
+            "title": "Uptime Probes (probe_success)",
+            "gridPos": {
+                "x": 0,
+                "y": 4,
+                "w": 12,
+                "h": 8
+            },
+            "targets": [
+                {
+                    "expr": "probe_success",
+                    "legendFormat": "{{instance}}"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "min": 0,
+                    "max": 1
+                }
+            }
+        },
+        {
+            "type": "stat",
+            "title": "Active Critical Alerts",
+            "gridPos": {
+                "x": 12,
+                "y": 8,
+                "w": 6,
+                "h": 4
+            },
+            "targets": [
+                {
+                    "expr": "count(ALERTS{severity=\"critical\", alertstate=\"firing\"})"
+                }
+            ]
+        },
+        {
+            "type": "stat",
+            "title": "Recording Rules Fresh (<= 5m)",
+            "gridPos": {
+                "x": 18,
+                "y": 8,
+                "w": 6,
+                "h": 4
+            },
+            "targets": [
+                {
+                    "expr": "clamp_max(timestamp(crm:invoices_paid_24h) - time(), 0)"
+                }
+            ],
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                }
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "s",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": -300
+                            },
+                            {
+                                "color": "red",
+                                "value": -301
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "type": "timeseries",
+            "title": "TCP Probe Success (5m ratio)",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 16
+            },
+            "targets": [
+                {
+                    "expr": "tcp:probe_success:ratio_5m",
+                    "legendFormat": "{{instance}}"
+                }
+            ],
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percentunit",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": 0
+                            },
+                            {
+                                "color": "orange",
+                                "value": 0.8
+                            },
+                            {
+                                "color": "green",
+                                "value": 0.95
+                            }
+                        ]
+                    },
+                    "min": 0,
+                    "max": 1
+                },
+                "overrides": []
+            }
+        },
+        {
+            "type": "gauge",
+            "title": "Error Budget Remaining (Payment Rate SLO 85%)",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 16
+            },
+            "targets": [
+                {
+                    "expr": "slo:payment_rate:error_budget_remaining",
+                    "legendFormat": "EBR"
+                }
+            ],
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showThresholdLabels": true,
+                "showThresholdMarkers": true
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percentunit",
+                    "min": 0,
+                    "max": 1,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": 0.00
+                            },
+                            {
+                                "color": "orange",
+                                "value": 0.25
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 0.50
+                            },
+                            {
+                                "color": "green",
+                                "value": 0.75
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            }
+        },
+        {
+            "type": "stat",
+            "title": "Current Burn (1h)",
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 0,
+                "y": 24
+            },
+            "targets": [
+                {
+                    "expr": "slo:payment_rate:burn_1h"
+                }
+            ],
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                }
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "none",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 0.5
+                            },
+                            {
+                                "color": "orange",
+                                "value": 1.0
+                            },
+                            {
+                                "color": "red",
+                                "value": 2.0
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "type": "timeseries",
+            "title": "Payment-Rate Burn (1h vs 6h)",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 6,
+                "y": 24
+            },
+            "targets": [
+                {
+                    "expr": "slo:payment_rate:burn_1h",
+                    "legendFormat": "burn_1h"
+                },
+                {
+                    "expr": "slo:payment_rate:burn_6h",
+                    "legendFormat": "burn_6h"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "none",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 0.5
+                            },
+                            {
+                                "color": "orange",
+                                "value": 1.0
+                            },
+                            {
+                                "color": "red",
+                                "value": 2.0
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "none"
+                }
+            }
+        },
+        {
+            "type": "row",
+            "title": "AetherVision (Predictive Ops)",
+            "collapsed": false,
+            "gridPos": {
+                "x": 0,
+                "y": 32,
+                "w": 24,
+                "h": 1
+            }
+        },
+        {
+            "type": "stat",
+            "title": "Runway (days to breach)",
+            "targets": [
+                {
+                    "expr": "slo:payment_rate:days_to_breach",
+                    "legendFormat": "days"
+                }
+            ],
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                }
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "min": 0,
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": 0
+                            },
+                            {
+                                "color": "orange",
+                                "value": 6
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 24
+                            },
+                            {
+                                "color": "green",
+                                "value": 72
+                            }
+                        ]
+                    },
+                    "unit": "d"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "x": 0,
+                "y": 33,
+                "w": 6,
+                "h": 4
+            }
+        },
+        {
+            "type": "stat",
+            "title": "Alerts (critical / total)",
+            "targets": [
+                {
+                    "expr": "aethervision:alerts_critical:count",
+                    "legendFormat": "critical"
+                },
+                {
+                    "expr": "aethervision:alerts:count",
+                    "legendFormat": "total"
+                }
+            ],
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "horizontal"
+            },
+            "gridPos": {
+                "x": 6,
+                "y": 33,
+                "w": 6,
+                "h": 4
+            }
+        },
+        {
+            "type": "stat",
+            "title": "Probes Up (HTTP / TCP)",
+            "targets": [
+                {
+                    "expr": "aethervision:probes_http_up",
+                    "legendFormat": "http"
+                },
+                {
+                    "expr": "aethervision:probes_tcp_up",
+                    "legendFormat": "tcp"
+                }
+            ],
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "horizontal"
+            },
+            "gridPos": {
+                "x": 12,
+                "y": 33,
+                "w": 6,
+                "h": 4
+            }
+        },
+        {
+            "type": "timeseries",
+            "title": "Burn (1h vs 6h)",
+            "targets": [
+                {
+                    "expr": "slo:payment_rate:burn_1h",
+                    "legendFormat": "burn_1h"
+                },
+                {
+                    "expr": "slo:payment_rate:burn_6h",
+                    "legendFormat": "burn_6h"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 0.5
+                            },
+                            {
+                                "color": "orange",
+                                "value": 1.0
+                            },
+                            {
+                                "color": "red",
+                                "value": 2.0
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "x": 0,
+                "y": 37,
+                "w": 24,
+                "h": 8
+            }
+        }
+    ],
+    "templating": {
+        "list": [
+            {
+                "type": "query",
+                "name": "org",
+                "datasource": null,
+                "refresh": 1,
+                "query": "label_values(crm_invoices_generated_total, org_id)",
+                "includeAll": false,
+                "sort": 1
+            }
+        ]
+    }
+}

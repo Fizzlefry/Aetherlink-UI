@@ -1,0 +1,19 @@
+name: Observability Validate
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: promtool check
+        run: |
+          docker run --rm -v $PWD:/w -w /w prom/prometheus:v2.54.1 \
+            promtool check rules monitoring/prometheus-recording-rules.yml monitoring/prometheus-alerts.yml
+      - name: promtool tests
+        run: |
+          docker run --rm -v $PWD:/w -w /w prom/prometheus:v2.54.1 \
+            promtool test rules monitoring/tests/rules.test.yml
+      - name: alertmanager check
+        run: |
+          docker run --rm -v $PWD:/conf quay.io/prometheus/alertmanager:latest \
+            amtool check-config /conf/monitoring/alertmanager.yml

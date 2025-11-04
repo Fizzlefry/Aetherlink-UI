@@ -1,0 +1,30 @@
+# Caddy Reverse Proxy - Automatic TLS
+# Deploy with: docker run -d --name caddy --network aether-monitoring \
+#              -p 80:80 -p 443:443 -v $PWD/Caddyfile:/etc/caddy/Caddyfile \
+#              -v caddy_data:/data caddy:latest
+
+# Grafana - No auth (has built-in)
+grafana.aetherlink.com {
+    reverse_proxy grafana:3000
+}
+
+# Alertmanager - Basic auth for everything
+am.aetherlink.com {
+    # Generate hash with: caddy hash-password
+    basicauth {
+        aether JDJhJDE0JGtFaG5zRVBXQ2VvTmFSLmNHLnFLZi5aUkxuN3RYdFJpTldVQkdCSi9mYzRPeGxCVzdOZTBH
+    }
+    reverse_proxy alertmanager:9093
+}
+
+# Prometheus - Optional auth
+prometheus.aetherlink.com {
+    # Uncomment for basic auth:
+    # basicauth {
+    #     aether JDJhJDE0JGtFaG5zRVBXQ2VvTmFSLmNHLnFLZi5aUkxuN3RYdFJpTldVQkdCSi9mYzRPeGxCVzdOZTBH
+    # }
+    reverse_proxy prometheus:9090
+}
+
+# ℹ️  Default password hash is for: "aether123"
+#    Generate new with: docker run --rm caddy caddy hash-password

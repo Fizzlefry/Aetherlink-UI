@@ -1,0 +1,127 @@
+openapi: 3.0.3
+info:
+  title: Aetherlink Edge API
+  version: 1.0.0
+  description: |
+    Gateway API for Aetherlink platform
+    - JWT-based authentication
+    - Multi-tenant support via x-tenant-id header
+    - Request tracing via x-request-id header
+
+servers:
+  - url: http://edge.aetherlink.local
+    description: Local development
+
+paths:
+  /healthz:
+    get:
+      summary: Health check
+      description: Returns service health status
+      operationId: healthCheck
+      tags:
+        - Health
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+
+  /whoami:
+    get:
+      summary: Identity echo
+      description: Returns current user's identity and tenant information from JWT
+      operationId: whoAmI
+      tags:
+        - Identity
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: x-tenant-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Tenant identifier
+        - name: x-request-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Request tracing ID
+      responses:
+        "200":
+          description: Identity information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sub:
+                    type: string
+                    description: User subject ID
+                    example: "user-uuid-123"
+                  tenant_id:
+                    type: string
+                    nullable: true
+                    description: Tenant identifier from header
+                    example: "acme"
+                  roles:
+                    type: array
+                    items:
+                      type: string
+                    description: User roles from JWT
+                    example: ["admin", "manager"]
+        "401":
+          description: Unauthorized - Missing or invalid JWT
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token from Keycloak realm 'aetherlink'
+        Example: Authorization: Bearer eyJhbGciOiJSUzI1NiIs...
+
+  schemas:
+    Problem:
+      type: object
+      description: RFC7807 Problem Details
+      properties:
+        type:
+          type: string
+          format: uri
+          example: "about:blank"
+        title:
+          type: string
+          example: "Unauthorized"
+        status:
+          type: integer
+          example: 401
+        detail:
+          type: string
+          example: "missing bearer token"
+        instance:
+          type: string
+          format: uri
+          example: "/whoami"
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Health
+    description: Service health endpoints
+  - name: Identity
+    description: Identity and authentication endpoints

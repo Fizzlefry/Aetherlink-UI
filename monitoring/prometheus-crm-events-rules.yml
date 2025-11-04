@@ -1,0 +1,326 @@
+# Prometheus Recording & Alerting Rules for CRM Events Service
+# Monitors Kafka consumer lag, SSE health, and throughput
+
+groups:
+  - name: crm_events_consumer_health
+    interval: 30s
+    rules:
+      # Recording rule: message rate per second
+      - record: crm_events:messages:rate5m
+        expr: rate(crm_events_messages_total[5m])
+
+      # Recording rule: request rate by endpoint
+      - record: crm_events:http_requests:rate5m
+        expr: rate(crm_events_http_requests_total[5m])
+
+      # Recording rule: active SSE clients (already a gauge, but recorded for consistency)
+      - record: crm_events:sse_clients:current
+        expr: crm_events_sse_clients
+
+  - name: crm_events_alerts
+    interval: 30s
+    rules:
+      # Alert: No SSE clients connected for extended period (potential issue)
+      - alert: CrmEventsNoClients
+        expr: crm_events_sse_clients == 0
+        for: 10m
+        labels:
+          severity: warning
+          service: crm-events
+          component: sse
+        annotations:
+          summary: "CRM Events SSE has no connected clients"
+          description: "No SSE clients have been connected to crm-events service for 10 minutes. This may indicate frontend issues or service discovery problems."
+          runbook: "Check Command Center connectivity and verify /api/ops/crm-events proxy is working."
+
+      # Alert: SSE service down (no metrics)
+      - alert: CrmEventsServiceDown
+        expr: up{job="crm-events"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: crm
+          service: crm-events-sse
+          product: aetherlink
+          component: service
+          consumergroup: crm-events-sse
+        annotations:
+          summary: "CRM Events SSE service is down"
+          description: "Prometheus cannot scrape metrics from crm-events service. Service may be crashed or unreachable."
+          runbook: "Check docker logs aether-crm-events and verify container is running."
+
+      # Alert: High SSE client count (potential resource issue)
+      - alert: CrmEventsTooManyClients
+        expr: crm_events_sse_clients > 50
+        for: 5m
+        labels:
+          severity: warning
+          service: crm-events
+          component: sse
+        annotations:
+          summary: "CRM Events SSE has unusually high client count"
+          description: "{{ $value }} SSE clients connected. This may strain resources or indicate a connection leak."
+          runbook: "Review SSE client lifecycle and check for unclosed connections in Command Center."
+
+      # Alert: Message throughput dropped to zero
+      - alert: CrmEventsNoMessages
+        expr: rate(crm_events_messages_total[5m]) == 0 and crm_events_sse_clients > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: crm-events
+          component: consumer
+        annotations:
+          summary: "CRM Events consumer not receiving messages"
+          description: "No Kafka messages consumed in the last 5 minutes despite active SSE clients. Check Kafka broker connectivity."
+          runbook: "Verify Kafka topic has messages: docker exec kafka rpk topic consume aetherlink.events --num 1. Check consumer group lag."
+
+      # Alert: High error rate on HTTP endpoints
+      - alert: CrmEventsHighErrorRate
+        expr: |
+          sum(rate(crm_events_http_requests_total{path!="/metrics"}[5m])) by (path)
+          > 10
+        for: 3m
+        labels:
+          severity: warning
+          service: crm-events
+          component: http
+        annotations:
+          summary: "High HTTP error rate on CRM Events endpoints"
+          description: "Path {{ $labels.path }} receiving >10 req/sec. Check for client connection storms or SSE reconnection loops."
+          runbook: "Review nginx/load balancer logs and check client reconnection backoff."
+
+  - name: crm_events_kafka_consumer
+    interval: 30s
+    rules:
+      # Note: Kafka consumer lag metrics require kafka_exporter or aiokafka custom metrics
+      # For now, we alert on message throughput as a proxy for consumer health
+
+      # Alert: Consumer appears stuck (no progress in offsets)
+      - alert: CrmEventsConsumerStuck
+        expr: |
+          rate(crm_events_messages_total[10m]) == 0
+          and
+          rate(crm_events_messages_total[1h]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          service: crm-events
+          component: consumer
+        annotations:
+          summary: "CRM Events Kafka consumer appears stuck"
+          description: "Consumer was processing messages in the past hour but has stopped for 10+ minutes."
+          runbook: "Check consumer group status: docker exec kafka rpk group describe crm-events-sse. Restart service if needed."
+
+      # Alert: Consumer rebalancing frequently
+      - alert: CrmEventsFrequentRestarts
+        expr: |
+          resets(crm_events_http_requests_total{path="/healthz"}[15m]) > 3
+        for: 1m
+        labels:
+          severity: warning
+          service: crm-events
+          component: consumer
+        annotations:
+          summary: "CRM Events service restarting frequently"
+          description: "Service has restarted {{ $value }} times in 15 minutes. This may cause consumer rebalancing and lag."
+          runbook: "Check docker logs aether-crm-events for crash loops or OOM kills."
+
+  - name: crm_events_slo
+    interval: 30s
+    rules:
+      # SLO: 99% availability (service up and responding)
+      - record: crm_events:slo:availability:5m
+        expr: avg_over_time(up{job="crm-events"}[5m])
+
+      # SLO: Message delivery rate (events/sec)
+      - record: crm_events:slo:throughput:5m
+        expr: rate(crm_events_messages_total[5m])
+
+      # Alert: SLO breach - availability below 99%
+      - alert: CrmEventsSLOAvailabilityBreach
+        expr: crm_events:slo:availability:5m < 0.99
+        for: 5m
+        labels:
+          severity: critical
+          service: crm-events
+          slo: availability
+        annotations:
+          summary: "CRM Events availability SLO breach"
+          description: "Service availability is {{ $value | humanizePercentage }} (target: 99%)."
+          runbook: "Investigate service health, check autoheal logs, and review recent deployments."
+
+      # Alert: SLO breach - throughput degraded
+      - alert: CrmEventsSLOThroughputDegraded
+        expr: |
+          crm_events:slo:throughput:5m < 0.1
+          and
+          crm_events_sse_clients > 0
+        for: 10m
+        labels:
+          severity: warning
+          service: crm-events
+          slo: throughput
+        annotations:
+          summary: "CRM Events throughput SLO degraded"
+          description: "Message throughput is {{ $value | humanize }} events/sec with active clients. Expected >0.1 events/sec."
+          runbook: "Check Kafka topic for messages, verify OutboxPublisher is running, and check CRM API health."
+
+  # Lag & Capacity Metrics (requires kafka-exporter)
+  - name: crm_events_lag_capacity
+    interval: 15s
+    rules:
+      # Current consumer rate (events/sec) from instrumented service
+      - record: crm_events:consumer_rate_1m
+        expr: rate(crm_events_messages_total[1m])
+
+      # Peak capacity per consumer over a safe horizon (useful for scale hints)
+      - record: crm_events:consumer_peak_capacity_1h
+        expr: max_over_time(rate(crm_events_messages_total[5m])[1h:])
+
+      # Sum lag across partitions for the crm-events consumer group (requires kafka-exporter)
+      - record: kafka:group_lag_sum
+        expr: sum(kafka_consumergroup_lag{consumergroup=~"crm-events.*"})
+
+      # ETA to drain (seconds) = lag / drain_rate (protect against div-by-zero)
+      - record: kafka:group_drain_eta_seconds
+        expr: kafka:group_lag_sum / clamp_min(crm_events:consumer_rate_1m, 0.0001)
+
+      # Partition lag (source of truth for skew calculations)
+      - record: kafka:group_partition_lag
+        expr: max by (topic, consumergroup, partition) (kafka_consumergroup_lag)
+
+      # Skew ratio per group (max/avg), safe-divide with clamp_min to prevent NaN
+      - record: kafka:group_skew_ratio
+        expr: |
+          (
+            max by (topic, consumergroup) (kafka:group_partition_lag)
+          ) / clamp_min(
+            avg by (topic, consumergroup) (kafka:group_partition_lag),
+            0.001
+          )
+
+      # Hottest partition id (for runbooks & annotations)
+      - record: kafka:group_hottest_partition
+        expr: topk(1, sum by (topic, consumergroup, partition) (kafka:group_partition_lag))
+
+      # Consumer count per group (stable signal for panels/alerts, shares one truth)
+      - record: kafka:group_consumer_count
+        expr: count by (consumergroup) (count by (memberid, consumergroup) (kafka_consumergroup_current_offset))
+
+  # Lag Alerting
+  - name: crm_events_lag_alerts
+    interval: 30s
+    rules:
+      # Alert: Consumer lag high (sustained backlog)
+      - alert: CrmEventsConsumerLagHigh
+        expr: kafka:group_lag_sum > 500
+        for: 5m
+        labels:
+          severity: warning
+          service: crm-events
+          component: kafka-consumer
+        annotations:
+          summary: "CRM Events consumer lag high ({{ $value }} msgs)"
+          description: "Consumer lag has been >500 messages for 5m. Check consumer health and throughput. Consider scaling."
+          runbook: "1) Verify consumer rate: crm_events:consumer_rate_1m. 2) Check producer rate. 3) Scale consumers: docker compose up -d --scale crm-events=3. 4) Consider increasing partitions for long-term throughput."
+
+      # Alert: Drain ETA exceeds 30 minutes (critical capacity issue)
+      - alert: CrmEventsDrainEtaBreached
+        expr: kafka:group_drain_eta_seconds > 1800
+        for: 5m
+        labels:
+          severity: critical
+          service: crm-events
+          component: kafka-consumer
+        annotations:
+          summary: "Backlog drain ETA exceeds 30 minutes"
+          description: "Estimated drain time is {{ $value | humanizeDuration }}. Current lag processing rate is insufficient. Increase capacity or reduce input."
+          runbook: "1) If ETA > 30m: add replicas (horizontal scale) or temporarily throttle producers. 2) Verify network/storage. 3) Check consumer errors: docker logs aether-crm-events. 4) Monitor kafka:group_drain_eta_seconds until <600s."
+
+      # Alert: Single partition stuck (lag increasing but no consumption)
+      - alert: CrmEventsPartitionStuck
+        expr: |
+          increase(kafka_consumergroup_lag{consumergroup="crm-events-sse"}[10m]) > 0
+          and on (topic, partition)
+          rate(kafka_consumergroup_current_offset{consumergroup="crm-events-sse"}[10m]) == 0
+        for: 10m
+        labels:
+          severity: warning
+          team: ops
+          service: crm-events
+          component: kafka-consumer
+        annotations:
+          summary: "CRM Events partition stuck ({{ $labels.topic }} p{{ $labels.partition }})"
+          description: "Lag is increasing while no consumption is observed for this partition. Investigate consumer assignment/restarts, broker health, and hotspot keys. Suggested action: scale crm-events or rebalance consumer group."
+          runbook: "1) Check consumer logs: docker logs aether-crm-events --tail 100. 2) Verify partition assignment: docker exec kafka rpk group describe crm-events-sse. 3) Check for hot keys or large messages. 4) Force rebalance: docker restart aether-crm-events."
+
+      # Alert: Hot-key skew detected (one partition has >4x average lag)
+      - alert: CrmEventsHotKeySkewHigh
+        expr: kafka:group_skew_ratio{consumergroup="crm-events-sse"} > 4
+        for: 12m
+        labels:
+          severity: warning
+          team: crm
+          service: crm-events-sse
+          product: aetherlink
+          component: kafka-consumer
+          consumergroup: crm-events-sse
+        annotations:
+          summary: "Kafka hot-key skew high (>{{ $value | humanize }}x)"
+          description: |
+            Skew ratio (max/avg) is >4x for 12m. Likely key hot-spot.
+            Current skew: {{ $value | humanize }}x
+            Next steps: scale consumers to 2+, check partition key distribution.
+            Runbook: monitoring/docs/RUNBOOK_HOTKEY_SKEW.md
+          runbook: "1) Panel 17: identify hottest partition. 2) Panel 18: ensure ≥2 consumers. 3) Scale: docker compose up -d --scale crm-events=2. 4) If persistent: review message key strategy or increase partitions."
+
+      # Alert: Consumer group under-replicated
+      - alert: CrmEventsUnderReplicatedConsumers
+        expr: kafka:group_consumer_count{consumergroup="crm-events-sse"} < 2
+        for: 7m
+        labels:
+          severity: info
+          team: crm
+          service: crm-events-sse
+          product: aetherlink
+          component: kafka-consumer
+          consumergroup: crm-events-sse
+        annotations:
+          summary: "Consumer group under target size (<2 members)"
+          description: |
+            Active members dropped below 2 for 7m. Verify autoscaler/rebalance.
+            Current members: {{ $value }}
+            Target: 2+ for failover capacity
+            Action: docker compose up -d --scale crm-events=2
+          runbook: "1) Check consumer health: docker ps --filter name=aether-crm-events. 2) Scale manually: docker compose up -d --scale crm-events=2. 3) Force rebalance if stuck: docker restart aether-crm-events."
+
+      # Alert: CRM Events Sink down
+      - alert: CrmEventsSinkDown
+        expr: up{job="crm-events-sink"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          team: crm
+          service: crm-events-sink
+          product: aetherlink
+          component: consumer
+        annotations:
+          summary: "CRM events sink is down"
+          description: "The sink that materializes and counts ApexFlow CRM events is not being scraped. Events may be queuing in Kafka but not being processed."
+          runbook: "Check docker logs aether-crm-events-sink and verify container is running. Restart with: docker compose up -d crm-events-sink"
+
+      # Alert: CRM Events persistence stalled
+      - alert: CrmEventsPersistenceStalled
+        expr: rate(crm_events_persisted_total[5m]) == 0 and rate(crm_events_ingested_total[5m]) > 0
+        for: 10m
+        labels:
+          severity: warning
+          team: crm
+          service: crm-events-sink
+          product: aetherlink
+          component: persistence
+        annotations:
+          summary: "CRM events are being ingested but not persisted"
+          description: "Events are being consumed from Kafka but not written to PostgreSQL. This indicates a database connectivity issue. No events have been persisted in the last 10 minutes despite ongoing ingestion."
+          runbook: "Check PostgreSQL connectivity: docker exec -it aether-crm-events-db psql -U crm_events -d crm_events -c 'SELECT COUNT(*) FROM event_journal;'. Check sink logs for database errors: docker logs aether-crm-events-sink --tail 50"

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autoheal Event Stream – Aetherlink</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            padding: 20px;
+        }
+
+        header {
+            background: #161b22;
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #58a6ff;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #58a6ff;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #8b949e;
+        }
+
+        .controls {
+            background: #161b22;
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .controls label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .controls select,
+        .controls input {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .controls button {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .controls button:hover {
+            background: #2ea043;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #f85149;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.connected {
+            background: #3fb950;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        #events {
+            background: #161b22;
+            border-radius: 6px;
+            padding: 20px;
+            max-height: calc(100vh - 250px);
+            overflow-y: auto;
+        }
+
+        .event {
+            background: #0d1117;
+            border-left: 3px solid #30363d;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .event.webhook_received {
+            border-left-color: #58a6ff;
+        }
+
+        .event.decision_skip {
+            border-left-color: #f0883e;
+        }
+
+        .event.action_dry_run {
+            border-left-color: #a371f7;
+        }
+
+        .event.action_ok {
+            border-left-color: #3fb950;
+        }
+
+        .event.action_fail {
+            border-left-color: #f85149;
+        }
+
+        .event.ack {
+            border-left-color: #bc8cff;
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .event-kind {
+            color: #58a6ff;
+        }
+
+        .event-time {
+            color: #8b949e;
+            font-size: 12px;
+        }
+
+        .event-body {
+            color: #c9d1d9;
+            line-height: 1.6;
+        }
+
+        .event-body .key {
+            color: #79c0ff;
+        }
+
+        .event-body .value {
+            color: #a5d6ff;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #8b949e;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0d1117;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #484f58;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>🔄 Autoheal Event Stream</h1>
+        <div class="subtitle">Real-time monitoring · Aetherlink Platform · PeakPro CRM</div>
+    </header>
+
+    <div class="controls">
+        <label>
+            <span>Filter by Kind:</span>
+            <select id="filterKind">
+                <option value="">All Events</option>
+                <option value="webhook_received">webhook_received</option>
+                <option value="decision_skip">decision_skip</option>
+                <option value="action_dry_run">action_dry_run</option>
+                <option value="action_ok">action_ok</option>
+                <option value="action_fail">action_fail</option>
+                <option value="ack">ack</option>
+            </select>
+        </label>
+        <label>
+            <span>Filter by Alert:</span>
+            <input type="text" id="filterAlert" placeholder="e.g. TcpEndpointDownFast">
+        </label>
+        <label>
+            <span>Max Events:</span>
+            <select id="maxEvents">
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="200" selected>200</option>
+                <option value="500">500</option>
+            </select>
+        </label>
+        <button id="clearBtn">Clear Display</button>
+        <div class="status">
+            <div class="status-indicator" id="statusIndicator"></div>
+            <span id="statusText">Connecting...</span>
+        </div>
+    </div>
+
+    <div id="events">
+        <div class="empty-state">
+            <div class="empty-state-icon">📡</div>
+            <div>Waiting for events...</div>
+        </div>
+    </div>
+
+    <script>
+        const eventsContainer = document.getElementById('events');
+        const filterKind = document.getElementById('filterKind');
+        const filterAlert = document.getElementById('filterAlert');
+        const maxEvents = document.getElementById('maxEvents');
+        const clearBtn = document.getElementById('clearBtn');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+
+        let allEvents = [];
+        let eventSource = null;
+
+        function connectSSE() {
+            eventSource = new EventSource('/events');
+
+            eventSource.onopen = () => {
+                statusIndicator.classList.add('connected');
+                statusText.textContent = 'Connected';
+            };
+
+            eventSource.onerror = () => {
+                statusIndicator.classList.remove('connected');
+                statusText.textContent = 'Disconnected - Reconnecting...';
+                setTimeout(connectSSE, 3000);
+            };
+
+            eventSource.onmessage = (e) => {
+                try {
+                    const event = JSON.parse(e.data);
+                    allEvents.unshift(event); // Add to front
+                    trimEvents();
+                    renderEvents();
+                } catch (err) {
+                    console.error('Parse error:', err);
+                }
+            };
+        }
+
+        function trimEvents() {
+            const max = parseInt(maxEvents.value);
+            if (allEvents.length > max) {
+                allEvents = allEvents.slice(0, max);
+            }
+        }
+
+        function renderEvents() {
+            const kindFilter = filterKind.value;
+            const alertFilter = filterAlert.value.toLowerCase();
+
+            const filtered = allEvents.filter(ev => {
+                if (kindFilter && ev.kind !== kindFilter) return false;
+                if (alertFilter && (!ev.alertname || !ev.alertname.toLowerCase().includes(alertFilter))) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                eventsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔍</div>
+                        <div>No events match the current filters.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            eventsContainer.innerHTML = filtered.map(ev => {
+                const time = new Date(ev.ts * 1000).toLocaleTimeString();
+                const kind = ev.kind || 'unknown';
+                const details = formatEventDetails(ev);
+
+                return `
+                    <div class="event ${kind}">
+                        <div class="event-header">
+                            <span class="event-kind">${kind}</span>
+                            <span class="event-time">${time}</span>
+                        </div>
+                        <div class="event-body">${details}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function formatEventDetails(ev) {
+            const lines = [];
+            for (const [key, value] of Object.entries(ev)) {
+                if (key === 'kind' || key === 'ts') continue;
+                const displayValue = typeof value === 'object' ? JSON.stringify(value) : value;
+                lines.push(`<span class="key">${key}:</span> <span class="value">${displayValue}</span>`);
+            }
+            return lines.join('<br>');
+        }
+
+        filterKind.addEventListener('change', renderEvents);
+        filterAlert.addEventListener('input', renderEvents);
+        maxEvents.addEventListener('change', () => {
+            trimEvents();
+            renderEvents();
+        });
+
+        clearBtn.addEventListener('click', () => {
+            allEvents = [];
+            renderEvents();
+        });
+
+        // Start connection
+        connectSSE();
+    </script>
+</body>
+
+</html>

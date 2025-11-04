@@ -1,0 +1,4 @@
+# Crontab for autoheal-logrotate Alpine container
+# Run logrotate daily at 02:10 AM
+
+10 2 * * * /usr/sbin/logrotate -s /tmp/logrotate.status /etc/logrotate.d/audit.conf

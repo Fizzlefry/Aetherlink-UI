@@ -1,0 +1,300 @@
+groups:
+  - name: aetherlink.recording
+    interval: 30s
+    rules:
+      # ============================================================================
+      # Per-Tenant Recording Rules (for alerts & dashboards)
+      # ============================================================================
+
+      # Cache hit ratio % per tenant (5m window)
+      - record: aether:cache_hit_ratio:5m
+        expr: 100 * sum by(tenant) (rate(aether_cache_hits_total{tenant!=""}[5m])) / sum by(tenant) (rate(aether_cache_requests_total{tenant!=""}[5m]))
+        labels:
+          team: aetherlink
+
+      # Rerank utilization % per tenant (15m window)
+      - record: aether:rerank_utilization_pct:15m
+        expr: 100 * sum by(tenant) (rate(aether_rerank_requests_total{tenant!=""}[15m])) / sum by(tenant) (rate(aether_rag_answers_total{tenant!=""}[15m]))
+        labels:
+          team: aetherlink
+
+      # Low-confidence % per tenant (15m window)
+      - record: aether:lowconfidence_pct:15m
+        expr: 100 * sum by(tenant) (rate(aether_rag_low_confidence_total{tenant!=""}[15m])) / sum by(tenant) (rate(aether_rag_answers_total{tenant!=""}[15m]))
+        labels:
+          team: aetherlink
+
+      # ============================================================================
+      # Aggregate Recording Rules (all tenants combined)
+      # ============================================================================
+
+      # Cache hit ratio % aggregate (5m window)
+      - record: aether:cache_hit_ratio:5m:all
+        expr: 100 * sum(rate(aether_cache_hits_total[5m])) / sum(rate(aether_cache_requests_total[5m]))
+        labels:
+          team: aetherlink
+
+      # Rerank utilization % aggregate (15m window)
+      - record: aether:rerank_utilization_pct:15m:all
+        expr: 100 * sum(rate(aether_rerank_requests_total[15m])) / sum(rate(aether_rag_answers_total[15m]))
+        labels:
+          team: aetherlink
+
+      # Low-confidence % aggregate (15m window)
+      - record: aether:lowconfidence_pct:15m:all
+        expr: 100 * sum(rate(aether_rag_low_confidence_total[15m])) / sum(rate(aether_rag_answers_total[15m]))
+        labels:
+          team: aetherlink
+
+      # ============================================================================
+      # Billing & Cost Metrics
+      # ============================================================================
+
+      # Estimated 30-day cost (USD) - $0.001/answer without rerank, $0.006/answer with rerank
+      - record: aether:estimated_cost_30d_usd
+        expr: |
+          sum(
+            increase(aether_rag_answers_total{rerank="false"}[30d]) * 0.001
+          + increase(aether_rag_answers_total{rerank="true"}[30d])  * 0.006
+          )
+        labels:
+          team: aetherlink
+
+      # ============================================================================
+      # Health Score (Composite Metric)
+      # ============================================================================
+
+      # Overall system health score (0-100) - weighted composite
+      # - 50% cache effectiveness (higher = better)
+      # - 30% answer quality (lower low-confidence = better)
+      # - 20% rerank efficiency (lower rerank usage = better cost)
+      - record: aether:health_score:15m
+        expr: |
+          clamp_max(
+            clamp_min(
+              0.5 * aether:cache_hit_ratio:5m:all
+            + 0.3 * (100 - aether:lowconfidence_pct:15m:all)
+            + 0.2 * (100 - aether:rerank_utilization_pct:15m:all)
+            , 0)
+          , 100)
+        labels:
+          team: aetherlink
+
+  # ============================================================================
+  # CRM Finance Recording Rules (Sprint 5)
+  # ============================================================================
+  - name: crm_finance.recording
+    interval: 30s
+    rules:
+      # Invoices created in last 24h
+      - record: crm:invoices_created_24h
+        expr: sum(increase(crm_invoices_generated_total[24h]))
+        labels:
+          service: crm
+          component: finance
+
+      # Invoices paid in last 24h
+      - record: crm:invoices_paid_24h
+        expr: sum(increase(crm_invoices_paid_total[24h]))
+        labels:
+          service: crm
+          component: finance
+
+      # Revenue in USD (rate interval)
+      - record: crm:revenue_usd
+        expr: sum(rate(crm_invoice_payments_cents_total[5m])) / 100
+        labels:
+          service: crm
+          component: finance
+
+      # Payment rate percentage (30 day window)
+      - record: crm:payment_rate_30d_pct
+        expr: 100 * sum(increase(crm_invoices_paid_total[30d])) / clamp_min(sum(increase(crm_invoices_generated_total[30d])), 1)
+        labels:
+          service: crm
+          component: finance
+
+      # Per-org recording rules (when multi-tenant)
+      - record: crm:invoices_created_24h:by_org
+        expr: sum by(org_id) (increase(crm_invoices_generated_total[24h]))
+        labels:
+          service: crm
+          component: finance
+
+      - record: crm:invoices_paid_24h:by_org
+        expr: sum by(org_id) (increase(crm_invoices_paid_total[24h]))
+        labels:
+          service: crm
+          component: finance
+
+      - record: crm:revenue_usd:by_org
+        expr: sum by(org_id) (rate(crm_invoice_payments_cents_total[5m])) / 100
+        labels:
+          service: crm
+          component: finance
+
+      - record: crm:payment_rate_30d_pct:by_org
+        expr: 100 * sum by(org_id) (increase(crm_invoices_paid_total[30d])) / clamp_min(sum by(org_id) (increase(crm_invoices_generated_total[30d])), 1)
+        labels:
+          service: crm
+          component: finance
+
+  # ============================================================================
+  # TCP Probe Recording Rules (Blackbox)
+  # ============================================================================
+  - name: blackbox_tcp.recording
+    interval: 30s
+    rules:
+      # 5-minute TCP probe success ratio (0.0 to 1.0)
+      - record: tcp:probe_success:ratio_5m
+        expr: avg_over_time(probe_success{job="blackbox_tcp"}[5m])
+        labels:
+          layer: tcp
+
+      # P50 TCP latency in milliseconds (5m window)
+      - record: tcp:probe_latency_ms:p50_5m
+        expr: 1000 * histogram_quantile(0.5, sum by (instance, le) (rate(probe_duration_seconds_bucket{job="blackbox_tcp"}[5m])))
+        labels:
+          layer: tcp
+
+      # P90 TCP latency in milliseconds (5m window)
+      - record: tcp:probe_latency_ms:p90_5m
+        expr: 1000 * histogram_quantile(0.9, sum by (instance, le) (rate(probe_duration_seconds_bucket{job="blackbox_tcp"}[5m])))
+        labels:
+          layer: tcp
+
+  # ============================================================================
+  # SLO: Error Budget Remaining for Payment Rate
+  # ============================================================================
+  - name: slo_payment_rate.recording
+    interval: 30s
+    rules:
+      # Convert 30d payment rate percent -> ratio [0..1]
+      - record: slo:payment_rate:ratio_30d
+        expr: clamp_min(clamp_max(crm:payment_rate_30d_pct / 100, 1), 0)
+        labels:
+          service: crm
+          component: slo
+
+      # Error budget remaining = (SLO - (1 - availability)) / (1 - SLO)
+      # With SLO=0.85: EBR = (0.85 - (1 - availability)) / 0.15
+      - record: slo:payment_rate:error_budget_remaining
+        expr: clamp_min(clamp_max((0.85 - (1 - slo:payment_rate:ratio_30d)) / 0.15, 1), 0)
+        labels:
+          service: crm
+          component: slo
+
+  # ============================================================================
+  # SLO: Payment-Rate short windows & burn rates
+  # ============================================================================
+  - name: slo_payment_rate.burn.recording
+    interval: 30s
+    rules:
+      # Short windows: 1h + 6h payment-rate ratios
+      - record: slo:payment_rate:ratio_1h
+        expr: clamp_min(clamp_max(sum(increase(crm_invoices_paid_total[1h])) / clamp_min(sum(increase(crm_invoices_generated_total[1h])), 1), 1), 0)
+        labels:
+          service: crm
+          component: slo
+
+      - record: slo:payment_rate:ratio_6h
+        expr: clamp_min(clamp_max(sum(increase(crm_invoices_paid_total[6h])) / clamp_min(sum(increase(crm_invoices_generated_total[6h])), 1), 1), 0)
+        labels:
+          service: crm
+          component: slo
+
+      # Burn rate = (error rate) / error budget, with SLO=0.85 => budget=0.15
+      - record: slo:payment_rate:burn_1h
+        expr: (1 - slo:payment_rate:ratio_1h) / 0.15
+        labels:
+          service: crm
+          component: slo
+
+      - record: slo:payment_rate:burn_6h
+        expr: (1 - slo:payment_rate:ratio_6h) / 0.15
+        labels:
+          service: crm
+          component: slo
+
+  # === Predictive SLO intelligence ===
+  - name: slo_payment_rate.predict.recording
+    interval: 30s
+    rules:
+      # Guard rails: avoid div-by-zero; treat 0 burn as infinite runway
+      - record: slo:payment_rate:hours_to_breach_1h
+        expr: clamp_min((slo:payment_rate:error_budget_remaining * 30 * 24) / clamp_min(slo:payment_rate:burn_1h, 0.0001), 0)
+        labels:
+          service: crm
+          component: slo
+
+      - record: slo:payment_rate:hours_to_breach_6h
+        expr: clamp_min((slo:payment_rate:error_budget_remaining * 30 * 24) / clamp_min(slo:payment_rate:burn_6h, 0.0001), 0)
+        labels:
+          service: crm
+          component: slo
+
+      # Conservative runway (take the smaller of the two)
+      - record: slo:payment_rate:hours_to_breach
+        expr: (slo:payment_rate:hours_to_breach_1h < bool slo:payment_rate:hours_to_breach_6h) * slo:payment_rate:hours_to_breach_1h + (slo:payment_rate:hours_to_breach_6h <= bool slo:payment_rate:hours_to_breach_1h) * slo:payment_rate:hours_to_breach_6h
+        labels:
+          service: crm
+          component: slo
+
+      # Human-friendly days (derived from the conservative hours)
+      - record: slo:payment_rate:days_to_breach
+        expr: slo:payment_rate:hours_to_breach / 24
+        labels:
+          service: crm
+          component: slo
+
+  # === AetherVision: rollups for the unified view ===
+  - name: aethervision.recording
+    interval: 30s
+    rules:
+      # Live alert counts by severity
+      - record: aethervision:alerts:count
+        expr: count(ALERTS{alertstate="firing"}) or vector(0)
+
+      - record: aethervision:alerts_critical:count
+        expr: count(ALERTS{alertstate="firing", severity="critical"}) or vector(0)
+
+      - record: aethervision:alerts_warning:count
+        expr: count(ALERTS{alertstate="firing", severity="warning"}) or vector(0)
+
+      # Probe health summaries
+      - record: aethervision:probes_http_up
+        expr: sum(probe_success{job="blackbox_http"}) or vector(0)
+
+      - record: aethervision:probes_tcp_up
+        expr: sum(probe_success{job="blackbox_tcp"}) or vector(0)
+
+      # SLO runway snapshots
+      - record: aethervision:days_to_breach
+        expr: slo:payment_rate:days_to_breach
+
+      # Autoheal status
+      - record: aethervision:autoheal_enabled
+        expr: max(autoheal_enabled) or vector(0)
+
+      - record: aethervision:autoheal_last_action_age
+        expr: time() - max(autoheal_last_action_epoch) or vector(0)
+
+  # Autoheal operational metrics
+  - name: autoheal.recording
+    interval: 15s
+    rules:
+      # Cooldown active (any alert with remaining cooldown > 0)
+      - record: autoheal:cooldown_active
+        expr: autoheal_cooldown_remaining_seconds > 0
+
+      # Action rate (5m window)
+      - record: autoheal:actions:rate_5m
+        expr: rate(autoheal_actions_total[5m])
+
+      # Heartbeat age (seconds since last event)
+      - record: autoheal:heartbeat:age_seconds
+        expr: time() - max(autoheal_last_event_timestamp)
+
+      # Action failure rate (15m window)
+      - record: autoheal:action_fail_rate_15m
+        expr: sum(rate(autoheal_action_failures_total[15m]))

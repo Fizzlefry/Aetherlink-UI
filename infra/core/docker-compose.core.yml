@@ -1,0 +1,306 @@
+version: "3.9"
+name: aether-core
+
+networks:
+  aether:
+    driver: bridge
+  monitoring_aether-monitoring:
+    external: true  # Connect to monitoring stack's network (where Kafka/Redpanda lives)
+
+volumes:
+  kc_data:
+  kc_db:
+  tenancy_db:
+  apexflow_db:
+  crm_events_db:
+
+services:
+  # === Traefik Edge Proxy ===
+  traefik:
+    image: traefik:v3.1
+    container_name: aether-traefik
+    restart: unless-stopped
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8090:8080"  # Traefik dashboard (changed from 8088 to avoid conflict with aether-agent)
+    networks:
+      - aether
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      - "traefik.enable=true"
+
+  # === Keycloak Database ===
+  kc_db:
+    image: postgres:16
+    container_name: aether-kc-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${AE_POSTGRES_PASS}
+    networks:
+      - aether
+    volumes:
+      - kc_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # === Keycloak Identity Provider ===
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: aether-keycloak
+    restart: unless-stopped
+    command:
+      - "start-dev"
+      - "--http-port=8080"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://kc_db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${AE_POSTGRES_PASS}
+      KEYCLOAK_ADMIN: ${AE_KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${AE_KEYCLOAK_PASSWORD}
+    depends_on:
+      kc_db:
+        condition: service_healthy
+    networks:
+      - aether
+    ports:
+      - "8180:8080"  # Keycloak admin console (avoiding 8080 conflicts)
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kc.rule=Host(`keycloak.${AE_DOMAIN}`)"
+      - "traefik.http.routers.kc.entrypoints=web"
+      - "traefik.http.services.kc.loadbalancer.server.port=8080"
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # === Tenancy Database ===
+  tenancy_db:
+    image: postgres:16
+    container_name: aether-tenancy-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tenancy
+      POSTGRES_USER: tenancy
+      POSTGRES_PASSWORD: tenancy
+    networks:
+      - aether
+    ports:
+      - "5435:5432"  # Local dev convenience
+    volumes:
+      - tenancy_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tenancy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # === Tenancy Service ===
+  tenancy:
+    build:
+      context: ../../services/tenancy
+      dockerfile: Dockerfile
+    container_name: aether-tenancy
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${AE_TENANCY_DB_URL}
+    networks:
+      - aether
+    depends_on:
+      tenancy_db:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tenancy.rule=Host(`tenancy.${AE_DOMAIN}`)"
+      - "traefik.http.routers.tenancy.entrypoints=web"
+      - "traefik.http.services.tenancy.loadbalancer.server.port=8001"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8001/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # === Gateway (Edge API) ===
+  gateway:
+    build:
+      context: ../../services/gateway
+      dockerfile: Dockerfile
+    container_name: aether-gateway
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      JWT_ISSUER: ${AE_JWT_ISS}
+      JWT_AUDIENCE: ${AE_JWT_AUD}
+      OIDC_ISSUER_URL: http://keycloak:8080/realms/aetherlink
+      OIDC_JWKS_URL: http://keycloak:8080/realms/aetherlink/protocol/openid-connect/certs
+      OIDC_AUDIENCE: aetherlink-gateway
+      OIDC_REQUIRED: "false"
+      UPSTREAM_APEXFLOW: http://apexflow:8080
+      FORWARD_CLAIMS: "true"
+      CLAIM_HEADER_PREFIX: x-user-
+    networks:
+      - aether
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.edge.rule=Host(`edge.${AE_DOMAIN}`)"
+      - "traefik.http.routers.edge.entrypoints=web"
+      - "traefik.http.services.edge.loadbalancer.server.port=8000"
+      # Gateway also proxies ApexFlow requests with JWT claim injection
+      - "traefik.http.routers.apexflow-via-gateway.rule=Host(`apexflow.${AE_DOMAIN}`)"
+      - "traefik.http.routers.apexflow-via-gateway.entrypoints=web"
+      - "traefik.http.routers.apexflow-via-gateway.service=edge"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz').read()\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # === ApexFlow CRM (Leads/Jobs/Appointments) ===
+  apexflow:
+    build: ../../services/apexflow
+    container_name: aether-apexflow
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+psycopg://postgres:postgres@db-apexflow:5432/apexflow
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_ENABLED=true
+    networks:
+      - aether
+      - monitoring_aether-monitoring  # Access to Kafka (Redpanda) from monitoring stack
+    depends_on:
+      db-apexflow:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=false"  # Proxied through Gateway, not directly exposed
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # === ApexFlow Database ===
+  db-apexflow:
+    image: postgres:16-alpine
+    container_name: aether-apexflow-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: apexflow
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    networks:
+      - aether
+    volumes:
+      - apexflow_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # NOTE: Kafka (Redpanda) is already running from monitoring stack
+  # ApexFlow connects to existing kafka:9092
+
+  # === CRM Events Sink Database ===
+  crm-events-db:
+    image: postgres:16-alpine
+    container_name: aether-crm-events-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: crm_events
+      POSTGRES_PASSWORD: crm_events
+      POSTGRES_DB: crm_events
+    ports:
+      - "5446:5432"
+    volumes:
+      - crm_events_db:/var/lib/postgresql/data
+    networks:
+      - aether
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crm_events"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # === CRM Events Sink ===
+  crm-events-sink:
+    build: ../../services/crm-events-sink
+    container_name: aether-crm-events-sink
+    restart: unless-stopped
+    environment:
+      - KAFKA_BOOTSTRAP=kafka:9092
+      - GROUP_ID=crm-events-sink
+      - POSTGRES_DSN=postgresql://crm_events:crm_events@crm-events-db:5432/crm_events
+      - PROM_PORT=9105
+    depends_on:
+      crm-events-db:
+        condition: service_healthy
+    networks:
+      - aether
+      - monitoring_aether-monitoring
+    ports:
+      - "9105:9105"  # Prometheus metrics
+      - "9106:9106"  # HTTP API (replay, list, DLQ)
+
+  # === Notifications Consumer ===
+  notifications-consumer:
+    build: ../../services/notifications-consumer
+    container_name: aether-notifications-consumer
+    restart: unless-stopped
+    environment:
+      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_GROUP_ID=aetherlink-notifications
+      - RULES_PATH=/app/rules.yaml
+      # Optional: set this to only notify for one tenant
+      # - TENANT_FILTER=acme
+      # Optional: point this at Slack / Teams / test webhook
+      # For testing, send to the sink's health endpoint
+      - NOTIFY_WEBHOOK=http://aether-crm-events-sink:9106/health
+    # Mount rules.yaml from host for live editing without rebuild
+    volumes:
+      - ../../services/notifications-consumer/rules.yaml:/app/rules.yaml:ro
+    networks:
+      - aether
+      - monitoring_aether-monitoring
+    ports:
+      - "9107:9107"  # HTTP API
+
+  # === AI Summarizer ===
+  ai-summarizer:
+    container_name: aether-ai-summarizer
+    build:
+      context: ../../services/ai-summarizer
+    image: aetherlink-ai-summarizer
+    restart: unless-stopped
+    environment:
+      - APEXFLOW_BASE=http://apexflow:8080
+      # Set this to your real key when ready:
+      # - CLAUDE_API_KEY=sk-ant-xxxxxxxx
+      - CLAUDE_ENDPOINT=https://api.anthropic.com/v1/messages
+      - CLAUDE_MODEL=claude-3-sonnet-20240229
+    networks:
+      - aether
+    ports:
+      - "9108:9108"
+    depends_on:
+      - apexflow

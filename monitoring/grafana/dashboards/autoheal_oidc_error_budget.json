@@ -1,0 +1,639 @@
+{
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "prometheus"
+                },
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": null,
+    "links": [],
+    "liveNow": false,
+    "panels": [
+        {
+            "type": "stat",
+            "title": "Autoheal Status",
+            "gridPos": {
+                "x": 0,
+                "y": 0,
+                "w": 4,
+                "h": 4
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "colorMode": "value",
+                "graphMode": "none",
+                "textMode": "value_and_name"
+            },
+            "targets": [
+                {
+                    "expr": "up{job=\"autoheal\"}",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": 0
+                            },
+                            {
+                                "color": "green",
+                                "value": 1
+                            }
+                        ]
+                    },
+                    "mappings": [
+                        {
+                            "type": "value",
+                            "value": "0",
+                            "text": "Down"
+                        },
+                        {
+                            "type": "value",
+                            "value": "1",
+                            "text": "Up"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "type": "stat",
+            "title": "Heartbeat Age (s)",
+            "gridPos": {
+                "x": 4,
+                "y": 0,
+                "w": 4,
+                "h": 4
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "colorMode": "value",
+                "graphMode": "area"
+            },
+            "targets": [
+                {
+                    "expr": "autoheal:heartbeat:age_seconds",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 200
+                            },
+                            {
+                                "color": "red",
+                                "value": 300
+                            }
+                        ]
+                    },
+                    "unit": "s"
+                }
+            }
+        },
+        {
+            "type": "stat",
+            "title": "Failure Rate (15m) (/s)",
+            "gridPos": {
+                "x": 8,
+                "y": 0,
+                "w": 4,
+                "h": 4
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "colorMode": "value",
+                "graphMode": "area"
+            },
+            "targets": [
+                {
+                    "expr": "autoheal:action_fail_rate_15m",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 0.0003
+                            },
+                            {
+                                "color": "red",
+                                "value": 0.001
+                            }
+                        ]
+                    },
+                    "unit": "ops"
+                }
+            }
+        },
+        {
+            "type": "stat",
+            "title": "Audit Write p95 (s)",
+            "gridPos": {
+                "x": 12,
+                "y": 0,
+                "w": 4,
+                "h": 4
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "colorMode": "value",
+                "graphMode": "area"
+            },
+            "targets": [
+                {
+                    "expr": "histogram_quantile(0.95, sum(rate(autoheal_audit_write_seconds_bucket[5m])) by (le))",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 0.08
+                            },
+                            {
+                                "color": "red",
+                                "value": 0.1
+                            }
+                        ]
+                    },
+                    "unit": "s"
+                }
+            }
+        },
+        {
+            "type": "timeseries",
+            "title": "SLO-1: Heartbeat Age (Target: <300s)",
+            "gridPos": {
+                "x": 0,
+                "y": 4,
+                "w": 8,
+                "h": 7
+            },
+            "targets": [
+                {
+                    "expr": "autoheal:heartbeat:age_seconds",
+                    "refId": "A",
+                    "legendFormat": "Heartbeat Age"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            },
+                            {
+                                "color": "red",
+                                "value": 300
+                            }
+                        ]
+                    },
+                    "unit": "s"
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Heartbeat Age"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "mode": "thresholds"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "single"
+                }
+            }
+        },
+        {
+            "type": "timeseries",
+            "title": "SLO-2: Action Failure Rate (Target: <0.1%)",
+            "gridPos": {
+                "x": 8,
+                "y": 4,
+                "w": 8,
+                "h": 7
+            },
+            "targets": [
+                {
+                    "expr": "autoheal:action_fail_rate_15m",
+                    "refId": "A",
+                    "legendFormat": "Failure Rate"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            },
+                            {
+                                "color": "red",
+                                "value": 0.001
+                            }
+                        ]
+                    },
+                    "unit": "ops"
+                }
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "single"
+                }
+            }
+        },
+        {
+            "type": "timeseries",
+            "title": "Error Budget Burn (Fast) - Critical Threshold: 14.4x",
+            "gridPos": {
+                "x": 0,
+                "y": 11,
+                "w": 8,
+                "h": 7
+            },
+            "targets": [
+                {
+                    "expr": "(sum(rate(autoheal:heartbeat:age_seconds[5m])) / (300 * 0.999))",
+                    "refId": "A",
+                    "legendFormat": "Fast Burn Rate"
+                },
+                {
+                    "expr": "14.4",
+                    "refId": "B",
+                    "legendFormat": "Critical Threshold"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            },
+                            {
+                                "color": "orange",
+                                "value": 10
+                            },
+                            {
+                                "color": "red",
+                                "value": 14.4
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                }
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            }
+        },
+        {
+            "type": "timeseries",
+            "title": "Error Budget Burn (Slow) - Warning Threshold: 2.4x",
+            "gridPos": {
+                "x": 8,
+                "y": 11,
+                "w": 8,
+                "h": 7
+            },
+            "targets": [
+                {
+                    "expr": "(sum(rate(autoheal:heartbeat:age_seconds[1h])) / (300 * 0.999))",
+                    "refId": "A",
+                    "legendFormat": "Slow Burn Rate"
+                },
+                {
+                    "expr": "2.4",
+                    "refId": "B",
+                    "legendFormat": "Warning Threshold"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 2.4
+                            },
+                            {
+                                "color": "red",
+                                "value": 5
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                }
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            }
+        },
+        {
+            "type": "stat",
+            "title": "Active Burn Alerts",
+            "gridPos": {
+                "x": 0,
+                "y": 18,
+                "w": 8,
+                "h": 4
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "colorMode": "value",
+                "graphMode": "none",
+                "textMode": "value_and_name"
+            },
+            "targets": [
+                {
+                    "expr": "count(ALERTS{alertname=~\".*Burn.*\", alertstate=\"firing\"})",
+                    "refId": "A",
+                    "legendFormat": "Firing Burn Alerts"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 1
+                            },
+                            {
+                                "color": "red",
+                                "value": 2
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "type": "table",
+            "title": "Autoheal Service Labels",
+            "gridPos": {
+                "x": 8,
+                "y": 18,
+                "w": 8,
+                "h": 4
+            },
+            "targets": [
+                {
+                    "expr": "up{job=\"autoheal\"}",
+                    "refId": "A",
+                    "format": "table"
+                }
+            ],
+            "options": {
+                "showHeader": true,
+                "sortBy": []
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "align": "auto",
+                        "displayMode": "auto"
+                    }
+                }
+            }
+        },
+        {
+            "type": "timeseries",
+            "title": "SLO-3: Service Availability (Target: >99.9%)",
+            "gridPos": {
+                "x": 0,
+                "y": 22,
+                "w": 8,
+                "h": 7
+            },
+            "targets": [
+                {
+                    "expr": "avg_over_time(up{job=\"autoheal\"}[5m])",
+                    "refId": "A",
+                    "legendFormat": "Availability (5m)"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": 0
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 0.999
+                            },
+                            {
+                                "color": "green",
+                                "value": 1
+                            }
+                        ]
+                    },
+                    "unit": "percentunit",
+                    "min": 0.99,
+                    "max": 1
+                }
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "single"
+                }
+            }
+        },
+        {
+            "type": "timeseries",
+            "title": "SLO-4: Audit Write Latency Percentiles",
+            "gridPos": {
+                "x": 8,
+                "y": 22,
+                "w": 8,
+                "h": 7
+            },
+            "targets": [
+                {
+                    "expr": "histogram_quantile(0.50, sum(rate(autoheal_audit_write_seconds_bucket[5m])) by (le))",
+                    "refId": "A",
+                    "legendFormat": "p50"
+                },
+                {
+                    "expr": "histogram_quantile(0.95, sum(rate(autoheal_audit_write_seconds_bucket[5m])) by (le))",
+                    "refId": "B",
+                    "legendFormat": "p95"
+                },
+                {
+                    "expr": "histogram_quantile(0.99, sum(rate(autoheal_audit_write_seconds_bucket[5m])) by (le))",
+                    "refId": "C",
+                    "legendFormat": "p99"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": 0
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 0.08
+                            },
+                            {
+                                "color": "red",
+                                "value": 0.1
+                            }
+                        ]
+                    },
+                    "unit": "s"
+                }
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            }
+        }
+    ],
+    "refresh": "10s",
+    "schemaVersion": 38,
+    "style": "dark",
+    "tags": [
+        "autoheal",
+        "slo",
+        "error-budget",
+        "oidc"
+    ],
+    "templating": {
+        "list": []
+    },
+    "time": {
+        "from": "now-1h",
+        "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "Autoheal OIDC + Error Budget",
+    "uid": "autoheal-oidc-error-budget",
+    "version": 1,
+    "weekStart": ""
+}

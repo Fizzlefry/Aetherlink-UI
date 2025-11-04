@@ -1,0 +1,136 @@
+asyncapi: 2.6.0
+info:
+  title: Aetherlink Event Envelope
+  version: 1.0.0
+  description: |
+    Event envelope specification for Aetherlink platform
+    - CloudEvents-inspired structure
+    - Multi-tenant event routing
+    - Actor tracking for audit
+    - Type-based routing
+
+channels:
+  aetherlink.events:
+    description: Main event stream for all Aetherlink events
+    publish:
+      summary: Publish events to the platform
+      operationId: publishEvent
+      message:
+        $ref: '#/components/messages/Envelope'
+
+components:
+  messages:
+    Envelope:
+      name: Envelope
+      title: Event Envelope
+      summary: Standard envelope for all platform events
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EventEnvelope'
+
+  schemas:
+    EventEnvelope:
+      type: object
+      description: |
+        Standard event envelope for all Aetherlink events.
+        Follows CloudEvents specification patterns.
+      required:
+        - id
+        - ts
+        - type
+        - source
+        - tenant_id
+        - data
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique event identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        
+        ts:
+          type: string
+          format: date-time
+          description: Event timestamp (ISO8601)
+          example: "2025-11-03T10:30:00Z"
+        
+        type:
+          type: string
+          description: Event type (dot-notation)
+          pattern: "^[a-z0-9]+(\.[a-z0-9]+)*$"
+          examples:
+            - "lead.created"
+            - "appointment.scheduled"
+            - "invoice.paid"
+        
+        source:
+          type: string
+          description: Source service/system that emitted the event
+          pattern: "^[a-z0-9-]+$"
+          examples:
+            - "apex-flow"
+            - "customer-ops"
+            - "billing"
+        
+        tenant_id:
+          type: string
+          description: Tenant identifier for multi-tenancy routing
+          pattern: "^[a-z0-9-]+$"
+          example: "acme"
+        
+        actor:
+          type: string
+          description: User or system that triggered the event
+          example: "user:550e8400-e29b-41d4-a716-446655440000"
+        
+        correlation_id:
+          type: string
+          format: uuid
+          description: Optional correlation ID for request tracing
+          example: "660e8400-e29b-41d4-a716-446655440000"
+        
+        data:
+          type: object
+          description: Event-specific payload (schema varies by event type)
+          additionalProperties: true
+          example:
+            lead_id: "lead-123"
+            name: "John Doe"
+            email: "john@example.com"
+            phone: "+1234567890"
+            source: "web-form"
+
+  examples:
+    LeadCreatedEvent:
+      summary: Example of a lead.created event
+      value:
+        id: "550e8400-e29b-41d4-a716-446655440000"
+        ts: "2025-11-03T10:30:00Z"
+        type: "lead.created"
+        source: "apex-flow"
+        tenant_id: "acme"
+        actor: "user:admin@acme.com"
+        data:
+          lead_id: "lead-123"
+          name: "John Doe"
+          email: "john@example.com"
+          phone: "+1234567890"
+          source: "web-form"
+          campaign: "fall-2025"
+
+    AppointmentScheduledEvent:
+      summary: Example of an appointment.scheduled event
+      value:
+        id: "660e8400-e29b-41d4-a716-446655440000"
+        ts: "2025-11-03T11:00:00Z"
+        type: "appointment.scheduled"
+        source: "apex-flow"
+        tenant_id: "acme"
+        actor: "user:agent@acme.com"
+        correlation_id: "550e8400-e29b-41d4-a716-446655440000"
+        data:
+          appointment_id: "appt-456"
+          lead_id: "lead-123"
+          scheduled_at: "2025-11-10T14:00:00Z"
+          duration_minutes: 60
+          type: "consultation"

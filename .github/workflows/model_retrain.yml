@@ -1,0 +1,91 @@
+name: nightly-model-retrain
+on:
+  schedule:
+    - cron: "17 3 * * *"   # 03:17 UTC nightly
+  workflow_dispatch: {}    # Manual trigger for testing
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pods/customer_ops
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt scikit-learn pandas requests
+
+      - name: Export outcomes from API
+        env:
+          API_BASE: ${{ secrets.API_BASE }}   # e.g. https://staging.example.com
+          API_KEY:  ${{ secrets.API_KEY }}    # optional if /ops routes require auth
+        run: |
+          set -e
+          python - <<'PY'
+          import os,requests,sys
+          base=os.environ.get("API_BASE")
+          if not base: sys.exit("Missing API_BASE secret")
+          url=f"{base.rstrip('/')}/ops/export/outcomes.csv"
+          headers={}
+          if os.environ.get("API_KEY"): headers["x-api-key"]=os.environ["API_KEY"]
+          r=requests.get(url,headers=headers,timeout=60)
+          r.raise_for_status()
+          open("outcomes.csv","wb").write(r.content)
+          print("Exported", len(r.content), "bytes -> outcomes.csv")
+          PY
+
+      - name: Train new model
+        run: |
+          python scripts/train_model.py --input outcomes.csv --output api/model.json
+
+      - name: Validate model.json
+        run: |
+          test -s api/model.json && python -c "import json,sys;json.load(open('api/model.json'));print('✓ model.json valid')"
+
+      - name: Upload model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: customer-ops-model-${{ github.run_number }}
+          path: pods/customer_ops/api/model.json
+          if-no-files-found: error
+
+      - name: Hot-reload model on API
+        if: ${{ secrets.API_BASE != '' }}
+        env:
+          API_BASE: ${{ secrets.API_BASE }}
+          API_KEY:  ${{ secrets.API_KEY }}
+        run: |
+          python - <<'PY'
+          import os,requests,sys,json
+          base=os.environ["API_BASE"].rstrip("/")
+          headers={"content-type":"application/json"}
+          if os.environ.get("API_KEY"): headers["x-api-key"]=os.environ["API_KEY"]
+          
+          # Upload new model
+          with open("api/model.json","rb") as f:
+              model_data = f.read()
+          r=requests.post(f"{base}/ops/reload-model",headers=headers,data=model_data,timeout=30)
+          print("Reload status:", r.status_code, r.text[:200])
+          
+          if r.status_code == 200:
+              print("✓ Model reloaded successfully")
+          else:
+              sys.exit(f"Model reload failed: {r.status_code}")
+          PY
+
+      - name: Commit updated model (optional)
+        if: ${{ github.event_name == 'schedule' }}  # Only on automatic runs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add api/model.json
+          git diff --staged --quiet || git commit -m "chore: nightly model retrain (run ${{ github.run_number }})"
+          # Uncomment to push:
+          # git push

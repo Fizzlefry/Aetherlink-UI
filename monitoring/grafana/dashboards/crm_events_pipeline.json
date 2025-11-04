@@ -1,0 +1,1063 @@
+﻿{
+    "title": "CRM Events - Kafka SSE Pipeline",
+    "uid": "crm-events-pipeline",
+    "tags": [
+        "kafka",
+        "sse",
+        "crm",
+        "events",
+        "aetherlink"
+    ],
+    "timezone": "browser",
+    "refresh": "10s",
+    "time": {
+        "from": "now-1h",
+        "to": "now"
+    },
+    "panels": [
+        {
+            "id": 1,
+            "type": "stat",
+            "title": "SSE Clients Connected",
+            "gridPos": {
+                "x": 0,
+                "y": 0,
+                "w": 6,
+                "h": 4
+            },
+            "targets": [
+                {
+                    "expr": "crm_events_sse_clients",
+                    "refId": "A"
+                }
+            ],
+            "options": {
+                "graphMode": "area",
+                "colorMode": "value",
+                "textMode": "value_and_name"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": 0,
+                                "color": "red"
+                            },
+                            {
+                                "value": 1,
+                                "color": "green"
+                            },
+                            {
+                                "value": 50,
+                                "color": "yellow"
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                }
+            }
+        },
+        {
+            "id": 2,
+            "type": "stat",
+            "title": "Service Status",
+            "gridPos": {
+                "x": 6,
+                "y": 0,
+                "w": 6,
+                "h": 4
+            },
+            "targets": [
+                {
+                    "expr": "up{job=\"crm-events\"}",
+                    "refId": "A"
+                }
+            ],
+            "options": {
+                "graphMode": "none",
+                "colorMode": "background",
+                "textMode": "value_and_name"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": 0,
+                                "color": "red"
+                            },
+                            {
+                                "value": 1,
+                                "color": "green"
+                            }
+                        ]
+                    },
+                    "mappings": [
+                        {
+                            "type": "value",
+                            "value": "1",
+                            "text": "UP"
+                        },
+                        {
+                            "type": "value",
+                            "value": "0",
+                            "text": "DOWN"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": 3,
+            "type": "stat",
+            "title": "Messages Total",
+            "gridPos": {
+                "x": 12,
+                "y": 0,
+                "w": 6,
+                "h": 4
+            },
+            "targets": [
+                {
+                    "expr": "crm_events_messages_total",
+                    "refId": "A"
+                }
+            ],
+            "options": {
+                "graphMode": "area",
+                "colorMode": "value"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": 0,
+                                "color": "blue"
+                            },
+                            {
+                                "value": 100,
+                                "color": "green"
+                            },
+                            {
+                                "value": 1000,
+                                "color": "yellow"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "id": 4,
+            "type": "stat",
+            "title": "Availability SLO",
+            "gridPos": {
+                "x": 18,
+                "y": 0,
+                "w": 6,
+                "h": 4
+            },
+            "targets": [
+                {
+                    "expr": "avg_over_time(up{job=\"crm-events\"}[5m]) * 100",
+                    "refId": "A"
+                }
+            ],
+            "options": {
+                "graphMode": "area",
+                "colorMode": "value"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent",
+                    "decimals": 2,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": 0,
+                                "color": "red"
+                            },
+                            {
+                                "value": 95,
+                                "color": "yellow"
+                            },
+                            {
+                                "value": 99,
+                                "color": "green"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "id": 5,
+            "type": "timeseries",
+            "title": "Message Throughput (events/sec)",
+            "gridPos": {
+                "x": 0,
+                "y": 4,
+                "w": 12,
+                "h": 8
+            },
+            "targets": [
+                {
+                    "expr": "rate(crm_events_messages_total[5m])",
+                    "legendFormat": "Messages/sec",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "ops",
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "fillOpacity": 10
+                    }
+                }
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "multi"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            }
+        },
+        {
+            "id": 6,
+            "type": "timeseries",
+            "title": "SSE Clients Over Time",
+            "gridPos": {
+                "x": 12,
+                "y": 4,
+                "w": 12,
+                "h": 8
+            },
+            "targets": [
+                {
+                    "expr": "crm_events_sse_clients",
+                    "legendFormat": "Active Clients",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "fillOpacity": 20,
+                        "lineWidth": 2
+                    }
+                }
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "multi"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            }
+        },
+        {
+            "id": 7,
+            "type": "timeseries",
+            "title": "HTTP Requests by Endpoint",
+            "gridPos": {
+                "x": 0,
+                "y": 12,
+                "w": 12,
+                "h": 8
+            },
+            "targets": [
+                {
+                    "expr": "rate(crm_events_http_requests_total[5m])",
+                    "legendFormat": "{{method}} {{path}}",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "reqps",
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "fillOpacity": 10
+                    }
+                }
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "multi"
+                },
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "right"
+                }
+            }
+        },
+        {
+            "id": 8,
+            "type": "timeseries",
+            "title": "Service Uptime",
+            "gridPos": {
+                "x": 12,
+                "y": 12,
+                "w": 12,
+                "h": 8
+            },
+            "targets": [
+                {
+                    "expr": "up{job=\"crm-events\"}",
+                    "legendFormat": "Service Up",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "stepAfter",
+                        "fillOpacity": 50
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": 0,
+                                "color": "red"
+                            },
+                            {
+                                "value": 1,
+                                "color": "green"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "id": 9,
+            "type": "table",
+            "title": "Service Labels \u0026 Metadata",
+            "gridPos": {
+                "x": 0,
+                "y": 20,
+                "w": 12,
+                "h": 6
+            },
+            "targets": [
+                {
+                    "expr": "up{job=\"crm-events\"}",
+                    "format": "table",
+                    "instant": true,
+                    "refId": "A"
+                }
+            ],
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Time": true,
+                            "Value": true
+                        },
+                        "indexByName": {},
+                        "renameByName": {}
+                    }
+                }
+            ]
+        },
+        {
+            "id": 10,
+            "type": "gauge",
+            "title": "Message Rate vs Baseline",
+            "gridPos": {
+                "x": 12,
+                "y": 20,
+                "w": 12,
+                "h": 6
+            },
+            "targets": [
+                {
+                    "expr": "rate(crm_events_messages_total[5m])",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "ops",
+                    "min": 0,
+                    "max": 10,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": 0,
+                                "color": "red"
+                            },
+                            {
+                                "value": 0.1,
+                                "color": "yellow"
+                            },
+                            {
+                                "value": 1,
+                                "color": "green"
+                            }
+                        ]
+                    }
+                }
+            },
+            "options": {
+                "showThresholdLabels": true,
+                "showThresholdMarkers": true
+            }
+        },
+        {
+            "id": 11,
+            "type": "text",
+            "title": "Service Info",
+            "gridPos": {
+                "x": 0,
+                "y": 26,
+                "w": 24,
+                "h": 3
+            },
+            "options": {
+                "content": "## CRM Events - Kafka SSE Pipeline\n\n**Service**: crm-events:9010  \n**Topic**: aetherlink.events (3 partitions)  \n**Consumer Group**: crm-events-sse  \n**Offset Strategy**: earliest (dev), latest (prod)  \n\n**Endpoints**:\n- `GET /healthz` - Health check\n- `GET /metrics` - Prometheus metrics  \n- `GET /crm-events` - Server-Sent Events stream  \n- `GET /` - Service info\n\n**SLOs**:\n- Availability: 99% uptime\n- Throughput: \u003e0.1 events/sec when clients connected\n- Latency: \u003c100ms message delivery\n\n**Runbook**: See `monitoring/docs/CRM_EVENTS_PRODUCTION_READY.md`",
+                "mode": "markdown"
+            }
+        },
+        {
+            "id": 13,
+            "type": "timeseries",
+            "title": "Consumer Lag (messages)",
+            "gridPos": {
+                "x": 0,
+                "y": 29,
+                "w": 12,
+                "h": 8
+            },
+            "targets": [
+                {
+                    "expr": "kafka:group_lag_sum",
+                    "legendFormat": "lag",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "none",
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "fillOpacity": 10,
+                        "showPoints": "auto"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "green"
+                            },
+                            {
+                                "value": 500,
+                                "color": "yellow"
+                            },
+                            {
+                                "value": 1000,
+                                "color": "red"
+                            }
+                        ]
+                    }
+                }
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "single"
+                }
+            }
+        },
+        {
+            "id": 14,
+            "type": "stat",
+            "title": "Drain ETA",
+            "gridPos": {
+                "x": 12,
+                "y": 29,
+                "w": 6,
+                "h": 4
+            },
+            "targets": [
+                {
+                    "expr": "kafka:group_drain_eta_seconds",
+                    "refId": "A"
+                }
+            ],
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "center",
+                "textMode": "value_and_name"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "s",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "green"
+                            },
+                            {
+                                "value": 600,
+                                "color": "yellow"
+                            },
+                            {
+                                "value": 1800,
+                                "color": "red"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "id": 15,
+            "type": "stat",
+            "title": "Scale Hint (replicas)",
+            "gridPos": {
+                "x": 18,
+                "y": 29,
+                "w": 6,
+                "h": 4
+            },
+            "targets": [
+                {
+                    "expr": "ceil(clamp_min(crm_events:consumer_rate_1m, 0) / clamp_min(crm_events:consumer_peak_capacity_1h, 0.001))",
+                    "legendFormat": "suggested_replicas",
+                    "refId": "A"
+                }
+            ],
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "center",
+                "textMode": "value_and_name"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "none",
+                    "decimals": 0,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "green"
+                            },
+                            {
+                                "value": 2,
+                                "color": "yellow"
+                            },
+                            {
+                                "value": 4,
+                                "color": "red"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "id": 16,
+            "type": "stat",
+            "title": "Backlog Drain Time (ETA)",
+            "gridPos": {
+                "x": 0,
+                "y": 37,
+                "w": 6,
+                "h": 4
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "textMode": "value"
+            },
+            "targets": [
+                {
+                    "expr": "kafka:group_drain_eta_seconds / 60",
+                    "legendFormat": "ETA (m)",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "m",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 10
+                            },
+                            {
+                                "color": "red",
+                                "value": 30
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "pluginVersion": "10.4.0"
+        },
+        {
+            "id": 17,
+            "type": "table",
+            "title": "Per-Partition Lag",
+            "gridPos": {
+                "x": 6,
+                "y": 37,
+                "w": 18,
+                "h": 8
+            },
+            "options": {
+                "showHeader": true,
+                "footer": {
+                    "show": false
+                }
+            },
+            "targets": [
+                {
+                    "expr": "sum by (topic, partition) (kafka_consumergroup_lag{consumergroup=\"crm-events-sse\"})",
+                    "format": "table",
+                    "instant": true,
+                    "refId": "A"
+                }
+            ],
+            "transformations": [
+                {
+                    "id": "labelsToFields",
+                    "options": {
+                        "mode": "columns"
+                    }
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "indexByName": {},
+                        "excludeByName": {}
+                    }
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "custom": {
+                        "align": "left"
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Value"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.align",
+                                "value": "right"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "pluginVersion": "10.4.0"
+        },
+        {
+            "id": 18,
+            "type": "stat",
+            "title": "Consumer Group Size",
+            "gridPos": {
+                "x": 0,
+                "y": 45,
+                "w": 6,
+                "h": 4
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "center",
+                "textMode": "value_and_name"
+            },
+            "targets": [
+                {
+                    "expr": "kafka:group_consumer_count{consumergroup=\"crm-events-sse\"}",
+                    "legendFormat": "Active Members",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "decimals": 0,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 1
+                            },
+                            {
+                                "color": "green",
+                                "value": 2
+                            }
+                        ]
+                    },
+                    "mappings": [
+                        {
+                            "type": "special",
+                            "options": {
+                                "match": "null",
+                                "result": {
+                                    "text": "0"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "overrides": []
+            },
+            "pluginVersion": "10.4.0"
+        },
+        {
+            "id": 19,
+            "type": "stat",
+            "title": "Hot-Key Skew Ratio",
+            "gridPos": {
+                "x": 6,
+                "y": 45,
+                "w": 6,
+                "h": 4
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "center",
+                "textMode": "value_and_name"
+            },
+            "targets": [
+                {
+                    "expr": "kafka:group_skew_ratio{consumergroup=\"crm-events-sse\"}",
+                    "legendFormat": "Max/Avg Skew",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "decimals": 1,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 2
+                            },
+                            {
+                                "color": "orange",
+                                "value": 3
+                            },
+                            {
+                                "color": "red",
+                                "value": 4
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "pluginVersion": "10.4.0"
+        },
+        {
+            "id": 20,
+            "type": "timeseries",
+            "title": "CRM Events Ingested (by topic)",
+            "datasource": "Prometheus",
+            "gridPos": {
+                "x": 0,
+                "y": 49,
+                "w": 12,
+                "h": 8
+            },
+            "targets": [
+                {
+                    "expr": "sum by (topic) (rate(crm_events_ingested_total[5m]))",
+                    "legendFormat": "{{topic}}",
+                    "intervalFactor": 1,
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "ops",
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "fillOpacity": 10
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "none"
+                }
+            }
+        },
+        {
+            "id": 21,
+            "type": "table",
+            "title": "Top Tenants by CRM Events (5m)",
+            "datasource": "Prometheus",
+            "gridPos": {
+                "x": 12,
+                "y": 49,
+                "w": 12,
+                "h": 8
+            },
+            "targets": [
+                {
+                    "expr": "topk(10, sum by (tenant_id) (rate(crm_events_ingested_total[5m])))",
+                    "legendFormat": "{{tenant_id}}",
+                    "refId": "A",
+                    "instant": true
+                }
+            ],
+            "options": {
+                "showHeader": true,
+                "footer": {
+                    "show": false
+                }
+            },
+            "transformations": [
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Time": true
+                        },
+                        "indexByName": {
+                            "tenant_id": 0,
+                            "Value": 1
+                        },
+                        "renameByName": {
+                            "tenant_id": "Tenant ID",
+                            "Value": "Events/sec"
+                        }
+                    }
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "ops",
+                    "decimals": 3,
+                    "custom": {
+                        "align": "auto",
+                        "displayMode": "auto"
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Events/sec"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.displayMode",
+                                "value": "gradient-gauge"
+                            },
+                            {
+                                "id": "color",
+                                "value": {
+                                    "mode": "continuous-GrYlRd"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "id": 22,
+            "type": "timeseries",
+            "title": "CRM Events Persisted vs Ingested",
+            "datasource": "Prometheus",
+            "gridPos": {
+                "x": 0,
+                "y": 57,
+                "w": 24,
+                "h": 6
+            },
+            "targets": [
+                {
+                    "expr": "sum by (topic) (rate(crm_events_ingested_total[5m]))",
+                    "legendFormat": "Ingested - {{topic}}",
+                    "refId": "A"
+                },
+                {
+                    "expr": "sum by (topic) (rate(crm_events_persisted_total[5m]))",
+                    "legendFormat": "Persisted - {{topic}}",
+                    "refId": "B"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "ops",
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "fillOpacity": 0
+                    }
+                }
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                }
+            }
+        },
+        {
+            "id": 12,
+            "type": "alert-list",
+            "title": "Active Alerts",
+            "gridPos": {
+                "x": 0,
+                "y": 63,
+                "w": 24,
+                "h": 6
+            },
+            "options": {
+                "showOptions": "current",
+                "maxItems": 20,
+                "sortOrder": 1,
+                "dashboardAlerts": false,
+                "alertName": "",
+                "dashboardTitle": "",
+                "folderId": 0,
+                "tags": [
+                    "crm-events"
+                ]
+            }
+        }
+    ],
+    "annotations": {
+        "list": [
+            {
+                "name": "Deployments",
+                "datasource": "Prometheus",
+                "enable": true,
+                "expr": "changes(crm_events_http_requests_total{path=\"/healthz\"}[1m]) \u003e 0",
+                "iconColor": "blue",
+                "tagKeys": "service,version"
+            }
+        ]
+    },
+    "schemaVersion": 36,
+    "version": 1,
+    "editable": true
+}

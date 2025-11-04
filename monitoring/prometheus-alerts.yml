@@ -1,0 +1,792 @@
+groups:
+  - name: aetherlink_rag.rules
+    interval: 30s
+    rules:
+      # ============================================================================
+      # PRODUCTION-READY ALERTS (Using Recording Rules for Performance)
+      # ============================================================================
+
+      # Cache effectiveness monitoring (sharper alerting with traffic guard)
+      - alert: CacheEffectivenessDrop
+        expr: (aether:cache_hit_ratio:5m < 30) and sum(rate(aether_cache_requests_total[5m])) > 0
+        for: 15m
+        labels:
+          severity: warning
+          team: aetherlink
+        annotations:
+          summary: "Cache hit ratio low (<30%)"
+          description: 'Cache hit ratio is {{ $value | printf "%.1f" }}% over the last 15m. Investigate cache layer and upstream latency.'
+
+      # Quality monitoring (sharper alerting with traffic guard)
+      - alert: LowConfidenceSpike
+        expr: (aether:lowconfidence_pct:15m > 20) and sum(rate(aether_rag_answers_total[15m])) > 0
+        for: 10m
+        labels:
+          severity: warning
+          team: aetherlink
+        annotations:
+          summary: "Low-confidence answer share high (>20%)"
+          description: 'Low-confidence share is {{ $value | printf "%.1f" }}% over the last 10m. Check retrieval quality, rerank thresholds, and model drift.'
+
+      # VIP tenant critical variant (stricter threshold with traffic guard)
+      - alert: LowConfidenceSpikeVIP
+        expr: (aether:lowconfidence_pct:15m{tenant=~"vip-.*|premium-.*"} > 15) and sum(rate(aether_rag_answers_total{tenant=~"vip-.*|premium-.*"}[15m])) > 0
+        for: 5m
+        labels:
+          severity: critical
+          team: aetherlink
+          sla: breach
+        annotations:
+          summary: "VIP tenant low-confidence spike (>15%)"
+          description: 'Tenant={{ $labels.tenant }} at {{ $value | printf "%.1f" }}%.'
+
+      # Cache effectiveness critical (VIP tenants with traffic guard)
+      - alert: CacheEffectivenessDropVIP
+        expr: (aether:cache_hit_ratio:5m{tenant=~"vip-.*|premium-.*"} < 20) and sum(rate(aether_cache_requests_total{tenant=~"vip-.*|premium-.*"}[5m])) > 0
+        for: 10m
+        labels:
+          severity: critical
+          team: aetherlink
+          sla: at_risk
+        annotations:
+          summary: "VIP cache effectiveness low (<20%)"
+          description: 'Tenant={{ $labels.tenant }} at {{ $value | printf "%.1f" }}%.'
+
+      # Composite health score degradation (with traffic guard)
+      - alert: HealthScoreDegradation
+        expr: (aether:health_score:15m < 60) and sum(rate(aether_rag_answers_total[15m])) > 0
+        for: 15m
+        labels:
+          severity: warning
+          team: aetherlink
+        annotations:
+          summary: "Health score low (<60)"
+          description: 'Composite health is {{ $value | printf "%.0f" }} over 15m. Check cache effectiveness, rerank utilization, and low-confidence rates.'
+
+      # ============================================================================
+      # ORIGINAL ALERTS (Preserved)
+      # ============================================================================
+      # Alert on high low-confidence rate (system struggling to answer)
+      - alert: HighLowConfidenceRate
+        expr: rate(aether_rag_lowconfidence_total[10m]) > 0.2
+        for: 10m
+        labels:
+          severity: warning
+          component: rag
+        annotations:
+          summary: "High low-confidence answer rate"
+          description: "Low-confidence answers exceeding 0.2/s for tenant {{ $labels.tenant }} over the last 10m"
+          runbook_url: "https://github.com/your-org/aetherlink/wiki/Runbooks#high-low-confidence"
+
+      # Alert on low cache effectiveness (cache not helping)
+      - alert: CacheIneffectiveForTenant
+        expr: |
+          (
+            sum(rate(aether_rag_cache_hits_total{endpoint="answer"}[10m])) by (tenant)
+          )
+          /
+          (
+            sum(rate(aether_rag_cache_hits_total{endpoint="answer"}[10m])) by (tenant)
+          +
+            sum(rate(aether_rag_cache_misses_total{endpoint="answer"}[10m])) by (tenant)
+          ) < 0.3
+        for: 15m
+        labels:
+          severity: info
+          component: cache
+        annotations:
+          summary: "Low cache hit ratio for tenant {{ $labels.tenant }}"
+          description: "Cache hit ratio below 30% for answer endpoint over 15m (tenant: {{ $labels.tenant }})"
+          impact: "Increased latency and compute usage"
+          runbook_url: "https://github.com/your-org/aetherlink/wiki/Runbooks#cache-ineffective"
+
+      # Alert on very high answer volume (potential abuse or spike)
+      - alert: HighAnswerVolumeForTenant
+        expr: rate(aether_rag_answers_total[5m]) > 10
+        for: 10m
+        labels:
+          severity: warning
+          component: rag
+        annotations:
+          summary: "High answer request volume for tenant {{ $labels.tenant }}"
+          description: "Answer requests exceeding 10/s for tenant {{ $labels.tenant }} over the last 10m"
+          impact: "Potential cost spike or abuse"
+          runbook_url: "https://github.com/your-org/aetherlink/wiki/Runbooks#high-volume"
+
+      # Alert on zero answers (potential outage or config issue)
+      - alert: NoAnswerRequestsForTenant
+        expr: rate(aether_rag_answers_total[15m]) == 0
+        for: 30m
+        labels:
+          severity: info
+          component: rag
+        annotations:
+          summary: "No answer requests for tenant {{ $labels.tenant }}"
+          description: "Zero answer requests received for tenant {{ $labels.tenant }} in the last 30m"
+          impact: "Potential customer issue or expected downtime"
+
+      # Alert on critical cache failure (all misses, no hits)
+      - alert: CacheCompletelyMissing
+        expr: |
+          (
+            rate(aether_rag_cache_hits_total[10m]) == 0
+            and
+            rate(aether_rag_cache_misses_total[10m]) > 0
+          )
+        for: 10m
+        labels:
+          severity: critical
+          component: cache
+        annotations:
+          summary: "Cache completely ineffective for tenant {{ $labels.tenant }}"
+          description: "Zero cache hits with ongoing misses for tenant {{ $labels.tenant }} - cache may be broken"
+          impact: "All requests hitting backend, severely degraded performance"
+          runbook_url: "https://github.com/your-org/aetherlink/wiki/Runbooks#cache-failure"
+
+      # Alert on high rerank usage (cost monitoring)
+      - alert: HighRerankUsageForTenant
+        expr: |
+          (
+            sum(rate(aether_rag_answers_total{rerank="true"}[15m])) by (tenant)
+          )
+          /
+          (
+            sum(rate(aether_rag_answers_total[15m])) by (tenant)
+          ) > 0.8
+        for: 30m
+        labels:
+          severity: info
+          component: rag
+          cost_impact: high
+        annotations:
+          summary: "High reranking usage for tenant {{ $labels.tenant }}"
+          description: "Over 80% of answers using reranking for tenant {{ $labels.tenant }} over 30m"
+          impact: "Increased compute cost due to reranking"
+
+      # SLA breach: low confidence rate too high for premium tenant
+      - alert: SLABreachLowConfidenceVIP
+        expr: |
+          (
+            rate(aether_rag_lowconfidence_total{tenant=~"vip-.*|premium-.*"}[15m])
+          )
+          /
+          (
+            rate(aether_rag_answers_total{tenant=~"vip-.*|premium-.*"}[15m])
+          ) > 0.15
+        for: 20m
+        labels:
+          severity: critical
+          component: rag
+          sla: breach
+        annotations:
+          summary: "SLA breach: high low-confidence rate for VIP tenant {{ $labels.tenant }}"
+          description: "Low-confidence answer rate exceeds 15% for VIP tenant {{ $labels.tenant }}"
+          impact: "SLA violation - immediate attention required"
+          runbook_url: "https://github.com/your-org/aetherlink/wiki/Runbooks#sla-breach"
+
+      # Cache effectiveness drop (per tenant) - sharper alerting
+      - alert: CacheEffectivenessDrop
+        expr: |
+          (
+            sum(rate(aether_rag_cache_hits_total{endpoint="answer"}[10m])) by (tenant)
+          )
+          /
+          ignoring(endpoint)
+          (
+            sum(rate(aether_rag_cache_hits_total{endpoint="answer"}[10m])) by (tenant)
+            +
+            sum(rate(aether_rag_cache_misses_total{endpoint="answer"}[10m])) by (tenant)
+          )
+          < 0.3
+        for: 15m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Cache effectiveness dropped below 30% for tenant {{ $labels.tenant }}"
+          description: "Answer cache hit ratio is {{ $value | humanizePercentage }} for tenant {{ $labels.tenant }} (threshold: 30%)"
+          impact: "Degraded performance, increased backend load"
+          runbook_url: "https://github.com/your-org/aetherlink/wiki/Runbooks#cache-effectiveness-drop"
+
+      # Critical cache effectiveness drop
+      - alert: CacheEffectivenessCritical
+        expr: |
+          (
+            sum(rate(aether_rag_cache_hits_total{endpoint="answer"}[10m])) by (tenant)
+          )
+          /
+          ignoring(endpoint)
+          (
+            sum(rate(aether_rag_cache_hits_total{endpoint="answer"}[10m])) by (tenant)
+            +
+            sum(rate(aether_rag_cache_misses_total{endpoint="answer"}[10m])) by (tenant)
+          )
+          < 0.15
+        for: 15m
+        labels:
+          severity: critical
+          component: cache
+        annotations:
+          summary: "Cache effectiveness critically low for tenant {{ $labels.tenant }}"
+          description: "Answer cache hit ratio is {{ $value | humanizePercentage }} for tenant {{ $labels.tenant }} (threshold: 15%)"
+          impact: "Severe performance degradation, immediate investigation required"
+          runbook_url: "https://github.com/your-org/aetherlink/wiki/Runbooks#cache-effectiveness-drop"
+
+      # Low-confidence spike (per tenant)
+      - alert: LowConfidenceSpike
+        expr: |
+          (
+            sum(rate(aether_rag_lowconfidence_total[15m])) by (tenant)
+          )
+          /
+          (
+            sum(rate(aether_rag_answers_total[15m])) by (tenant)
+          )
+          > 0.2
+        for: 10m
+        labels:
+          severity: warning
+          component: rag
+        annotations:
+          summary: "Low-confidence answer spike for tenant {{ $labels.tenant }}"
+          description: "Low-confidence rate is {{ $value | humanizePercentage }} for tenant {{ $labels.tenant }} (threshold: 20%)"
+          impact: "Quality degradation, users may be getting poor answers"
+          runbook_url: "https://github.com/your-org/aetherlink/wiki/Runbooks#low-confidence-spike"
+
+      # Low-confidence spike for VIP tenants (stricter threshold)
+      - alert: LowConfidenceSpikeVIP
+        expr: |
+          (
+            sum(rate(aether_rag_lowconfidence_total[15m])) by (tenant)
+          )
+          /
+          (
+            sum(rate(aether_rag_answers_total[15m])) by (tenant)
+          )
+          > 0.15
+        for: 10m
+        labels:
+          severity: critical
+          component: rag
+          sla: at_risk
+        annotations:
+          summary: "Low-confidence spike for VIP tenant {{ $labels.tenant }}"
+          description: "Low-confidence rate is {{ $value | humanizePercentage }} for VIP tenant {{ $labels.tenant }} (threshold: 15%)"
+          impact: "SLA at risk - premium customer experiencing quality issues"
+          runbook_url: "https://github.com/your-org/aetherlink/wiki/Runbooks#low-confidence-spike"
+
+  # ============================================================================
+  # CRM FINANCE ALERTS (Sprint 5)
+  # ============================================================================
+  - name: crm_finance.rules
+    interval: 30s
+    rules:
+      # Alert when invoice payment rate drops below 50% over 30 days
+      - alert: LowInvoicePaymentRate
+        expr: |
+          (
+            100 * sum(increase(crm_invoices_paid_total[30d]))
+            / clamp_min(sum(increase(crm_invoices_generated_total[30d])), 1)
+          ) < 50
+        for: 24h
+        labels:
+          severity: warning
+          service: crm
+          component: finance
+        annotations:
+          summary: "Low invoice payment rate (<50% over 30d)"
+          description: 'Invoice payment rate is {{ $value | printf "%.1f" }}% over the last 30 days. Expected: ≥50%.'
+          impact: "Cash flow at risk. Investigate customer follow-ups, QBO sync issues, and payment friction."
+          runbook_url: "https://github.com/your-org/aetherlink/wiki/Runbooks#low-payment-rate"
+
+      # Alert when no revenue recorded for 48 hours
+      - alert: RevenueZeroStreak
+        expr: sum(increase(crm_invoice_payments_cents_total[48h])) == 0
+        for: 48h
+        labels:
+          severity: critical
+          service: crm
+          component: finance
+        annotations:
+          summary: "No recorded revenue for 48h"
+          description: "Zero invoice payments detected in the last 48 hours. This may indicate a critical system failure."
+          impact: "Revenue tracking stopped. Check QBO OAuth connection, invoice status poller health, and Stripe webhooks."
+          runbook_url: "https://github.com/your-org/aetherlink/wiki/Runbooks#revenue-zero"
+
+      # Alert when invoice generation stops (no invoices created in 24h)
+      - alert: InvoiceGenerationStalled
+        expr: sum(increase(crm_invoices_generated_total[24h])) == 0
+        for: 24h
+        labels:
+          severity: warning
+          service: crm
+          component: finance
+        annotations:
+          summary: "No invoices created in the last 24h"
+          description: "Zero invoices created in the last 24 hours. May be expected on weekends/holidays, but review if unexpected."
+          impact: "Check QBO connection, auto-invoice background task, and Stripe webhook processing."
+          runbook_url: "https://github.com/your-org/aetherlink/wiki/Runbooks#invoice-generation-stalled"
+
+      # Alert when CRM API is down (Prometheus cannot scrape metrics)
+      - alert: CrmApiDown
+        expr: up{job="crm_api"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: crm
+          component: api
+        annotations:
+          summary: "CRM API scrape target is down"
+          description: "Prometheus cannot scrape /metrics from crm-api for >5 minutes. API may be crashed or unreachable."
+          impact: "No metrics collection. Finance monitoring, lead scoring, and all CRM operations may be impacted."
+          runbook_url: "https://github.com/your-org/aetherlink/wiki/Runbooks#crm-api-down"
+
+      # Alert when recording rules stop evaluating (silent failure detection)
+      - alert: CrmRecordingRulesStale
+        expr: |
+          absent_over_time(crm:invoices_created_24h[15m])
+          or absent_over_time(crm:invoices_paid_24h[15m])
+          or absent_over_time(crm:revenue_usd[15m])
+          or absent_over_time(crm:payment_rate_30d_pct[15m])
+        for: 10m
+        labels:
+          severity: warning
+          service: crm
+          component: finance
+        annotations:
+          summary: "CRM recording rules stopped updating"
+          description: "One or more CRM recording rules have no samples in the last 15m. Check Prometheus rules evaluation, Prometheus load, and source metrics."
+          impact: "Dashboard performance degraded. Finance panels may show stale data."
+          runbook_url: "docs/runbooks/ALERTS_CRM_FINANCE.md"
+
+      # Alert when core metrics stop being scraped (silent scrape failure)
+      - alert: CrmMetricsScrapeStale
+        expr: |
+          absent_over_time(crm_invoices_generated_total{job="crm_api"}[10m])
+          or absent_over_time(crm_invoices_paid_total{job="crm_api"}[10m])
+          or absent_over_time(crm_invoice_payments_cents_total{job="crm_api"}[10m])
+        for: 10m
+        labels:
+          severity: critical
+          service: crm
+          component: finance
+        annotations:
+          summary: "CRM metrics not scraped recently"
+          description: "Prometheus has not seen core CRM counters in 10m. Check crm-api /metrics endpoint health and Prometheus scrape target configuration."
+          impact: "No new finance data. All CRM monitoring and alerts may be stale or broken."
+          runbook_url: "docs/runbooks/ALERTS_CRM_FINANCE.md"
+
+      # Alert when uptime probe fails for any endpoint
+      - alert: UptimeProbeFailing
+        expr: probe_success == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: crm
+          component: infrastructure
+        annotations:
+          summary: "Uptime probe failing: {{ $labels.instance }}"
+          description: "Blackbox probe to {{ $labels.instance }} has been failing for 5+ minutes. Endpoint may be down or unreachable."
+          impact: "{{ $labels.instance }} is not responding to health checks. Service may be degraded or unavailable."
+          runbook_url: "docs/runbooks/ALERTS_CRM_FINANCE.md"
+
+      # Fast SLO burn-rate alert for payment rate
+      - alert: PaymentRateDegradingFast
+        expr: (85 - crm:payment_rate_30d_pct) > 5
+        for: 30m
+        labels:
+          severity: warning
+          service: crm
+          component: finance
+        annotations:
+          summary: "Payment rate degrading fast (<80% for 30m)"
+          description: '30-day payment rate is {{ $value | humanize }}% below SLO target (85%). Current rate: {{ printf "crm:payment_rate_30d_pct" | query | first | value }}%.'
+          impact: "Payment conversion is trending down rapidly. Revenue may be at risk if trend continues."
+          runbook_url: "docs/runbooks/ALERTS_CRM_FINANCE.md"
+
+      # Slow degradation alert for payment rate
+      - alert: PaymentRateDegradingSlow
+        expr: (85 - crm:payment_rate_30d_pct) > 10
+        for: 6h
+        labels:
+          severity: critical
+          service: crm
+          component: finance
+        annotations:
+          summary: "Payment rate below SLO (<75% for 6h)"
+          description: '30-day payment rate is {{ $value | humanize }}% below SLO target (85%). Current rate: {{ printf "crm:payment_rate_30d_pct" | query | first | value }}%. SUSTAINED VIOLATION.'
+          impact: "Payment conversion well below SLO for extended period. Significant revenue impact. Executive escalation required."
+          runbook_url: "docs/runbooks/ALERTS_CRM_FINANCE.md"
+
+      # Fast revenue flatline alert
+      - alert: RevenueFlatlineFast
+        expr: sum(increase(crm_invoice_payments_cents_total[1h])) == 0
+        for: 90m
+        labels:
+          severity: warning
+          service: crm
+          component: finance
+        annotations:
+          summary: "No revenue in the last ~2.5h"
+          description: "Zero payment revenue recorded in the last 1h window, persisting for 90m. Either no payments are being processed or payment tracking is broken."
+          impact: "Revenue stream may be interrupted. Could be payment processing failure, webhook issue, or genuine lull."
+          runbook_url: "docs/runbooks/ALERTS_CRM_FINANCE.md"
+
+      # Slow revenue flatline alert
+      - alert: RevenueFlatlineSlow
+        expr: sum(increase(crm_invoice_payments_cents_total[6h])) == 0
+        for: 8h
+        labels:
+          severity: critical
+          service: crm
+          component: finance
+        annotations:
+          summary: "No revenue in the last ~14h"
+          description: "Zero payment revenue recorded in the last 6h window, persisting for 8h. SUSTAINED REVENUE OUTAGE."
+          impact: "No payments processed for half a business day. Critical payment processing failure or severe business impact. Immediate executive escalation required."
+          runbook_url: "docs/runbooks/ALERTS_CRM_FINANCE.md"
+
+  # --- TCP Connectivity Alerts (Blackbox) ---
+  - name: blackbox_tcp.rules
+    interval: 30s
+    rules:
+      - alert: TcpEndpointDownFast
+        expr: probe_success{job="blackbox_tcp"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: network
+          layer: tcp
+        annotations:
+          summary: "TCP down: {{ $labels.instance }}"
+          description: "Blackbox tcp_connect cannot reach {{ $labels.instance }} (job={{ $labels.job }}) for 2m."
+          impact: "Service on {{ $labels.instance }} likely unreachable."
+          runbook_url: "docs/runbooks/ALERTS_CRM_FINANCE.md#tcp-endpoint-down"
+          tips: "Check container health, ports, firewall, Docker network, security groups."
+          autoheal: "true"
+
+      - alert: TcpEndpointFlapping
+        expr: changes(probe_success{job="blackbox_tcp"}[10m]) >= 4
+        for: 0m
+        labels:
+          severity: warning
+          service: network
+          layer: tcp
+        annotations:
+          summary: "TCP flapping: {{ $labels.instance }}"
+          description: "Frequent state changes detected (>=4 in 10m). Intermittent connectivity or restart loops."
+          impact: "Unstable user experience; may cascade into higher-level alerts."
+          runbook_url: "docs/runbooks/ALERTS_CRM_FINANCE.md#tcp-endpoint-flapping"
+          tips: "Correlate with container restarts, ingress/egress rules, and host resource pressure."
+
+      - alert: TcpLatencyHigh
+        expr: probe_duration_seconds{job="blackbox_tcp"} > 0.250
+        for: 5m
+        labels:
+          severity: warning
+          service: network
+          layer: tcp
+        annotations:
+          summary: "TCP latency high: {{ $labels.instance }}"
+          description: "Median TCP connect time >250ms for 5m."
+          impact: "Potential user-perceived slowness; may precede timeouts."
+          runbook_url: "docs/runbooks/ALERTS_CRM_FINANCE.md#tcp-latency-high"
+          tips: "Check host/network load; look for noisy neighbors or throttling."
+
+  # ============================================================================
+  # SLO: Payment-Rate burn-rate & EBR threshold alerts
+  # ============================================================================
+  - name: slo_payment_rate.alerts
+    interval: 30s
+    rules:
+      - alert: PaymentRateSLOBurnFast
+        expr: slo:payment_rate:burn_1h > 2
+        for: 30m
+        labels:
+          severity: warning
+          service: crm
+          layer: slo
+        annotations:
+          summary: "Payment-rate burn is elevated (fast window)"
+          description: "1h burn rate > 2 for 30m (error budget depleting quickly)."
+          impact: "Accelerated error-budget burn; SLO breach likely if sustained."
+          tips: "Inspect recent invoice spikes, payment processor errors, retries."
+          runbook_url: "docs/runbooks/ALERTS_CRM_FINANCE.md#payment-rate-slo-burn-fast"
+
+      - alert: PaymentRateSLOBurnSlow
+        expr: slo:payment_rate:burn_6h > 1
+        for: 2h
+        labels:
+          severity: critical
+          service: crm
+          layer: slo
+        annotations:
+          summary: "Payment-rate burn is high (slow window)"
+          description: "6h burn rate > 1 for 2h (budget burning at or above allowed rate)."
+          impact: "SLO at risk across multi-hour horizon; sustained incident."
+          tips: "Check systemic issues: QBO integration, API errors, invoice flows."
+          runbook_url: "docs/runbooks/ALERTS_CRM_FINANCE.md#payment-rate-slo-burn-slow"
+
+      - alert: PaymentRateErrorBudgetLow
+        expr: slo:payment_rate:error_budget_remaining < 0.50
+        for: 30m
+        labels:
+          severity: warning
+          service: crm
+          layer: slo
+        annotations:
+          summary: "Error budget remaining is below 50%"
+          description: "EBR < 50% over the last 30d window."
+          impact: "Reduced resilience to incidents; consider mitigation."
+          tips: "Harden flows, reduce risk, prioritize reliability."
+          runbook_url: "docs/runbooks/ALERTS_CRM_FINANCE.md#error-budget-low"
+
+      - alert: PaymentRateErrorBudgetCritical
+        expr: slo:payment_rate:error_budget_remaining < 0.25
+        for: 30m
+        labels:
+          severity: critical
+          service: crm
+          layer: slo
+        annotations:
+          summary: "Error budget remaining is below 25% (critical)"
+          description: "EBR < 25% over the last 30d window."
+          impact: "SLO breach imminent; declare/continue incident response."
+          tips: "Limit risky deploys, focus on recovery, apply rate limits/backoff."
+          runbook_url: "docs/runbooks/ALERTS_CRM_FINANCE.md#error-budget-critical"
+
+      # Early heads-up: predicted breach within 24h
+      - alert: PaymentRatePredictedBreachSoon
+        expr: slo:payment_rate:hours_to_breach > 0 and slo:payment_rate:hours_to_breach < 24
+        for: 15m
+        labels:
+          severity: warning
+          service: crm
+          layer: slo
+          component: prediction
+        annotations:
+          summary: "Payment Rate SLO predicted breach within 24h"
+          description: 'Current burn trend projects SLO budget exhaustion in ~{{ $value | printf "%.1f" }} hours.'
+          runway_days: '{{ printf "%.1f" $value | humanizeDuration }}'
+          runbook_url: "http://localhost:3000/d/peakpro_crm_slo"
+          tips: "Investigate payment failures, QBO sync health, gateway errors; consider pausing risky deploys."
+
+      # Urgent: predicted breach within 6h
+      - alert: PaymentRatePredictedBreachCritical
+        expr: slo:payment_rate:hours_to_breach > 0 and slo:payment_rate:hours_to_breach < 6
+        for: 10m
+        labels:
+          severity: critical
+          service: crm
+          layer: slo
+          component: prediction
+          autoheal: "false"
+        annotations:
+          summary: "Payment Rate SLO predicted breach within 6h"
+          description: 'Runway ~{{ $value | printf "%.1f" }} hours. Budget will be exhausted soon at current burn.'
+          runway_days: '{{ printf "%.1f" $value | humanizeDuration }}'
+          runbook_url: "http://localhost:3000/d/peakpro_crm_slo"
+          tips: "Declare incident, throttle risky flows, rollback last changes, prioritize reliability work."
+
+  # AetherVision operator-quality alerts
+  - name: aethervision.alerts
+    rules:
+      - alert: AutohealDisabledInDev
+        expr: aethervision:autoheal_enabled == 0
+        for: 10m
+        labels:
+          severity: info
+          service: aetherlink
+          layer: ops
+        annotations:
+          summary: "Autoheal is disabled"
+          description: "Autoheal service is running but disabled. This is expected in prod; enable to test remediation in dev."
+          runbook_url: "http://localhost:3000/d/peakpro_crm_slo"
+
+      - alert: AutohealStaleActions
+        expr: aethervision:autoheal_enabled == 1 and aethervision:autoheal_last_action_age > 24*3600
+        for: 15m
+        labels:
+          severity: warning
+          service: aetherlink
+          layer: ops
+        annotations:
+          summary: "No autoheal actions in 24h while enabled"
+          description: "Autoheal is enabled but hasn't executed in over a day. Verify mappings/annotations and Alertmanager route."
+          runbook_url: "http://localhost:3000/d/peakpro_crm_slo"
+
+      - alert: ProbesCoverageLow
+        expr: (aethervision:probes_http_up + aethervision:probes_tcp_up) < 5
+        for: 10m
+        labels:
+          severity: warning
+          service: aetherlink
+          layer: probes
+        annotations:
+          summary: "Probe coverage low"
+          description: "Less than expected healthy probes. Check Blackbox config/targets."
+
+      # ============================================================================
+      # AUTOHEAL SLO ALERTS (Production-Ready)
+      # ============================================================================
+
+      # SLO-1: Heartbeat age p95 < 5m
+      - alert: AutohealHeartbeatSLOBreach
+        expr: autoheal:heartbeat:age_seconds > 300
+        for: 10m
+        labels:
+          severity: critical
+          service: ops
+          layer: autoheal
+          slo: breach
+        annotations:
+          summary: "Autoheal heartbeat age SLO breach (>5m)"
+          description: "Heartbeat age {{ $value }}s exceeds 5m threshold. Autoheal may be stalled."
+          runbook_url: "https://docs.aetherlink.io/runbooks/autoheal-heartbeat"
+
+      # SLO-1 Warning: Early detection
+      - alert: AutohealNoEvents15m
+        expr: autoheal:heartbeat:age_seconds > 900
+        for: 10m
+        labels:
+          severity: warning
+          service: ops
+          layer: autoheal
+        annotations:
+          summary: "Autoheal heartbeat missing (>15m)"
+          description: "No autoheal events for > 15m (age={{ $value }}s). Check /events and /audit."
+
+      # SLO-2: Action failure rate p95 < 0.05/s
+      - alert: AutohealFailureRateSLOBreach
+        expr: autoheal:action_fail_rate_15m > 0.05
+        for: 15m
+        labels:
+          severity: critical
+          service: ops
+          layer: autoheal
+          slo: breach
+        annotations:
+          summary: "Autoheal failure rate SLO breach (>0.05/s)"
+          description: 'Failure rate {{ $value | printf "%.3f" }}/s over 15m. Investigate failing actions in audit trail.'
+          runbook_url: "https://docs.aetherlink.io/runbooks/autoheal-failures"
+
+      # SLO-2 Warning: Early detection at higher threshold
+      - alert: AutohealActionFailureSpike
+        expr: autoheal:action_fail_rate_15m > 0.2
+        for: 10m
+        labels:
+          severity: warning
+          service: ops
+          layer: autoheal
+        annotations:
+          summary: "Autoheal action failures spiking (>0.2/s)"
+          description: 'Failure rate (15m) is {{ $value | printf "%.3f" }}/s. Inspect logs, audit, cooldowns.'
+          runbook_url: "http://localhost:9090/targets#blackbox_http"
+
+      # SLO-3: Event ingestion availability > 99.9%
+      - alert: AutohealServiceDown
+        expr: up{job="autoheal"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: ops
+          layer: autoheal
+          slo: breach
+        annotations:
+          summary: "Autoheal service down (availability SLO breach)"
+          description: "Autoheal service unavailable for >2m. Check container health and logs."
+          runbook_url: "https://docs.aetherlink.io/runbooks/autoheal-down"
+
+      # SLO-4: Audit write latency p95 < 200ms
+      - alert: AutohealAuditWriteLatencySLOBreach
+        expr: histogram_quantile(0.95, rate(autoheal_audit_write_seconds_bucket[10m])) > 0.2
+        for: 10m
+        labels:
+          severity: warning
+          service: ops
+          layer: autoheal
+          slo: at_risk
+        annotations:
+          summary: "Autoheal audit write latency p95 SLO breach (>200ms)"
+          description: 'Audit write latency p95 is {{ $value | printf "%.3f" }}s. Check disk I/O and filesystem.'
+          runbook_url: "https://docs.aetherlink.io/runbooks/autoheal-audit-latency"
+
+      # ============================================================================
+      # ERROR BUDGET BURN ALERTS (Multi-window, multi-burn-rate)
+      # ============================================================================
+      # Detects both fast (5% in 1h) and slow (10% in 6h) error budget consumption
+      # Based on Google SRE Workbook multiwindow, multi-burn-rate approach
+
+      # SLO-1 Error Budget Burn: Fast (5% budget in 1 hour)
+      - alert: AutohealErrorBudgetBurnFast
+        expr: |
+          (
+            sum(rate(autoheal:heartbeat:age_seconds{job="autoheal"}[5m])) 
+            / 
+            (300 * 0.999)  # SLO target: p95 < 5m (300s) with 99.9% availability
+          ) > 14.4  # 5% of monthly budget in 1 hour (30d * 24h / (0.05 * 100) = 14.4x burn)
+        for: 5m
+        labels:
+          severity: critical
+          service: ops
+          layer: autoheal
+          slo: error_budget
+        annotations:
+          summary: "Autoheal error budget burning FAST (5% in 1h)"
+          description: 'Error budget burn rate: {{ $value | printf "%.1f" }}x normal. Immediate action required to avoid SLO miss.'
+          runbook_url: "https://docs.aetherlink.io/runbooks/autoheal-error-budget-burn"
+
+      # SLO-1 Error Budget Burn: Slow (10% budget in 6 hours)
+      - alert: AutohealErrorBudgetBurnSlow
+        expr: |
+          (
+            sum(rate(autoheal:heartbeat:age_seconds{job="autoheal"}[1h])) 
+            / 
+            (300 * 0.999)
+          ) > 2.4  # 10% of monthly budget in 6 hours (30d * 24h / (0.1 * 6) = 2.4x burn)
+        for: 30m
+        labels:
+          severity: warning
+          service: ops
+          layer: autoheal
+          slo: error_budget
+        annotations:
+          summary: "Autoheal error budget burning slow (10% in 6h)"
+          description: 'Error budget burn rate: {{ $value | printf "%.1f" }}x normal. Track and remediate to prevent SLO breach.'
+          runbook_url: "https://docs.aetherlink.io/runbooks/autoheal-error-budget-burn"
+
+      # SLO-2 Error Budget Burn: Fast (failure rate)
+      - alert: AutohealFailureRateBurnFast
+        expr: |
+          (
+            sum(rate(autoheal_action_failures_total[5m]))
+            /
+            sum(rate(autoheal_actions_total[5m]))
+          ) > 14.4  # 5% budget in 1 hour
+        for: 5m
+        labels:
+          severity: critical
+          service: ops
+          layer: autoheal
+          slo: error_budget
+        annotations:
+          summary: "Autoheal action failure budget burning FAST"
+          description: 'Action failure rate {{ $value | printf "%.1f" }}x exceeds error budget burn threshold. Investigate failures immediately.'
+          runbook_url: "https://docs.aetherlink.io/runbooks/autoheal-action-failures"
+
+      # SLO-3 Availability Error Budget
+      - alert: AutohealAvailabilityBurnFast
+        expr: |
+          (
+            1 - avg_over_time(up{job="autoheal"}[5m])
+          ) > 0.0005  # 99.9% SLO allows 0.1% error (43m/month), fast burn = 5% in 1h
+        for: 5m
+        labels:
+          severity: critical
+          service: ops
+          layer: autoheal
+          slo: error_budget
+        annotations:
+          summary: "Autoheal availability error budget burning FAST"
+          description: "Service downtime consuming error budget rapidly. Restore service immediately."
+          runbook_url: "https://docs.aetherlink.io/runbooks/autoheal-down"

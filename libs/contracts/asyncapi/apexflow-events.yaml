@@ -1,0 +1,92 @@
+asyncapi: "2.6.0"
+info:
+  title: ApexFlow Events
+  version: 1.0.0
+  description: Domain events emitted by ApexFlow CRM
+channels:
+  apexflow.leads.created:
+    description: Fired when a new lead is created
+    publish:
+      message:
+        name: LeadCreated
+        payload:
+          type: object
+          properties:
+            id:
+              type: integer
+              description: Unique lead identifier
+            tenant_id:
+              type: string
+              description: Tenant owning this lead
+            name:
+              type: string
+              description: Lead's full name
+            email:
+              type: string
+              description: Lead's email address
+            source:
+              type: string
+              description: Lead source (Website, Referral, etc.)
+            created_at:
+              type: string
+              format: date-time
+              description: Timestamp when lead was created
+  apexflow.jobs.created:
+    description: Fired when a new job is created
+    publish:
+      message:
+        name: JobCreated
+        payload:
+          type: object
+          properties:
+            id:
+              type: integer
+              description: Unique job identifier
+            tenant_id:
+              type: string
+              description: Tenant owning this job
+            lead_id:
+              type: integer
+              description: Associated lead ID
+            title:
+              type: string
+              description: Job title/description
+            status:
+              type: string
+              description: Job status (Open, In Progress, Closed)
+            created_at:
+              type: string
+              format: date-time
+              description: Timestamp when job was created
+  apexflow.appointments.created:
+    description: Fired when a new appointment is scheduled
+    publish:
+      message:
+        name: AppointmentCreated
+        payload:
+          type: object
+          properties:
+            id:
+              type: integer
+              description: Unique appointment identifier
+            tenant_id:
+              type: string
+              description: Tenant owning this appointment
+            lead_id:
+              type: integer
+              description: Associated lead ID
+            job_id:
+              type: integer
+              nullable: true
+              description: Associated job ID (optional)
+            scheduled_at:
+              type: string
+              format: date-time
+              description: Appointment scheduled time
+            type:
+              type: string
+              description: Appointment type (Phone, Video, In-Person)
+            created_at:
+              type: string
+              format: date-time
+              description: Timestamp when appointment was created

@@ -1,0 +1,298 @@
+version: "3.9"
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: aether-prom
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus-config.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus-alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./prometheus-recording-rules.yml:/etc/prometheus/recording-rules.yml:ro
+      - ./prometheus-crm-events-rules.yml:/etc/prometheus/crm-events-rules.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
+      - "--storage.tsdb.retention.time=15d"
+      - "--query.max-concurrency=20"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: aether-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    environment:
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9093/api/v2/status"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: aether-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_USERS_DEFAULT_THEME=dark
+    volumes:
+      # Legacy dashboard provisioning (kept for backward compatibility)
+      - ./grafana-provisioning.yml:/etc/grafana/provisioning/dashboards/legacy-dashboards.yml:ro
+      - ./grafana-dashboard.json:/etc/grafana/provisioning/dashboards/aether.json:ro
+      - ./grafana-dashboard-enhanced.json:/etc/grafana/provisioning/dashboards/aether-enhanced.json:ro
+      - ./grafana-dashboard-slo.json:/etc/grafana/provisioning/dashboards/slo.json:ro
+      # CRM Events dashboard (auto-provisioned)
+      - ./grafana/dashboards/crm_events_pipeline.json:/etc/grafana/provisioning/dashboards/crm_events_pipeline.json:ro
+      - ./grafana-datasource.yml:/etc/grafana/provisioning/datasources/legacy-prometheus.yml:ro
+      # New datasource provisioning
+      - ./grafana/provisioning/datasources/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+
+  blackbox:
+    image: prom/blackbox-exporter:v0.25.0
+    container_name: aether-blackbox
+    command:
+      - --config.file=/etc/blackbox/blackbox.yml
+    volumes:
+      - ./blackbox.yml:/etc/blackbox/blackbox.yml:ro
+    ports:
+      - "9115:9115"
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+
+  aether-agent:
+    build:
+      context: ../pods/aetherlink_agent
+      dockerfile: ./Dockerfile
+    container_name: aether-agent
+    ports:
+      - "8088:8080"
+    environment:
+      - PROM_URL=http://prometheus:9090
+      - ALERTMANAGER_URL=http://alertmanager:9093
+      - GRAFANA_URL=http://grafana:3000
+      - LOG_LEVEL=INFO
+    depends_on:
+      - prometheus
+      - grafana
+      - alertmanager
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+
+  postgres-crm:
+    image: pgvector/pgvector:pg16
+    container_name: postgres-crm
+    environment:
+      POSTGRES_USER: crm
+      POSTGRES_PASSWORD: crm
+      POSTGRES_DB: crm
+    volumes:
+      - crm-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crm -d crm"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+
+  crm-api:
+    build:
+      context: ../pods/crm
+      dockerfile: ./Dockerfile
+    container_name: crm-api
+    ports:
+      - "8089:8080"
+    environment:
+      - DATABASE_URL=postgresql+psycopg://crm:crm@postgres-crm:5432/crm
+      - CRM_ENABLE_SEED=true
+      - LOG_LEVEL=INFO
+      - MINIO_INTERNAL_ENDPOINT=minio:9000
+      - MINIO_PUBLIC_ENDPOINT=localhost:9000
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=admin123
+      - MINIO_BUCKET=crm-proposals
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      # Stripe configuration (set real keys for production, leave empty for dev mode)
+      - STRIPE_SECRET_KEY=
+      - STRIPE_PUBLIC_KEY=
+      - STRIPE_WEBHOOK_SECRET=
+      - PORTAL_PUBLIC_URL=http://localhost:5173
+      - DEPOSIT_PERCENT=30
+      # QuickBooks Online OAuth (set real keys for production)
+      - QBO_CLIENT_ID=
+      - QBO_CLIENT_SECRET=
+      - QBO_REDIRECT_URI=http://localhost:8089/qbo/oauth/callback
+      - QBO_ENV=sandbox
+      - QBO_ITEM_NAME_DEPOSIT=Roof Deposit
+    depends_on:
+      - postgres-crm
+      - minio
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/metrics', timeout=2).getcode()==200 else 1)"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+
+  minio:
+    image: minio/minio:RELEASE.2024-01-16T16-07-38Z
+    container_name: minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=admin123
+    volumes:
+      - minio-data:/data
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: mailhog
+    ports:
+      - "8025:8025"  # UI
+      - "1025:1025"  # SMTP
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+
+  autoheal:
+    image: python:3.11-slim
+    container_name: aether-autoheal
+    profiles: ["dev"]  # Only start with: docker compose --profile dev up
+    working_dir: /app
+    volumes:
+      - ./autoheal:/app
+      - ./sse-console:/app/sse-console   # Live event monitoring console
+      - ./data/autoheal:/data   # Persistent audit trail
+      - /var/run/docker.sock:/var/run/docker.sock   # required for docker restart (dev only)
+    environment:
+      AUTOHEAL_ENABLED: "false"
+      AUTOHEAL_DRY_RUN: "true"
+      ALERTMANAGER_URL: "http://alertmanager:9093"
+      AUTOHEAL_PUBLIC_URL: "http://localhost:9009"
+      AUTOHEAL_AUDIT_PATH: "/data/audit.jsonl"
+      AUTOHEAL_DEFAULT_COOLDOWN_SEC: "600"
+      COOLDOWN_TCP_DOWN_SEC: "600"
+      COOLDOWN_UPTIME_FAIL_SEC: "600"
+      COOLDOWN_SCRAPE_STALE_SEC: "600"
+    command: bash -c "pip install -q -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 9009"
+    ports:
+      - "9009:9009"
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+
+  crm-events:
+    build: ../pods/crm-events
+    container_name: aether-crm-events
+    ports:
+      - "9010:9010"
+    environment:
+      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_TOPIC=aetherlink.events
+      - KAFKA_GROUP=crm-events-sse
+      - KAFKA_OFFSET_RESET=earliest  # Use 'latest' in production
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+    depends_on:
+      - kafka
+
+  # Redpanda Kafka (single-node for dev/testing)
+  kafka:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.4
+    container_name: kafka
+    command:
+      - redpanda
+      - start
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://kafka:9092,external://localhost:19092
+      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr internal://kafka:8082,external://localhost:18082
+      - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+      - --rpc-addr kafka:33145
+      - --advertise-rpc-addr kafka:33145
+      - --mode dev-container
+      - --smp 1
+      - --memory 1G
+    ports:
+      - "19092:19092"  # External Kafka
+      - "18081:18081"  # Schema Registry
+      - "18082:18082"  # Pandaproxy
+      - "19644:9644"   # Admin API
+    networks:
+      - aether-monitoring
+    restart: unless-stopped
+
+  # Kafka Exporter (for consumer lag metrics)
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.7.0
+    container_name: aether-kafka-exporter
+    command:
+      - --kafka.server=kafka:9092
+      - --group.filter=.*
+      - --topic.filter=.*
+    restart: unless-stopped
+    depends_on:
+      - kafka
+    networks:
+      - aether-monitoring
+    ports:
+      - "9308:9308"
+
+volumes:
+  prometheus-data:
+  grafana-data:
+  crm-data:
+  minio-data:
+
+
+networks:
+  aether-monitoring:
+    driver: bridge

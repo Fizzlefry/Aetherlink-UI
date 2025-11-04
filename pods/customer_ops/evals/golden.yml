@@ -1,0 +1,8 @@
+version: 1
+dataset:
+  - id: lead-123
+    question: "What do we know about Lead 123?"
+    must_contain: ["Lead 123", "Acme", "priority"]
+  - id: schedule
+    question: "Please schedule an inspection for job J-1001 next week."
+    expect_tool: "schedule_inspection"
