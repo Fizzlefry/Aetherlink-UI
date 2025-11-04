@@ -1,29 +1,72 @@
+# Run all hooks on staged files before commit.
+# Re-run on entire repo once:  pre-commit run --all-files
+minimum_pre_commit_version: "3.5.0"
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+  # --- Core whitespace & file hygiene ---
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
     hooks:
-    -   id: trailing-whitespace
-    -   id: end-of-file-fixer
-    -   id: check-yaml
-    -   id: check-added-large-files
-    -   id: check-toml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: mixed-line-ending
+        args: ["--fix=auto"]
 
--   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.6
+  # --- Ruff: superfast lint + import order (we'll still run isort for consistency) ---
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
     hooks:
-    -   id: ruff
-        args: [--fix]
-    -   id: ruff-format
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
 
--   repo: https://github.com/python-poetry/poetry
-    rev: '1.7.0'
+  # --- Black (opinionated formatter; aligns with Ruff’s formatter) ---
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
     hooks:
-    -   id: poetry-check
+      - id: black
 
--   repo: local
+  # --- isort (using Black profile) ---
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
     hooks:
-    -   id: pyright
-        name: pyright type check
-        entry: python -m pyright
+      - id: isort
+        args: ["--profile", "black"]
+
+  # --- mypy (type checking) ---
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - types-requests
+          - types-redis
+          - types-PyYAML
+          - sqlalchemy-stubs
+          - psycopg2-binary
+        args:
+          - "--config-file=pyproject.toml"
+
+  # --- Secret scanning (lightweight) ---
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ["--baseline", ".secrets.baseline"]
+        exclude: |
+          (?x)^(
+            .*\.lock|
+            .*\.snap|
+            alembic/versions/.*
+          )$
+
+  # --- Local: Alembic schema drift guard (you added scripts/check_alembic_clean.py) ---
+  - repo: local
+    hooks:
+      - id: alembic-schema-drift
+        name: Alembic schema drift check
+        entry: python scripts/check_alembic_clean.py
         language: system
-        types: [python]
+        pass_filenames: false
