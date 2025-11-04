@@ -5,14 +5,17 @@ Revises: 002_sprint_0_foundation
 Create Date: 2025-11-02 15:35:00.000000
 
 """
-from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import UUID
+
 import uuid
 
+import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import UUID
+
+from alembic import op
+
 # revision identifiers, used by Alembic.
-revision = '003'
-down_revision = '002'
+revision = "003"
+down_revision = "002"
 branch_labels = None
 depends_on = None
 

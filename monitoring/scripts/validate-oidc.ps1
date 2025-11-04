@@ -34,7 +34,7 @@ if (Test-Path $authPath) {
     $hasDiscover = $authContent -match "def _discover"
     $hasVerify = $authContent -match "def _verify"
     $hasRequireOidc = $authContent -match "def require_oidc"
-    
+
     if ($hasDiscover -and $hasVerify -and $hasRequireOidc) {
         Write-Host "  ✅ auth.py has all required functions (_discover, _verify, require_oidc)" -ForegroundColor Green
         $tests += $true
@@ -58,7 +58,7 @@ if (Test-Path $mainPath) {
     $hasImport = $mainContent -match "from auth import"
     $hasMiddleware = $mainContent -match "@app\.middleware"
     $hasOidcGate = $mainContent -match "async def oidc_gate"
-    
+
     if ($hasImport -and $hasMiddleware -and $hasOidcGate) {
         Write-Host "  ✅ main.py has OIDC middleware integrated" -ForegroundColor Green
         $tests += $true
@@ -82,7 +82,7 @@ if (Test-Path $prodComposePath) {
     $hasOidcEnabled = $composeContent -match "OIDC_ENABLED"
     $hasOidcIssuer = $composeContent -match "OIDC_ISSUER"
     $hasOidcAudience = $composeContent -match "OIDC_AUDIENCE"
-    
+
     if ($hasOidcEnabled -and $hasOidcIssuer -and $hasOidcAudience) {
         Write-Host "  ✅ docker-compose.prod.yml has OIDC environment variables" -ForegroundColor Green
         $tests += $true
@@ -123,7 +123,7 @@ if (Test-Path $opsPagePath) {
     $opsContent = Get-Content $opsPagePath -Raw
     $hasEventSource = $opsContent -match "EventSource"
     $hasFilter = $opsContent -match "passFilter"
-    
+
     if ($hasEventSource -and $hasFilter) {
         Write-Host "  ✅ Next.js ops page with SSE and filtering" -ForegroundColor Green
         $tests += $true
@@ -164,7 +164,7 @@ try {
     Write-Host "  ✅ Autoheal service is running" -ForegroundColor Green
     Write-Host "     Enabled: $($health.enabled), Dry-run: $($health.dry_run)" -ForegroundColor Gray
     $tests += $true
-    
+
     # Test 9: Test public endpoint (should work without auth)
     Write-Host "`nTest 9: Testing public endpoint (/)..." -ForegroundColor Yellow
     try {
@@ -176,7 +176,7 @@ try {
         Write-Host "  ❌ Public endpoint failed: $($_.Exception.Message)" -ForegroundColor Red
         $tests += $false
     }
-    
+
     # Test 10: Test protected endpoint without token (should fail if OIDC enabled)
     Write-Host "`nTest 10: Testing protected endpoint without token..." -ForegroundColor Yellow
     try {

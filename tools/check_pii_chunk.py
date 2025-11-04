@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """Check what's actually stored in DuckDB for pii-test"""
-import duckdb
+
 import json
+
+import duckdb
 
 conn = duckdb.connect("/app/data/knowledge.duckdb")
 
 # Find all chunks mentioning pii-test
 rows = conn.execute("""
-    SELECT id, substr(content,1,200) as snippet, metadata 
-    FROM chunks 
-    WHERE metadata LIKE '%pii-test%' 
+    SELECT id, substr(content,1,200) as snippet, metadata
+    FROM chunks
+    WHERE metadata LIKE '%pii-test%'
     LIMIT 1
 """).fetchall()
 
@@ -22,7 +24,7 @@ if rows:
         print("=" * 60)
 else:
     print("No chunks found with pii-test in metadata")
-    
+
     # List all sources
     print("\nAll sources in DB:")
     all_sources = conn.execute("""

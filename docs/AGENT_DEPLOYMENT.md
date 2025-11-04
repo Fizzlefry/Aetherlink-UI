@@ -5,7 +5,7 @@
 The **AetherLink Command AI Agent** is now operational! This is your monitoring "brain" that:
 
 1. **Monitors Health Score**: Polls `aether:health_score:15m` every 60 seconds
-2. **Receives Alerts**: Listens for Alertmanager webhook notifications  
+2. **Receives Alerts**: Listens for Alertmanager webhook notifications
 3. **Proxies PromQL**: Execute instant queries against Prometheus via REST API
 4. **Action Stubs**: Ready for auto-remediation (restart, scale - currently logs only)
 5. **Exposes Metrics**: Custom counters tracked by Prometheus
@@ -69,7 +69,7 @@ The agent exposes custom metrics:
 # Health check rate
 rate(aether_agent_health_checks_total[5m])
 
-# Alert processing rate  
+# Alert processing rate
 rate(aether_agent_alerts_total[5m])
 ```
 

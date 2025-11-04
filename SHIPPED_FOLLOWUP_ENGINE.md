@@ -215,16 +215,16 @@ def _send_sms(lead_phone, message):
 
 ## 🏆 Key Features
 
-✅ **Fail-Open Resilience** - API continues if Redis unavailable  
-✅ **Hook-Based Architecture** - Easy swap to SMS/Email providers  
-✅ **Flexible Scheduling** - Supports m/h/d suffixes (30m, 2h, 1d)  
-✅ **Threshold-Based Triggering** - Only high-prob leads (pred_prob >= 0.70)  
-✅ **Prometheus Metrics** - Track success/error rates  
-✅ **Structured Logs** - JSON logs with lead_id, strategy, result  
-✅ **Ops Endpoints** - Monitor queue status in real-time  
-✅ **Docker-Ready** - Separate worker container  
-✅ **Tested** - 10 unit tests, integration script  
-✅ **Documented** - 450+ line guide with examples  
+✅ **Fail-Open Resilience** - API continues if Redis unavailable
+✅ **Hook-Based Architecture** - Easy swap to SMS/Email providers
+✅ **Flexible Scheduling** - Supports m/h/d suffixes (30m, 2h, 1d)
+✅ **Threshold-Based Triggering** - Only high-prob leads (pred_prob >= 0.70)
+✅ **Prometheus Metrics** - Track success/error rates
+✅ **Structured Logs** - JSON logs with lead_id, strategy, result
+✅ **Ops Endpoints** - Monitor queue status in real-time
+✅ **Docker-Ready** - Separate worker container
+✅ **Tested** - 10 unit tests, integration script
+✅ **Documented** - 450+ line guide with examples
 
 ---
 
@@ -256,10 +256,10 @@ def _send_sms(lead_phone, message):
 
 ---
 
-**Status**: ✅ Ready for deployment  
-**Reviewed**: All tests pass, documentation complete  
-**Risk**: Low (fail-open, isolated worker process)  
-**Impact**: High (automated revenue operations)  
+**Status**: ✅ Ready for deployment
+**Reviewed**: All tests pass, documentation complete
+**Risk**: Low (fail-open, isolated worker process)
+**Impact**: High (automated revenue operations)
 
 ---
 

@@ -31,7 +31,7 @@ if (Test-Path $auditFile) {
     Write-Log "Backing up audit trail..."
     $backupFile = Join-Path $BackupDir "audit_${timestamp}.jsonl"
     Copy-Item $auditFile $backupFile
-    
+
     # Compress with 7-Zip if available, otherwise use .NET compression
     if (Get-Command 7z -ErrorAction SilentlyContinue) {
         & 7z a "$backupFile.gz" $backupFile

@@ -13,7 +13,7 @@ All notifications include `rule=<rule_name>` in logs for observability.
 {container_name="aether-notifications-consumer"} |= "Notification matched rule=" | pattern `<_> INFO Notification matched rule=<rule>` | line_format "{{.rule}}"
 ```
 
-**Panel Type:** Time series  
+**Panel Type:** Time series
 **Legend:** `{{rule}}`
 
 ---
@@ -25,7 +25,7 @@ All notifications include `rule=<rule_name>` in logs for observability.
 {container_name="aether-notifications-consumer"} |= "Notification suppressed by rule="
 ```
 
-**Panel Type:** Stat  
+**Panel Type:** Stat
 **Calculation:** Count
 
 ---
@@ -37,7 +37,7 @@ All notifications include `rule=<rule_name>` in logs for observability.
 sum by (rule) (count_over_time({container_name="aether-notifications-consumer"} |= "Notification matched rule=" | pattern `<_> INFO Notification matched rule=<rule>` [5m]))
 ```
 
-**Panel Type:** Bar chart  
+**Panel Type:** Bar chart
 **Legend:** `{{rule}}`
 
 ---
@@ -53,7 +53,7 @@ topk(5,
 )
 ```
 
-**Panel Type:** Table  
+**Panel Type:** Table
 **Columns:** Rule, Count
 
 ---
@@ -69,7 +69,7 @@ topk(5,
 ) * 100
 ```
 
-**Panel Type:** Gauge  
+**Panel Type:** Gauge
 **Unit:** Percent (0-100)
 
 ---
@@ -85,8 +85,8 @@ topk(5,
 ) * 100
 ```
 
-**Panel Type:** Stat  
-**Unit:** Percent (0-100)  
+**Panel Type:** Stat
+**Unit:** Percent (0-100)
 **Thresholds:** Red < 95, Yellow < 99, Green >= 99
 
 ---
@@ -98,7 +98,7 @@ topk(5,
 {container_name="aether-notifications-consumer"} |= "Notification matched rule=" or "Notification suppressed by rule=" | pattern `<timestamp> <level> <message>`
 ```
 
-**Panel Type:** Logs  
+**Panel Type:** Logs
 **Show:** timestamp, level, message
 
 ---
@@ -110,7 +110,7 @@ topk(5,
 {container_name="aether-notifications-consumer"} |= "Rules reloaded:"
 ```
 
-**Panel Type:** Logs  
+**Panel Type:** Logs
 **Use Case:** Track when ops team changes rules
 
 ---

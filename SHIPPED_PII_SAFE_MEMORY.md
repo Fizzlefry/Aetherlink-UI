@@ -169,16 +169,16 @@ sum by (type) (pii_redactions_total)
 
 ## 🏆 Key Features
 
-✅ **Automatic Detection** - Regex-based pattern matching for common PII types  
-✅ **Hash-Linking** - SHA256 hashes for audit trails (10-char truncated)  
-✅ **Custom Patterns** - CSV-configurable extra regex patterns  
-✅ **Fail-Safe** - Invalid patterns skipped, no disruption  
-✅ **Overlap Handling** - Prevents double-redaction of overlapping matches  
-✅ **Prometheus Metrics** - Track redaction events by type  
-✅ **Drop-In Replacement** - `append_history_safe()` replaces `append_history()`  
-✅ **Compliance-Ready** - GDPR Article 5/25/32, HIPAA §164, PCI DSS Req 3  
-✅ **Tested** - 10 unit tests covering all edge cases  
-✅ **Documented** - 400+ line guide with examples and troubleshooting  
+✅ **Automatic Detection** - Regex-based pattern matching for common PII types
+✅ **Hash-Linking** - SHA256 hashes for audit trails (10-char truncated)
+✅ **Custom Patterns** - CSV-configurable extra regex patterns
+✅ **Fail-Safe** - Invalid patterns skipped, no disruption
+✅ **Overlap Handling** - Prevents double-redaction of overlapping matches
+✅ **Prometheus Metrics** - Track redaction events by type
+✅ **Drop-In Replacement** - `append_history_safe()` replaces `append_history()`
+✅ **Compliance-Ready** - GDPR Article 5/25/32, HIPAA §164, PCI DSS Req 3
+✅ **Tested** - 10 unit tests covering all edge cases
+✅ **Documented** - 400+ line guide with examples and troubleshooting
 
 ---
 
@@ -308,10 +308,10 @@ Write-Host $history.data.items[0].text
 
 ---
 
-**Status**: ✅ Ready for deployment  
-**Reviewed**: All tests pass, documentation complete  
-**Risk**: Low (fail-safe, backward compatible)  
-**Impact**: High (compliance-ready, enterprise-grade)  
+**Status**: ✅ Ready for deployment
+**Reviewed**: All tests pass, documentation complete
+**Risk**: Low (fail-safe, backward compatible)
+**Impact**: High (compliance-ready, enterprise-grade)
 
 ---
 

@@ -12,7 +12,7 @@ Use for Docker `healthcheck` or K8s `readinessProbe`.
 - **200**: Service ready to handle traffic
 - **500**: Service unhealthy (high skew or under-replicated)
 
-### `/health` - Liveness Probe  
+### `/health` - Liveness Probe
 Use for Docker/K8s liveness checks.
 - **200**: Service process is alive (always returns OK)
 
@@ -23,15 +23,15 @@ Detailed health status for troubleshooting.
 ## Health Checks
 
 ### 1. Hot-Key Skew Ratio
-**Metric**: `kafka:group_skew_ratio{consumergroup="crm-events-sse"}`  
-**Threshold**: `4.0x` (configurable via `SKEW_THRESHOLD`)  
-**Unhealthy when**: Skew ratio >4x for sustained period  
+**Metric**: `kafka:group_skew_ratio{consumergroup="crm-events-sse"}`
+**Threshold**: `4.0x` (configurable via `SKEW_THRESHOLD`)
+**Unhealthy when**: Skew ratio >4x for sustained period
 **Action**: Container restart triggers consumer rebalance
 
 ### 2. Consumer Count
-**Metric**: `kafka:group_consumer_count{consumergroup="crm-events-sse"}`  
-**Threshold**: `2` (configurable via `MIN_CONSUMERS`)  
-**Unhealthy when**: Active consumers <2  
+**Metric**: `kafka:group_consumer_count{consumergroup="crm-events-sse"}`
+**Threshold**: `2` (configurable via `MIN_CONSUMERS`)
+**Unhealthy when**: Active consumers <2
 **Action**: Container restart may trigger scaling or alert ops
 
 ## Docker Integration
@@ -170,7 +170,7 @@ spec:
           value: "kafka:9092"
         - name: KAFKA_GROUP
           value: "crm-events-sse"
-        
+
         # Liveness: Restart if process crashes
         livenessProbe:
           httpGet:
@@ -179,7 +179,7 @@ spec:
           initialDelaySeconds: 10
           periodSeconds: 10
           failureThreshold: 3
-        
+
         # Readiness: Remove from service if unhealthy
         readinessProbe:
           httpGet:
@@ -188,7 +188,7 @@ spec:
           initialDelaySeconds: 15
           periodSeconds: 30
           failureThreshold: 2
-      
+
       - name: health-probe
         image: aetherlink/crm-events-health:latest
         ports:
@@ -367,6 +367,6 @@ Health probe only checks skew and consumer count. Other issues:
 
 ---
 
-**Created**: 2025-11-02  
-**Maintainer**: DevOps Team  
+**Created**: 2025-11-02
+**Maintainer**: DevOps Team
 **Status**: Production-ready auto-healing capability

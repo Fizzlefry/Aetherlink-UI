@@ -5,7 +5,6 @@ from typing import Any
 
 from .cache import get_redis_client
 
-
 LEAD_KEY = "lead:{id}"
 TENANT_LEADS = "tenant:{tenant}:leads"
 
@@ -14,15 +13,18 @@ TENANT_LEADS = "tenant:{tenant}:leads"
 # reloading this module resets _CLIENT to None which keeps tests isolated.
 _CLIENT = None
 
+
 def _get_client():
     global _CLIENT
     if _CLIENT is None:
         _CLIENT = get_redis_client()
     return _CLIENT
 
+
 def _lead_id() -> str:
     # ULID-ish sortable id: ts + random suffix
     return f"L{int(time.time()*1000)}-{uuid.uuid4().hex[:6]}"
+
 
 def create_lead(tenant: str, name: str, phone: str, details: str = "") -> str:
     rid = _lead_id()
@@ -41,15 +43,22 @@ def create_lead(tenant: str, name: str, phone: str, details: str = "") -> str:
     pipe.execute()
     # Debug: print stored key and list length
     try:
-        print("DEBUG: lead_created - key", LEAD_KEY.format(id=rid), "exists?", bool(r.get(LEAD_KEY.format(id=rid))))
+        print(
+            "DEBUG: lead_created - key",
+            LEAD_KEY.format(id=rid),
+            "exists?",
+            bool(r.get(LEAD_KEY.format(id=rid))),
+        )
         print("DEBUG: tenant list length", r.lrange(TENANT_LEADS.format(tenant=tenant), 0, -1))
     except Exception as e:
         print("DEBUG: lead_store debug failed", e)
     return rid
 
+
 def get_lead(lead_id: str) -> dict[str, Any] | None:
     v = _get_client().get(LEAD_KEY.format(id=lead_id))
     return json.loads(v) if v else None
+
 
 def list_leads(tenant: str, limit: int = 50) -> list[dict[str, Any]]:
     r = _get_client()
@@ -118,4 +127,3 @@ def list_outcomes(limit: int = 100) -> list[dict[str, Any]]:
             item = item.decode()
         out.append(json.loads(item))
     return out
-

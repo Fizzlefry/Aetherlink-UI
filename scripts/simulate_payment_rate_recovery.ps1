@@ -17,13 +17,13 @@ import time, os
 try:
     from crm.metrics import CRM_INVOICES_PAID
     org = os.environ.get("ORG", "1")
-    
+
     print(f"[recovery] Incrementing paid invoices for org_id={org}")
     for i in range($incrementCount):
         CRM_INVOICES_PAID.labels(org_id=org).inc(1)
         print(f"  Payment {i+1}/$incrementCount processed")
         time.sleep(0.3)
-    
+
     print("[recovery] Payment recovery complete!")
 except ImportError as e:
     print(f"[recovery] Error: Could not import CRM metrics. Is crm-api running? {e}")
@@ -35,7 +35,7 @@ except Exception as e:
 try {
     Write-Host "[recovery] Executing in crm-api container..." -ForegroundColor Cyan
     $pythonScript | docker exec -i crm-api python -
-    
+
     Write-Host ""
     Write-Host "[recovery] ✅ Simulation complete!" -ForegroundColor Green
     Write-Host "[recovery] Payment rate should improve. Check these panels:" -ForegroundColor Green

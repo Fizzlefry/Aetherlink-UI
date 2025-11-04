@@ -1,8 +1,8 @@
 # PII-Safe Memory 🛡️
 
-**Status**: ✅ Shipped  
-**Impact**: GDPR/HIPAA compliance-ready conversation memory with automatic PII redaction  
-**Architecture**: Regex-based pattern matching with SHA256 hash-linking for audit trails  
+**Status**: ✅ Shipped
+**Impact**: GDPR/HIPAA compliance-ready conversation memory with automatic PII redaction
+**Architecture**: Regex-based pattern matching with SHA256 hash-linking for audit trails
 
 ---
 
@@ -264,18 +264,18 @@ If you need **reversible** PII storage (e.g., for customer service lookup):
 ## Compliance
 
 ### GDPR Compliance
-✅ **Article 5(1)(f)**: Data minimization - PII removed before storage  
-✅ **Article 25**: Privacy by design - Redaction enabled by default  
-✅ **Article 32**: Security of processing - Hash-linking for audit trails  
+✅ **Article 5(1)(f)**: Data minimization - PII removed before storage
+✅ **Article 25**: Privacy by design - Redaction enabled by default
+✅ **Article 32**: Security of processing - Hash-linking for audit trails
 
 ### HIPAA Compliance (PHI)
-✅ **§164.502(b)**: Minimum necessary - Only redacted data stored  
-✅ **§164.514(a)**: De-identification - PII patterns removed  
-✅ **§164.312(a)(2)(i)**: Audit controls - Prometheus metrics track redactions  
+✅ **§164.502(b)**: Minimum necessary - Only redacted data stored
+✅ **§164.514(a)**: De-identification - PII patterns removed
+✅ **§164.312(a)(2)(i)**: Audit controls - Prometheus metrics track redactions
 
 ### PCI DSS (Credit Cards)
-✅ **Requirement 3.2**: No storage of sensitive authentication data after authorization  
-✅ **Requirement 3.4**: Render PAN unreadable - Redacted with hash token  
+✅ **Requirement 3.2**: No storage of sensitive authentication data after authorization
+✅ **Requirement 3.4**: Render PAN unreadable - Redacted with hash token
 
 ---
 
@@ -334,7 +334,7 @@ r = redis.from_url(str(s.REDIS_URL), decode_responses=True)
 for key in r.scan_iter("mem:*"):
     items = r.lrange(key, 0, -1)
     redacted_items = []
-    
+
     for item_str in items:
         item = json.loads(item_str)
         if "pii" not in item:  # Not yet redacted
@@ -342,7 +342,7 @@ for key in r.scan_iter("mem:*"):
             item["text"] = text
             item["pii"] = pii_meta
         redacted_items.append(json.dumps(item))
-    
+
     # Replace list atomically
     r.delete(key)
     if redacted_items:

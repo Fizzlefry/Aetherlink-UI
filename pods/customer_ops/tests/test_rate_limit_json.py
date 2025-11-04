@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
+
 from ..api.main import app
+
 
 def test_rate_limit_json_shape(monkeypatch):
     c = TestClient(app)

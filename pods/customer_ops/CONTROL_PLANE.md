@@ -173,7 +173,7 @@ dataset:
   - id: lead-123
     question: "What do we know about Lead 123?"
     must_contain: ["Lead 123", "Acme", "priority"]
-  
+
   - id: schedule
     question: "Please schedule an inspection for job J-1001 next week."
     expect_tool: "schedule_inspection"
@@ -281,7 +281,7 @@ Invoke-WebRequest "http://localhost:8000/embed/project.csv" -Headers $h -OutFile
     curl -X POST http://localhost:8000/evals/run \
       -H "x-api-key: ${{ secrets.API_KEY }}" \
       -o results.json
-    
+
     # Fail if not all tests passed
     PASSED=$(jq -r '.passed' results.json)
     TOTAL=$(jq -r '.n' results.json)

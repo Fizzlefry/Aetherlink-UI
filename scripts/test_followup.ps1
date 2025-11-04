@@ -16,7 +16,7 @@ try {
         -Uri "$BASE_URL/ops/followup/queue" `
         -Method GET `
         -Headers @{ "x-api-key" = $API_KEY }
-    
+
     Write-Host "  ✓ Queue Status: enabled=$($queueStatus.enabled), queue=$($queueStatus.queue)" -ForegroundColor Green
     if ($queueStatus.jobs) {
         Write-Host "    - Queued: $($queueStatus.jobs.queued)" -ForegroundColor Gray
@@ -40,22 +40,22 @@ try {
     $leadResponse = Invoke-RestMethod `
         -Uri "$BASE_URL/v1/lead" `
         -Method POST `
-        -Headers @{ 
+        -Headers @{
             "x-api-key" = $API_KEY
             "Content-Type" = "application/json"
         } `
         -Body $highProbLead
-    
+
     $leadId = $leadResponse.data.lead_id
     $predProb = $leadResponse.data.pred_prob
     $intent = $leadResponse.data.intent
     $urgency = $leadResponse.data.urgency
-    
+
     Write-Host "  ✓ Lead Created: $leadId" -ForegroundColor Green
     Write-Host "    - Intent: $intent" -ForegroundColor Gray
     Write-Host "    - Urgency: $urgency" -ForegroundColor Gray
     Write-Host "    - Pred Prob: $predProb" -ForegroundColor Gray
-    
+
     if ($predProb -ge 0.70) {
         Write-Host "    ✓ Pred prob >= 0.70 - follow-ups should be enqueued!" -ForegroundColor Green
     } else {
@@ -75,12 +75,12 @@ try {
         -Uri "$BASE_URL/ops/followup/queue" `
         -Method GET `
         -Headers @{ "x-api-key" = $API_KEY }
-    
+
     Write-Host "  ✓ Queue Status After Lead Creation:" -ForegroundColor Green
     if ($queueStatusAfter.jobs) {
         Write-Host "    - Queued: $($queueStatusAfter.jobs.queued)" -ForegroundColor Gray
         Write-Host "    - Scheduled: $($queueStatusAfter.jobs.scheduled)" -ForegroundColor Gray
-        
+
         if ($queueStatusAfter.jobs.scheduled -gt 0) {
             Write-Host "    ✓ Follow-up tasks scheduled!" -ForegroundColor Green
         } else {
@@ -105,18 +105,18 @@ try {
     $lowLeadResponse = Invoke-RestMethod `
         -Uri "$BASE_URL/v1/lead" `
         -Method POST `
-        -Headers @{ 
+        -Headers @{
             "x-api-key" = $API_KEY
             "Content-Type" = "application/json"
         } `
         -Body $lowProbLead
-    
+
     $lowLeadId = $lowLeadResponse.data.lead_id
     $lowPredProb = $lowLeadResponse.data.pred_prob
-    
+
     Write-Host "  ✓ Low-Prob Lead Created: $lowLeadId" -ForegroundColor Green
     Write-Host "    - Pred Prob: $lowPredProb" -ForegroundColor Gray
-    
+
     if ($lowPredProb -lt 0.70) {
         Write-Host "    ✓ Pred prob < 0.70 - correctly skipped follow-ups" -ForegroundColor Green
     } else {

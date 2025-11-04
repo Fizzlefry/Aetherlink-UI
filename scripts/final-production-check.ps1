@@ -42,7 +42,7 @@ Write-Host "`n[2/6] Verifying Recording Rules" -ForegroundColor Yellow
 try {
     $response = Invoke-RestMethod "http://localhost:9090/api/v1/rules" -ErrorAction Stop
     $recordingRules = $response.data.groups.rules | Where-Object { $_.type -eq "recording" }
-    
+
     $expectedRules = @(
         "aether:cache_hit_ratio:5m",
         "aether:cache_hit_ratio:5m:all",
@@ -53,9 +53,9 @@ try {
         "aether:estimated_cost_30d_usd",
         "aether:health_score:15m"
     )
-    
+
     $foundRules = $recordingRules.name
-    
+
     foreach ($rule in $expectedRules) {
         if ($foundRules -contains $rule) {
             Write-Host "   ✅ $rule" -ForegroundColor Green
@@ -65,9 +65,9 @@ try {
             $errors++
         }
     }
-    
+
     Write-Host "   Total: $($recordingRules.Count) recording rules" -ForegroundColor Gray
-    
+
 }
 catch {
     Write-Host "   ❌ Failed to query Prometheus: $($_.Exception.Message)" -ForegroundColor Red
@@ -81,7 +81,7 @@ Write-Host "`n[3/6] Verifying Production Alerts" -ForegroundColor Yellow
 
 try {
     $alerts = $response.data.groups.rules | Where-Object { $_.type -eq "alerting" }
-    
+
     $criticalAlerts = @(
         "CacheEffectivenessDrop",
         "LowConfidenceSpike",
@@ -89,10 +89,10 @@ try {
         "CacheEffectivenessDropVIP",
         "HealthScoreDegradation"
     )
-    
+
     $foundAlerts = $alerts.name
     $verifiedCount = 0
-    
+
     foreach ($alertName in $criticalAlerts) {
         $alert = $alerts | Where-Object { $_.name -eq $alertName }
         if ($alert) {
@@ -110,9 +110,9 @@ try {
             $errors++
         }
     }
-    
+
     Write-Host "   Verified: $verifiedCount/5 critical alerts with traffic guards" -ForegroundColor Gray
-    
+
 }
 catch {
     Write-Host "   ❌ Failed to verify alerts" -ForegroundColor Red
@@ -126,37 +126,37 @@ Write-Host "`n[4/6] Verifying Grafana Dashboard" -ForegroundColor Yellow
 
 try {
     $auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("admin:admin"))
-    
+
     # Check dashboard exists
     $dashboard = Invoke-RestMethod "http://localhost:3000/api/dashboards/uid/aetherlink_rag_tenant_metrics_enhanced" `
         -Headers @{Authorization = "Basic $auth" } `
         -ErrorAction Stop
-    
+
     Write-Host "   ✅ Dashboard found: $($dashboard.dashboard.title)" -ForegroundColor Green
     Write-Host "   ✅ UID: $($dashboard.dashboard.uid)" -ForegroundColor Gray
     Write-Host "   ✅ Panels: $($dashboard.dashboard.panels.Count)" -ForegroundColor Gray
-    
+
     # Check for "No recent traffic" mappings
     $dashboardJson = Get-Content ".\grafana-dashboard-enhanced.json" -Raw | ConvertFrom-Json
     $mappingsCount = 0
-    
+
     foreach ($panel in $dashboardJson.panels) {
         if ($panel.fieldConfig.defaults.mappings) {
-            $noTrafficMapping = $panel.fieldConfig.defaults.mappings | Where-Object { 
-                $_.display -eq "No recent traffic" 
+            $noTrafficMapping = $panel.fieldConfig.defaults.mappings | Where-Object {
+                $_.display -eq "No recent traffic"
             }
             if ($noTrafficMapping) {
                 $mappingsCount++
             }
         }
     }
-    
+
     Write-Host "   ✅ 'No recent traffic' mappings: $mappingsCount panels" -ForegroundColor Green
-    
+
     if ($mappingsCount -lt 5) {
         Write-Host "   ⚠️  Expected 5 panels with 'No recent traffic' mapping" -ForegroundColor Yellow
     }
-    
+
 }
 catch {
     Write-Host "   ❌ Dashboard verification failed: $($_.Exception.Message)" -ForegroundColor Red

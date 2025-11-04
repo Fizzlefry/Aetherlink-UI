@@ -27,7 +27,7 @@ This directory contains all Aetherlink microservices that power the complete pla
 - **Port**: 8080
 - **URL**: http://apexflow.aetherlink.local
 - **Entities**: Leads, Jobs, Appointments
-- **Features**: 
+- **Features**:
   - Tenant-scoped data isolation
   - JWT authentication required
   - Event emission to `aetherlink.events`
@@ -99,5 +99,5 @@ All services are automatically scraped by Prometheus:
 
 ---
 
-**Last Updated**: November 3, 2025  
+**Last Updated**: November 3, 2025
 **Platform Version**: v1.0 (Core + ApexFlow MVP)

@@ -1,6 +1,6 @@
 # RAG Performance Enhancements - Implementation Summary
 
-**Date**: November 2, 2025  
+**Date**: November 2, 2025
 **Status**: Deployed and Tested ✅
 
 ---
@@ -9,8 +9,8 @@
 
 ### 1. Hot Query Cache (60s TTL) ✅
 
-**What**: In-memory cache for `/search` and `/answer` endpoints per tenant  
-**TTL**: 60 seconds (configurable via `CACHE_TTL_SECONDS`)  
+**What**: In-memory cache for `/search` and `/answer` endpoints per tenant
+**TTL**: 60 seconds (configurable via `CACHE_TTL_SECONDS`)
 **Key**: `(tenant_id, query, mode, rerank, k, rerank_topk)`
 
 **Performance Impact**:
@@ -31,8 +31,8 @@ CACHE_TTL_SECONDS = 60
 
 ### 2. Hybrid Alpha Weighting ✅
 
-**What**: Configurable semantic vs lexical balance for hybrid mode  
-**Default**: `HYBRID_ALPHA = 0.6` (60% semantic, 40% lexical)  
+**What**: Configurable semantic vs lexical balance for hybrid mode
+**Default**: `HYBRID_ALPHA = 0.6` (60% semantic, 40% lexical)
 **Environment Variable**: `HYBRID_ALPHA` (0.0 = all lexical, 1.0 = all semantic)
 
 **Formula**:
@@ -60,7 +60,7 @@ docker compose restart api
 
 ### 3. Answer Highlights ✅
 
-**What**: Character offsets for matched sentences in citations  
+**What**: Character offsets for matched sentences in citations
 **Use Case**: UI can bold/highlight exact sentences used in answer
 
 **Response Schema**:
@@ -96,7 +96,7 @@ cache_hits / (cache_hits + cache_misses)
 
 ### Query Latency (P95)
 ```promql
-histogram_quantile(0.95, 
+histogram_quantile(0.95,
   sum by (le)(
     rate(http_request_latency_seconds_bucket{endpoint="/answer"}[5m])
   )
@@ -146,13 +146,13 @@ SEARCH_WINDOW_SECONDS = 60
 ### 1. Cache Performance
 ```powershell
 # First query (cold)
-Measure-Command { 
-  curl.exe "http://localhost:8000/answer?q=test&k=5" -H "x-api-key: <key>" 
+Measure-Command {
+  curl.exe "http://localhost:8000/answer?q=test&k=5" -H "x-api-key: <key>"
 }
 
 # Second query (cached)
-Measure-Command { 
-  curl.exe "http://localhost:8000/answer?q=test&k=5" -H "x-api-key: <key>" 
+Measure-Command {
+  curl.exe "http://localhost:8000/answer?q=test&k=5" -H "x-api-key: <key>"
 }
 ```
 
@@ -187,7 +187,7 @@ cache_hits_total / (cache_hits_total + cache_misses_total)
 
 ### Panel: P95 Latency by Mode
 ```promql
-histogram_quantile(0.95, 
+histogram_quantile(0.95,
   sum by (le, mode)(
     rate(http_request_latency_seconds_bucket{endpoint="/answer"}[5m])
   )
@@ -205,8 +205,8 @@ histogram_quantile(0.95,
 ## 🔄 Pending Enhancements (Next Phase)
 
 ### 1. Neighbor Chunk Fetch
-**What**: Include ±1 adjacent chunks for better context  
-**Impact**: Reduces choppy answers from fragmented chunks  
+**What**: Include ±1 adjacent chunks for better context
+**Impact**: Reduces choppy answers from fragmented chunks
 **Implementation**:
 ```python
 def _fetch_neighbors(chunk_id: str, tenant_id: str) -> List[Dict]:
@@ -216,7 +216,7 @@ def _fetch_neighbors(chunk_id: str, tenant_id: str) -> List[Dict]:
 ```
 
 ### 2. Source Grouping
-**What**: Collapse multiple hits from same URL into one citation with count  
+**What**: Collapse multiple hits from same URL into one citation with count
 **Example**:
 ```json
 {
@@ -234,13 +234,13 @@ CACHE_MISSES = Counter("cache_misses_total", "Cache misses", ["endpoint"])
 ```
 
 ### 4. Query Rewriting (Synonyms)
-**What**: Deterministic synonym expansion before retrieval  
-**Example**: "storm collar" → "storm collar OR pipe boot collar"  
+**What**: Deterministic synonym expansion before retrieval
+**Example**: "storm collar" → "storm collar OR pipe boot collar"
 **Implementation**: Simple dict lookup or YAML config
 
 ### 5. Size Guardrails
-**What**: Cap prompt/answer assembly to N chars, truncate at sentence boundary  
-**Current**: Max 700 chars, word-based truncation  
+**What**: Cap prompt/answer assembly to N chars, truncate at sentence boundary
+**Current**: Max 700 chars, word-based truncation
 **Improvement**: Sentence-aware truncation with ellipsis
 
 ---
@@ -305,6 +305,6 @@ CACHE_MISSES = Counter("cache_misses_total", "Cache misses", ["endpoint"])
 
 ---
 
-**Built**: November 2, 2025  
-**Deployed**: Docker container `aether-customer-ops`  
+**Built**: November 2, 2025
+**Deployed**: Docker container `aether-customer-ops`
 **Next**: Add neighbor chunks, source grouping, cache metrics

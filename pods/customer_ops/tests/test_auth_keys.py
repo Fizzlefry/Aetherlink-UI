@@ -1,4 +1,5 @@
-from pods.customer_ops.api.config import reload_settings, get_settings
+from pods.customer_ops.api.config import get_settings, reload_settings
+
 
 def test_env_keys_to_dict(monkeypatch):
     monkeypatch.setenv("API_KEY_FOO", "K1")

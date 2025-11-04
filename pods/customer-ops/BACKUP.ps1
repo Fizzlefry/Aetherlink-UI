@@ -62,7 +62,7 @@ Write-Host "Backup complete: $zipPath ($([math]::Round($zipSize, 2)) MB)"
 
 # Optional: Clean up old backups (keep last 7 days)
 $cutoffDate = (Get-Date).AddDays(-7)
-Get-ChildItem -Path $BackupRoot -Filter "backup_*.zip" | 
+Get-ChildItem -Path $BackupRoot -Filter "backup_*.zip" |
 Where-Object { $_.LastWriteTime -lt $cutoffDate } |
 ForEach-Object {
     Remove-Item $_.FullName

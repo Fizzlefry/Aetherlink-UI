@@ -164,8 +164,8 @@ done
 ### 2. New Consumer Onboarding
 When adding a new consumer that needs historical events:
 ```sql
-SELECT id FROM event_journal 
-WHERE received_at >= '2025-11-01' 
+SELECT id FROM event_journal
+WHERE received_at >= '2025-11-01'
 ORDER BY id;
 ```
 Then replay via API.
@@ -287,12 +287,12 @@ Even if persistence fails catastrophically, events are captured in the DLQ with 
 
 **Phase 5+ is textbook complete.** The event-driven architecture now supports:
 
-✅ Event publishing (ApexFlow → Kafka)  
-✅ Event persistence (Sink → PostgreSQL)  
-✅ Event metrics (Prometheus)  
-✅ Event visualization (Grafana)  
-✅ Event replay (HTTP API → Kafka)  
-✅ Dead letter queue (Error handling)  
+✅ Event publishing (ApexFlow → Kafka)
+✅ Event persistence (Sink → PostgreSQL)
+✅ Event metrics (Prometheus)
+✅ Event visualization (Grafana)
+✅ Event replay (HTTP API → Kafka)
+✅ Dead letter queue (Error handling)
 
 The system is **production-ready** with full observability, recovery mechanisms, and operator tooling. Events can be replayed on-demand, failures are captured in the DLQ, and the entire pipeline is monitored end-to-end.
 

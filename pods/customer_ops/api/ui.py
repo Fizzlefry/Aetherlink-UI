@@ -211,6 +211,7 @@ class EventSourcePolyfill {
 </html>
 """
 
+
 @router.get("/", response_class=HTMLResponse)
 async def dashboard(_: Request) -> HTMLResponse:
     return HTMLResponse(DASHBOARD_HTML)

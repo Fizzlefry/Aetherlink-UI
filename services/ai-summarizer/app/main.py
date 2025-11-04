@@ -1,6 +1,6 @@
 # services/ai-summarizer/app/main.py
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import httpx
 from fastapi import FastAPI, HTTPException, Query
@@ -22,11 +22,11 @@ CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-3-sonnet-20240229")
 
 class ActivityItem(BaseModel):
     type: str
-    actor: Optional[str] = None
-    at: Optional[str] = None
-    data: Optional[Dict[str, Any]] = None
-    text: Optional[str] = None
-    is_system: Optional[bool] = None
+    actor: str | None = None
+    at: str | None = None
+    data: dict[str, Any] | None = None
+    text: str | None = None
+    is_system: bool | None = None
 
 
 class SummaryResponse(BaseModel):
@@ -34,7 +34,7 @@ class SummaryResponse(BaseModel):
     tenant_id: str
     summary: str
     confidence: float = 0.85
-    raw_tokens: Optional[int] = None
+    raw_tokens: int | None = None
 
 
 app = FastAPI(
@@ -44,7 +44,7 @@ app = FastAPI(
 )
 
 
-def build_prompt(lead_id: int, tenant_id: str, activity: List[ActivityItem]) -> str:
+def build_prompt(lead_id: int, tenant_id: str, activity: list[ActivityItem]) -> str:
     """
     Turn our normalized activity into a stable, LLM-friendly prompt.
     Keep it deterministic so UI can depend on it.
@@ -131,13 +131,13 @@ class LeadExtractionRequest(BaseModel):
 
 
 class LeadExtractionResponse(BaseModel):
-    name: Optional[str] = None
-    email: Optional[str] = None
-    company: Optional[str] = None
-    phone: Optional[str] = None
-    status: Optional[str] = "new"
-    tags: Optional[List[str]] = None
-    raw: Optional[Dict[str, Any]] = None
+    name: str | None = None
+    email: str | None = None
+    company: str | None = None
+    phone: str | None = None
+    status: str | None = "new"
+    tags: list[str] | None = None
+    raw: dict[str, Any] | None = None
 
 
 @app.post("/summaries/extract-lead", response_model=LeadExtractionResponse)
@@ -150,14 +150,15 @@ async def extract_lead(payload: LeadExtractionRequest):
     if not CLAUDE_API_KEY:
         guessed_email = None
         guessed_name = None
-        
+
         # Super naive: find email using regex
         import re
-        email_pattern = r'[\w\.-]+@[\w\.-]+'
+
+        email_pattern = r"[\w\.-]+@[\w\.-]+"
         email_matches = re.findall(email_pattern, payload.raw_text)
         if email_matches:
             guessed_email = email_matches[0]
-        
+
         # Try to guess name (first line that looks like a name)
         lines = payload.raw_text.strip().split("\n")
         if lines:
@@ -165,7 +166,7 @@ async def extract_lead(payload: LeadExtractionRequest):
             # If first line is short and doesn't have @ or http, guess it's a name
             if len(first_line) < 50 and "@" not in first_line and "http" not in first_line:
                 guessed_name = first_line
-        
+
         return LeadExtractionResponse(
             name=guessed_name or "(unknown)",
             email=guessed_email,
@@ -173,9 +174,9 @@ async def extract_lead(payload: LeadExtractionRequest):
             phone=None,
             status="new",
             tags=["ai-extracted", "stub-mode"],
-            raw={"stub": True}
+            raw={"stub": True},
         )
-    
+
     # Real Claude extraction
     prompt = f"""You are an assistant that extracts lead/contact data for a CRM.
 
@@ -199,7 +200,7 @@ Return JSON with these exact keys. If a field is missing, use null."""
         "anthropic-version": "2023-06-01",
         "content-type": "application/json",
     }
-    
+
     payload_claude = {
         "model": CLAUDE_MODEL,
         "max_tokens": 256,
@@ -211,22 +212,23 @@ Return JSON with these exact keys. If a field is missing, use null."""
             }
         ],
     }
-    
+
     async with httpx.AsyncClient(timeout=20.0) as client:
         resp = await client.post(CLAUDE_ENDPOINT, headers=headers, json=payload_claude)
         if resp.status_code >= 400:
             raise HTTPException(status_code=500, detail=f"Claude error: {resp.text}")
         data = resp.json()
         content = data["content"][0]["text"]
-    
+
     # Parse Claude's JSON response
     import json
+
     try:
         parsed = json.loads(content)
     except Exception:
         # If Claude didn't return valid JSON, return minimal response
         parsed = {}
-    
+
     return LeadExtractionResponse(
         name=parsed.get("name"),
         email=parsed.get("email"),
@@ -255,7 +257,7 @@ async def summarize_lead(
         raise HTTPException(status_code=500, detail="Failed to fetch activity")
 
     activity_raw = r.json()
-    activity: List[ActivityItem] = [ActivityItem(**a) for a in activity_raw]
+    activity: list[ActivityItem] = [ActivityItem(**a) for a in activity_raw]
 
     # 2) build prompt
     prompt = build_prompt(lead_id, tenant_id, activity)

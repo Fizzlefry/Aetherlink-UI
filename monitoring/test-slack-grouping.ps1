@@ -51,7 +51,7 @@ switch ($choice) {
     "1" {
         Write-Host "`n📖 Quick Demo: Configuration Comparison" -ForegroundColor Cyan
         Write-Host ""
-        
+
         Write-Host "❌ OLD Configuration (Multiple Separate Messages):" -ForegroundColor Red
         Write-Host @"
 route:
@@ -63,7 +63,7 @@ route:
       group_wait: 15s
       repeat_interval: 2h
 "@ -ForegroundColor Gray
-        
+
         Write-Host ""
         Write-Host "Result in Slack:" -ForegroundColor Yellow
         Write-Host @"
@@ -73,7 +73,7 @@ route:
 ├─ 🚨 CrmEventsUnderReplicatedConsumers (12:05 PM)
 └─ ✅ CrmEventsHotKeySkewHigh (12:30 PM)
 "@ -ForegroundColor Gray
-        
+
         Write-Host ""
         Write-Host "✅ NEW Configuration (Single Grouped Message):" -ForegroundColor Green
         Write-Host @"
@@ -87,7 +87,7 @@ route:
       group_interval: 5m                  # ✅ Updates every 5m
       repeat_interval: 4h                 # ✅ Less spam
 "@ -ForegroundColor White
-        
+
         Write-Host ""
         Write-Host "Result in Slack:" -ForegroundColor Yellow
         Write-Host @"
@@ -98,7 +98,7 @@ route:
 │
 └─ ✅ crm-events-sse Pipeline Resolved (12:30 PM)
 "@ -ForegroundColor White
-        
+
         Write-Host ""
         Write-Host "📊 Benefits:" -ForegroundColor Cyan
         Write-Host "   ✅ 75% fewer messages (2 instead of 6+)" -ForegroundColor Green
@@ -108,17 +108,17 @@ route:
         Write-Host "   ✅ Clean, professional feed" -ForegroundColor Green
         Write-Host ""
     }
-    
+
     "2" {
         Write-Host "`n🚀 Full Test: Triggering Real Alerts" -ForegroundColor Cyan
         Write-Host ""
-        
+
         if (!$groupingEnabled) {
             Write-Host "⚠️  Enhanced grouping not enabled yet" -ForegroundColor Yellow
             Write-Host "   Run option [3] first to apply configuration" -ForegroundColor Gray
             exit 1
         }
-        
+
         Write-Host "⏰ Timeline:" -ForegroundColor Yellow
         Write-Host "   T+0:00 - Trigger hot-key skew (300 messages)" -ForegroundColor White
         Write-Host "   T+0:30 - Stop consumer (under-replication)" -ForegroundColor White
@@ -128,17 +128,17 @@ route:
         Write-Host "   T+14:00 - Restart consumer" -ForegroundColor White
         Write-Host "   T+16:00 - Check Slack for resolved message" -ForegroundColor White
         Write-Host ""
-        
+
         $confirm = Read-Host "Continue with 15-minute test? (y/N)"
         if ($confirm -ne 'y' -and $confirm -ne 'Y') {
             Write-Host "   Test cancelled" -ForegroundColor Gray
             exit 0
         }
-        
+
         Write-Host "`n🔥 Step 1: Creating hot-key skew..." -ForegroundColor Yellow
         $evt = '{"Type":"Test","Key":"HOTKEY","Timestamp":"' + (Get-Date -Format o) + '"}'
         Write-Host "   Producing 300 messages to partition with key HOTKEY..." -ForegroundColor Gray
-        
+
         1..300 | ForEach-Object {
             $evt | docker exec -i kafka rpk topic produce --key HOTKEY aetherlink.events | Out-Null
             if ($_ % 50 -eq 0) {
@@ -146,21 +146,21 @@ route:
             }
         }
         Write-Host "   ✅ Hot-key skew created (will trigger alert in ~12 minutes)" -ForegroundColor Green
-        
+
         Write-Host "`n⏸️  Waiting 30 seconds..." -ForegroundColor Yellow
         Start-Sleep -Seconds 30
-        
+
         Write-Host "`n🛑 Step 2: Stopping consumer..." -ForegroundColor Yellow
         docker stop aether-crm-events | Out-Null
         Write-Host "   ✅ Consumer stopped (will trigger alert in ~7 minutes)" -ForegroundColor Green
-        
+
         Write-Host "`n⏰ Monitoring alerts..." -ForegroundColor Cyan
         Write-Host "   Open these URLs to watch progress:" -ForegroundColor Gray
         Write-Host "   • Prometheus: http://localhost:9090/alerts" -ForegroundColor White
         Write-Host "   • Grafana: http://localhost:3000/d/crm-events-pipeline" -ForegroundColor White
         Write-Host "   • Slack: #crm-events-alerts channel" -ForegroundColor White
         Write-Host ""
-        
+
         # Wait for alerts with countdown
         Write-Host "   Waiting 12 minutes for alerts to fire..." -ForegroundColor Yellow
         for ($i = 720; $i -gt 0; $i--) {
@@ -169,7 +169,7 @@ route:
             Write-Host "`r   Time remaining: $($minutes)m $($seconds)s " -NoNewline -ForegroundColor Cyan
             Start-Sleep -Seconds 1
         }
-        
+
         Write-Host "`n`n   ✅ Alerts should have fired!" -ForegroundColor Green
         Write-Host "   📱 Check #crm-events-alerts for SINGLE GROUPED MESSAGE" -ForegroundColor Cyan
         Write-Host ""
@@ -195,10 +195,10 @@ Skew ratio exceeded 4x...
 
 Firing: 2 | Resolved: 0
 "@ -ForegroundColor White
-        
+
         Write-Host ""
         $restoreNow = Read-Host "Restore consumer now to trigger resolved notification? (y/N)"
-        
+
         if ($restoreNow -eq 'y' -or $restoreNow -eq 'Y') {
             Write-Host "`n🔄 Restoring consumer..." -ForegroundColor Yellow
             docker start aether-crm-events | Out-Null
@@ -210,14 +210,14 @@ Firing: 2 | Resolved: 0
             Write-Host "`n   ℹ️  To restore later, run:" -ForegroundColor Cyan
             Write-Host "   docker start aether-crm-events" -ForegroundColor White
         }
-        
+
         Write-Host ""
     }
-    
+
     "3" {
         Write-Host "`n🔧 Applying Enhanced Configuration" -ForegroundColor Cyan
         Write-Host ""
-        
+
         if ($groupingEnabled) {
             Write-Host "   ✅ Enhanced grouping already enabled" -ForegroundColor Green
             Write-Host "   No changes needed" -ForegroundColor Gray
@@ -225,10 +225,10 @@ Firing: 2 | Resolved: 0
         else {
             Write-Host "   ℹ️  Configuration already updated in alertmanager.yml" -ForegroundColor Cyan
             Write-Host "   Restarting Alertmanager to apply changes..." -ForegroundColor Yellow
-            
+
             docker compose restart alertmanager | Out-Null
             Start-Sleep -Seconds 3
-            
+
             $containerStatus = docker ps --filter "name=alertmanager" --format "{{.Status}}"
             if ($containerStatus -match "Up") {
                 Write-Host "   ✅ Alertmanager restarted successfully" -ForegroundColor Green
@@ -239,7 +239,7 @@ Firing: 2 | Resolved: 0
                 Write-Host "   Check: docker logs alertmanager" -ForegroundColor Gray
             }
         }
-        
+
         Write-Host ""
         Write-Host "📊 Active Configuration:" -ForegroundColor Cyan
         Write-Host "   • group_by: [service]" -ForegroundColor White
@@ -251,7 +251,7 @@ Firing: 2 | Resolved: 0
         Write-Host "   Run option [2] to test with real alerts" -ForegroundColor Gray
         Write-Host ""
     }
-    
+
     default {
         Write-Host "   Exiting..." -ForegroundColor Gray
         exit 0

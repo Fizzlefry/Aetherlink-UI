@@ -25,27 +25,27 @@ Write-Host "[1/4] Exporting Grafana dashboard..." -ForegroundColor Yellow
 
 try {
     $auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("admin:admin"))
-    
+
     # Get all dashboards
     $dashboards = Invoke-RestMethod -Uri "http://localhost:3000/api/search?type=dash-db" `
         -Headers @{Authorization = "Basic $auth" } `
         -ErrorAction Stop
-    
+
     foreach ($dash in $dashboards) {
         $uid = $dash.uid
         $title = $dash.title -replace '[^\w\s-]', ''
-        
+
         # Export dashboard JSON
         $dashboard = Invoke-RestMethod -Uri "http://localhost:3000/api/dashboards/uid/$uid" `
             -Headers @{Authorization = "Basic $auth" } `
             -ErrorAction Stop
-        
+
         $exportPath = "$BackupDir\grafana\$title.json"
         $dashboard.dashboard | ConvertTo-Json -Depth 100 | Set-Content $exportPath
-        
+
         Write-Host "   ✅ Exported: $title" -ForegroundColor Green
     }
-    
+
 }
 catch {
     Write-Host "   ❌ Grafana export failed: $($_.Exception.Message)" -ForegroundColor Red
@@ -62,15 +62,15 @@ try {
     $snapshot = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/admin/tsdb/snapshot" `
         -Method POST `
         -ErrorAction Stop
-    
+
     if ($snapshot.status -eq "success") {
         $snapshotName = $snapshot.data.name
         Write-Host "   ✅ Snapshot created: $snapshotName" -ForegroundColor Green
-        
+
         # Copy snapshot from container
         Write-Host "   📦 Copying snapshot data..." -ForegroundColor Gray
         docker cp "aether-prom:/prometheus/snapshots/$snapshotName" "$BackupDir\prometheus\" 2>$null
-        
+
         if ($LASTEXITCODE -eq 0) {
             Write-Host "   ✅ Snapshot exported" -ForegroundColor Green
         }
@@ -80,7 +80,7 @@ try {
             $errors++
         }
     }
-    
+
 }
 catch {
     Write-Host "   ⚠️  Snapshot failed: $($_.Exception.Message)" -ForegroundColor Yellow

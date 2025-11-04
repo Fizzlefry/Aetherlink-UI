@@ -2,16 +2,16 @@
 
 ## What's been delivered
 
-✅ **Safe limiter fallback** - Redis failures won't block the API  
-✅ **Request-ID middleware** - Every response includes `x-request-id`  
-✅ **Security headers** - X-Frame-Options, CSP, nosniff, etc.  
-✅ **Hot-reload auth** - Rotate API keys via `/ops/reload-auth` without restart  
-✅ **Rate limiting** - All `/ops/*` endpoints protected; degrades gracefully  
-✅ **Admin tenants endpoint** - `/ops/tenants` shows tenant names (keys never exposed)  
-✅ **Docker healthcheck** - `compose up --wait` works correctly  
-✅ **JSON logging** - Structured logs with optional request_id  
-✅ **CORS & TrustedHost** - Configured from env; prod-safe defaults  
-✅ **Tests** - Limiter fallback validated; 2/2 passing  
+✅ **Safe limiter fallback** - Redis failures won't block the API
+✅ **Request-ID middleware** - Every response includes `x-request-id`
+✅ **Security headers** - X-Frame-Options, CSP, nosniff, etc.
+✅ **Hot-reload auth** - Rotate API keys via `/ops/reload-auth` without restart
+✅ **Rate limiting** - All `/ops/*` endpoints protected; degrades gracefully
+✅ **Admin tenants endpoint** - `/ops/tenants` shows tenant names (keys never exposed)
+✅ **Docker healthcheck** - `compose up --wait` works correctly
+✅ **JSON logging** - Structured logs with optional request_id
+✅ **CORS & TrustedHost** - Configured from env; prod-safe defaults
+✅ **Tests** - Limiter fallback validated; 2/2 passing
 
 ## Quick verify (copy-paste)
 
@@ -84,5 +84,5 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 
 ## Status
 
-🚀 **Production-ready**  
+🚀 **Production-ready**
 All critical paths tested and hardened. Run `verify_production_ready.ps1` to confirm.

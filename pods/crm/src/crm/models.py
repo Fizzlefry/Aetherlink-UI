@@ -1,13 +1,14 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, Text
 
 from crm.db import Base
+from sqlalchemy import Column, DateTime, Integer, String, Text
 
 
 class Lead(Base):
     """Lead model."""
+
     __tablename__ = "leads"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False, index=True)
     email = Column(String(255), nullable=True, index=True)
@@ -22,8 +23,9 @@ class Lead(Base):
 
 class Project(Base):
     """Project model."""
+
     __tablename__ = "projects"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False, index=True)
     description = Column(Text, nullable=True)
@@ -35,8 +37,9 @@ class Project(Base):
 
 class Contact(Base):
     """Contact model."""
+
     __tablename__ = "contacts"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False, index=True)

@@ -1,8 +1,8 @@
 # CRM Finance Alerts — Runbook
 
-**Service**: CRM Portal  
-**Component**: Finance & Payments  
-**Team**: Engineering / Finance Ops  
+**Service**: CRM Portal
+**Component**: Finance & Payments
+**Team**: Engineering / Finance Ops
 **Last Updated**: November 2, 2025
 
 ---
@@ -476,9 +476,9 @@ docker logs crm-api | grep 'org_id=1' | tail -20
 
 ## TCP Endpoint Down
 
-**Alert**: `TcpEndpointDownFast`  
-**Severity**: Critical  
-**Layer**: TCP  
+**Alert**: `TcpEndpointDownFast`
+**Severity**: Critical
+**Layer**: TCP
 
 ### Meaning
 Blackbox Exporter cannot open a TCP connection to the instance for ≥2 minutes.
@@ -521,9 +521,9 @@ docker logs <service> --tail 50
 
 ## TCP Endpoint Flapping
 
-**Alert**: `TcpEndpointFlapping`  
-**Severity**: Warning  
-**Layer**: TCP  
+**Alert**: `TcpEndpointFlapping`
+**Severity**: Warning
+**Layer**: TCP
 
 ### Meaning
 Probe success state changed ≥4 times in a 10-minute window. Indicates intermittent connectivity or restart loops.
@@ -559,9 +559,9 @@ curl -s 'http://localhost:9090/api/v1/alerts' | jq '.data.alerts[] | select(.lab
 
 ## TCP Latency High
 
-**Alert**: `TcpLatencyHigh`  
-**Severity**: Warning  
-**Layer**: TCP  
+**Alert**: `TcpLatencyHigh`
+**Severity**: Warning
+**Layer**: TCP
 
 ### Meaning
 TCP connection time sustained above 250ms for 5+ minutes.
@@ -610,44 +610,44 @@ docker exec <service> ss -ti | grep retrans
 ## Quick Reference Anchors
 
 ### tcp-endpoint-down
-*Linked by:* TcpEndpointDownFast  
+*Linked by:* TcpEndpointDownFast
 See section **TCP Endpoint Down** above for full checks & fixes.
 
 ### tcp-endpoint-flapping
-*Linked by:* TcpEndpointFlapping  
+*Linked by:* TcpEndpointFlapping
 See section **TCP Endpoint Flapping** above.
 
 ### tcp-latency-high
-*Linked by:* TcpLatencyHigh  
+*Linked by:* TcpLatencyHigh
 See section **TCP Latency High** above.
 
 ### payment-rate-slo-burn-fast
-*Linked by:* PaymentRateSLOBurnFast  
-**What it means:** 1h burn rate > 2 for 30m — error budget is burning rapidly.  
-**Checks:**  
-- Grafana SLO dashboard: confirm burn_1h > 2  
-- Look for spikes in `crm_invoices_generated_total` without matching `*_paid_total`  
-- CRM/API logs for payment errors, retries, rate limits  
-**Mitigations:**  
+*Linked by:* PaymentRateSLOBurnFast
+**What it means:** 1h burn rate > 2 for 30m — error budget is burning rapidly.
+**Checks:**
+- Grafana SLO dashboard: confirm burn_1h > 2
+- Look for spikes in `crm_invoices_generated_total` without matching `*_paid_total`
+- CRM/API logs for payment errors, retries, rate limits
+**Mitigations:**
 - Throttle risky flows, fix payment failures, re-run sync jobs prudently
 
 ### payment-rate-slo-burn-slow
-*Linked by:* PaymentRateSLOBurnSlow  
-**What it means:** 6h burn rate > 1 for 2h — sustained/repeat issues.  
-**Checks:**  
-- Grafana: burn_6h timeline  
-- QBO integration health, credential validity, API limits  
-**Mitigations:**  
+*Linked by:* PaymentRateSLOBurnSlow
+**What it means:** 6h burn rate > 1 for 2h — sustained/repeat issues.
+**Checks:**
+- Grafana: burn_6h timeline
+- QBO integration health, credential validity, API limits
+**Mitigations:**
 - Roll back risky changes, stabilize pipeline, enact incident process
 
 ### error-budget-low
-*Linked by:* PaymentRateErrorBudgetLow  
-**What it means:** EBR < 50% — reduced margin for error.  
+*Linked by:* PaymentRateErrorBudgetLow
+**What it means:** EBR < 50% — reduced margin for error.
 **Actions:** Tighten change windows, prioritize reliability.
 
 ### error-budget-critical
-*Linked by:* PaymentRateErrorBudgetCritical  
-**What it means:** EBR < 25% — SLO breach imminent.  
+*Linked by:* PaymentRateErrorBudgetCritical
+**What it means:** EBR < 25% — SLO breach imminent.
 **Actions:** Declare/continue incident, pause risky deploys, focus on recovery.
 
 ---

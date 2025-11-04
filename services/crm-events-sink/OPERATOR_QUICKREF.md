@@ -181,7 +181,7 @@ docker logs aether-downstream-consumer --follow
 **Solution**:
 ```sql
 -- 1. Get event IDs from last 7 days
-SELECT id FROM event_journal 
+SELECT id FROM event_journal
 WHERE received_at >= NOW() - INTERVAL '7 days'
 ORDER BY id;
 

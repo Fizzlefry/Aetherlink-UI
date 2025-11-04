@@ -150,7 +150,7 @@ expr: (aether:lowconfidence_pct:15m > 20) and sum(rate(aether_rag_answers_total[
 expr: aether:lowconfidence_pct:15m{tenant=~"vip-.*|premium-.*"} > 15
 
 # NEW
-expr: (aether:lowconfidence_pct:15m{tenant=~"vip-.*|premium-.*"} > 15) 
+expr: (aether:lowconfidence_pct:15m{tenant=~"vip-.*|premium-.*"} > 15)
       and sum(rate(aether_rag_answers_total{tenant=~"vip-.*|premium-.*"}[15m])) > 0
 ```
 **Guard:** Only fires if VIP tenants have RAG activity
@@ -161,7 +161,7 @@ expr: (aether:lowconfidence_pct:15m{tenant=~"vip-.*|premium-.*"} > 15)
 expr: aether:cache_hit_ratio:5m{tenant=~"vip-.*|premium-.*"} < 20
 
 # NEW
-expr: (aether:cache_hit_ratio:5m{tenant=~"vip-.*|premium-.*"} < 20) 
+expr: (aether:cache_hit_ratio:5m{tenant=~"vip-.*|premium-.*"} < 20)
       and sum(rate(aether_cache_requests_total{tenant=~"vip-.*|premium-.*"}[5m])) > 0
 ```
 **Guard:** Only fires if VIP tenants have cache activity
@@ -370,7 +370,7 @@ expr: (aether:cache_hit_ratio:5m < 30) and sum(rate(aether_cache_requests_total[
 ### Multiple Traffic Guards
 ```yaml
 # Only fire if BOTH cache and RAG have traffic
-expr: (aether:cache_hit_ratio:5m < 30) 
+expr: (aether:cache_hit_ratio:5m < 30)
       and sum(rate(aether_cache_requests_total[5m])) > 0
       and sum(rate(aether_rag_answers_total[5m])) > 0
 ```

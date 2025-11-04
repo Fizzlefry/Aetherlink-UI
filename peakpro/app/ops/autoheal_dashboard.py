@@ -3,11 +3,12 @@ Autoheal Ops Dashboard - FastAPI Backend
 Proxy endpoints for Command Center integration
 """
 
-from fastapi import FastAPI, HTTPException, Depends
-from fastapi.responses import StreamingResponse, HTMLResponse
-from fastapi.middleware.cors import CORSMiddleware
-import httpx
 import os
+
+import httpx
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, StreamingResponse
 
 app = FastAPI(title="Autoheal Ops API")
 
@@ -18,7 +19,11 @@ GRAFANA_URL = os.getenv("GRAFANA_URL", "http://localhost:3000")
 # CORS for Command Center
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:8000", "https://command.aetherlink.io"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "https://command.aetherlink.io",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,11 +43,7 @@ async def get_health():
 
 @app.get("/api/ops/autoheal/audit")
 async def get_audit(
-    n: int = 200,
-    kind: str = None,
-    alertname: str = None,
-    since: float = None,
-    contains: str = None
+    n: int = 200, kind: str = None, alertname: str = None, since: float = None, contains: str = None
 ):
     """Proxy filtered audit trail"""
     async with httpx.AsyncClient() as client:
@@ -55,7 +56,7 @@ async def get_audit(
             params["since"] = since
         if contains:
             params["contains"] = contains
-        
+
         try:
             response = await client.get(f"{AUTOHEAL_URL}/audit", params=params)
             return response.json()
@@ -66,12 +67,13 @@ async def get_audit(
 @app.get("/api/ops/autoheal/events")
 async def get_events():
     """Proxy SSE event stream"""
+
     async def event_generator():
         async with httpx.AsyncClient() as client:
             async with client.stream("GET", f"{AUTOHEAL_URL}/events") as response:
                 async for line in response.aiter_lines():
                     yield f"{line}\n"
-    
+
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
@@ -229,7 +231,7 @@ OPS_DASHBOARD_HTML = """
         <!-- Grafana Dashboard Embed -->
         <div class="panel" style="grid-column: 1 / -1;">
             <h2>📊 Grafana Metrics Dashboard</h2>
-            <iframe 
+            <iframe
                 class="grafana-embed"
                 src="http://localhost:3000/d/peakpro_crm_slo?orgId=1&refresh=30s&kiosk"
                 frameborder="0">
@@ -282,14 +284,14 @@ OPS_DASHBOARD_HTML = """
         async function loadAudit() {
             const kind = document.getElementById('kindFilter').value;
             const alert = document.getElementById('alertFilter').value;
-            
+
             let url = '/api/ops/autoheal/audit?n=50';
             if (kind) url += `&kind=${kind}`;
             if (alert) url += `&alertname=${alert}`;
-            
+
             const response = await fetch(url);
             const data = await response.json();
-            
+
             const tbody = document.getElementById('auditBody');
             tbody.innerHTML = data.events.map(ev => {
                 const time = new Date(ev.ts * 1000).toLocaleTimeString();
@@ -308,7 +310,7 @@ OPS_DASHBOARD_HTML = """
         // Connect to SSE stream
         const eventSource = new EventSource('/api/ops/autoheal/events');
         const streamDiv = document.getElementById('eventStream');
-        
+
         eventSource.onmessage = (e) => {
             const event = JSON.parse(e.data);
             const time = new Date(event.ts * 1000).toLocaleTimeString();
@@ -320,7 +322,7 @@ OPS_DASHBOARD_HTML = """
                 </div>
             `;
             streamDiv.insertAdjacentHTML('afterbegin', eventHtml);
-            
+
             // Keep only last 50 events
             while (streamDiv.children.length > 50) {
                 streamDiv.removeChild(streamDiv.lastChild);
@@ -337,4 +339,5 @@ OPS_DASHBOARD_HTML = """
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8080)

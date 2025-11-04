@@ -43,7 +43,7 @@ Write-Host "`n[Step 2] Checking experiment dashboard..." -ForegroundColor Yellow
 try {
     $experiments = Invoke-RestMethod -Uri "$ApiBase/ops/experiments" -ErrorAction Stop
     $exp = $experiments.experiments.followup_timing
-    
+
     if ($exp.enabled) {
         Write-Host "  ✅ followup_timing experiment is ENABLED" -ForegroundColor Green
         Write-Host "     Variants: $($exp.variants -join ', ')" -ForegroundColor Gray
@@ -60,10 +60,10 @@ try {
 # Step 3: Seed test leads (if not skipped)
 if (-not $SkipSeeding) {
     Write-Host "`n[Step 3] Creating $NumLeads test leads..." -ForegroundColor Yellow
-    
+
     $leadIds = @()
     $variantCounts = @{}
-    
+
     for ($i = 1; $i -le $NumLeads; $i++) {
         try {
             $body = @{
@@ -71,12 +71,12 @@ if (-not $SkipSeeding) {
                 phone = "555-000$i"
                 details = "Urgent metal roof quote - test lead $i for A/B experiment"
             } | ConvertTo-Json
-            
+
             $response = Invoke-RestMethod -Method POST -Uri "$ApiBase/v1/lead" `
                 -ContentType "application/json" -Body $body -ErrorAction Stop
-            
+
             $leadIds += $response.lead_id
-            
+
             # Track variants (if available in response)
             if ($response.PSObject.Properties['experiment_variant']) {
                 $variant = $response.experiment_variant
@@ -85,14 +85,14 @@ if (-not $SkipSeeding) {
                 }
                 $variantCounts[$variant]++
             }
-            
+
             Write-Host "  ✅ Lead $i created: $($response.lead_id)" -ForegroundColor Green
             Start-Sleep -Milliseconds 200  # Rate limit
         } catch {
             Write-Host "  ⚠️  Lead $i failed: $_" -ForegroundColor Yellow
         }
     }
-    
+
     Write-Host "`n  Created $($leadIds.Count) leads" -ForegroundColor Green
     if ($variantCounts.Count -gt 0) {
         Write-Host "  Variant distribution:" -ForegroundColor Gray
@@ -108,22 +108,22 @@ if (-not $SkipSeeding) {
 # Step 4: Record outcomes (simulate conversion funnel)
 if ($leadIds.Count -gt 0) {
     Write-Host "`n[Step 4] Recording outcomes for test leads..." -ForegroundColor Yellow
-    
+
     # Simulate realistic conversion funnel:
     # 30% booked, 20% ghosted, 20% qualified, 10% callback, 10% nurture, 10% lost
     $outcomes = @("booked", "ghosted", "qualified", "callback", "nurture", "lost")
     $weights = @(0.3, 0.2, 0.2, 0.1, 0.1, 0.1)
-    
+
     $outcomeStats = @{}
-    
+
     for ($i = 0; $i -lt $leadIds.Count; $i++) {
         $leadId = $leadIds[$i]
-        
+
         # Weighted random outcome
         $rand = Get-Random -Minimum 0.0 -Maximum 1.0
         $cumulative = 0.0
         $outcome = "lost"
-        
+
         for ($j = 0; $j -lt $weights.Count; $j++) {
             $cumulative += $weights[$j]
             if ($rand -lt $cumulative) {
@@ -131,30 +131,30 @@ if ($leadIds.Count -gt 0) {
                 break
             }
         }
-        
+
         # Track stats
         if (-not $outcomeStats.ContainsKey($outcome)) {
             $outcomeStats[$outcome] = 0
         }
         $outcomeStats[$outcome]++
-        
+
         try {
             $body = @{
                 outcome = $outcome
                 time_to_conversion = if ($outcome -eq "booked") { Get-Random -Minimum 600 -Maximum 3600 } else { $null }
                 notes = "A/B test outcome"
             } | ConvertTo-Json
-            
+
             $response = Invoke-RestMethod -Method POST -Uri "$ApiBase/v1/lead/$leadId/outcome" `
                 -ContentType "application/json" -Body $body -ErrorAction Stop
-            
+
             Write-Host "  ✅ Lead $leadId → $outcome" -ForegroundColor Green
             Start-Sleep -Milliseconds 150
         } catch {
             Write-Host "  ⚠️  Failed to record outcome for $leadId : $_" -ForegroundColor Yellow
         }
     }
-    
+
     Write-Host "`n  Outcome distribution:" -ForegroundColor Green
     $outcomeStats.GetEnumerator() | Sort-Object -Property Value -Descending | ForEach-Object {
         $pct = [math]::Round(($_.Value / $leadIds.Count) * 100, 1)
@@ -168,20 +168,20 @@ Write-Host "`n[Step 5] Checking experiment metrics..." -ForegroundColor Yellow
 try {
     $experiments = Invoke-RestMethod -Uri "$ApiBase/ops/experiments" -ErrorAction Stop
     $exp = $experiments.experiments.followup_timing
-    
+
     if ($exp.significance) {
         $sig = $exp.significance
-        
+
         Write-Host "`n  Significance Test Results:" -ForegroundColor Cyan
         Write-Host "    Significant: $($sig.significant)" -ForegroundColor $(if ($sig.significant) { "Green" } else { "Yellow" })
         Write-Host "    P-value: $($sig.p_value)" -ForegroundColor Gray
-        
+
         if ($sig.winner) {
             Write-Host "    Winner: $($sig.winner) 🏆" -ForegroundColor Green
         } else {
             Write-Host "    Winner: None yet" -ForegroundColor Gray
         }
-        
+
         if ($sig.variants) {
             Write-Host "`n  Per-Variant Stats:" -ForegroundColor Cyan
             $sig.variants.PSObject.Properties | ForEach-Object {
@@ -206,19 +206,19 @@ Write-Host "`n[Step 6] Checking Prometheus metrics..." -ForegroundColor Yellow
 try {
     $metrics = Invoke-WebRequest -Uri "$ApiBase/metrics" -ErrorAction Stop
     $metricsText = $metrics.Content
-    
-    $experimentMetrics = $metricsText -split "`n" | Where-Object { 
+
+    $experimentMetrics = $metricsText -split "`n" | Where-Object {
         $_ -match "experiment_" -and $_ -notmatch "^#"
     }
-    
+
     if ($experimentMetrics.Count -gt 0) {
         Write-Host "  ✅ Found $($experimentMetrics.Count) experiment metrics" -ForegroundColor Green
-        
+
         # Show sample metrics
         $experimentMetrics | Select-Object -First 10 | ForEach-Object {
             Write-Host "    $_" -ForegroundColor Gray
         }
-        
+
         if ($experimentMetrics.Count -gt 10) {
             Write-Host "    ... and $($experimentMetrics.Count - 10) more" -ForegroundColor Gray
         }
@@ -232,10 +232,10 @@ try {
 # Step 7: Promote winner (if requested)
 if ($PromoteWinner) {
     Write-Host "`n[Step 7] Promoting winner..." -ForegroundColor Yellow
-    
+
     try {
         $result = Invoke-RestMethod -Method POST -Uri "$ApiBase/ops/experiments/followup_timing/promote" -ErrorAction Stop
-        
+
         if ($result.ok) {
             Write-Host "  🏆 Winner promoted: $($result.promoted)" -ForegroundColor Green
             Write-Host "     P-value: $($result.p_value)" -ForegroundColor Gray

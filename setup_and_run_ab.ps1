@@ -52,16 +52,16 @@ Write-Host "   Version: $pythonVersion" -ForegroundColor Gray
 if (!$SkipDeps) {
     Write-Host "`n[Step 1] Installing Dependencies" -ForegroundColor Yellow
     Write-Host "─────────────────────────────────────────────────────────────────" -ForegroundColor DarkGray
-    
+
     Write-Host "Upgrading pip and wheel..." -ForegroundColor Cyan
     & ".\.venv\Scripts\pip.exe" install -U pip wheel --quiet
-    
+
     Write-Host "Installing customer_ops requirements..." -ForegroundColor Cyan
     & ".\.venv\Scripts\pip.exe" install -r pods\customer_ops\requirements.txt --quiet
-    
+
     Write-Host "Ensuring critical libs (backoff, scikit-learn, scipy, numpy)..." -ForegroundColor Cyan
     & ".\.venv\Scripts\pip.exe" install backoff scikit-learn scipy numpy --quiet
-    
+
     # Verify installation
     $testImports = & ".\.venv\Scripts\python.exe" -c @"
 try:
@@ -75,7 +75,7 @@ except ImportError as e:
     print(f'❌ Import error: {e}')
     exit(1)
 "@ 2>&1
-    
+
     Write-Host $testImports -ForegroundColor Green
 } else {
     Write-Host "`n[Step 1] Skipping dependency installation (--SkipDeps)" -ForegroundColor Gray
@@ -87,17 +87,17 @@ except ImportError as e:
 if (!$SkipRedis) {
     Write-Host "`n[Step 2] Starting Redis" -ForegroundColor Yellow
     Write-Host "─────────────────────────────────────────────────────────────────" -ForegroundColor DarkGray
-    
+
     # Check if already running
     $existing = docker ps --filter "name=aether-redis" --format "{{.Names}}" 2>$null
     if ($existing -eq "aether-redis") {
         Write-Host "✅ Redis already running (container: aether-redis)" -ForegroundColor Green
     } else {
         Write-Host "Starting Redis container..." -ForegroundColor Cyan
-        
+
         # Remove old container if exists
         docker rm -f aether-redis 2>$null | Out-Null
-        
+
         # Start fresh
         $redisOutput = docker run -d --name aether-redis -p 6379:6379 redis:7 2>&1
         if ($LASTEXITCODE -eq 0) {
@@ -120,15 +120,15 @@ if (!$SkipRedis) {
 if (!$SkipModel) {
     Write-Host "`n[Step 3] Training Initial Model" -ForegroundColor Yellow
     Write-Host "─────────────────────────────────────────────────────────────────" -ForegroundColor DarkGray
-    
+
     if (Test-Path "pods\customer_ops\api\model.json") {
         Write-Host "✅ Model already exists (pods\customer_ops\api\model.json)" -ForegroundColor Green
     } else {
         Write-Host "No model found. Training initial model..." -ForegroundColor Cyan
-        
+
         $env:PYTHONPATH = $ROOT
         $trainOutput = & ".\.venv\Scripts\python.exe" pods\customer_ops\scripts\train_model.py 2>&1
-        
+
         if (Test-Path "pods\customer_ops\api\model.json") {
             Write-Host "✅ Model trained successfully" -ForegroundColor Green
         } else {
@@ -173,17 +173,17 @@ try {
 } catch {
     Write-Host "Starting uvicorn server..." -ForegroundColor Cyan
     Write-Host "   (This will open a new window - don't close it!)" -ForegroundColor Gray
-    
+
     $env:PYTHONPATH = $ROOT
     $apiProcess = Start-Process powershell -ArgumentList @(
         "-NoExit",
         "-Command",
         "cd '$ROOT'; `$env:PYTHONPATH='$ROOT'; .\.venv\Scripts\python.exe -m uvicorn pods.customer_ops.api.main:app --host 0.0.0.0 --port 8000 --reload"
     ) -PassThru
-    
+
     Write-Host "   Waiting for API to start..." -ForegroundColor Gray
     Start-Sleep -Seconds 8
-    
+
     # Verify
     try {
         $healthCheck = Invoke-WebRequest -Uri "http://localhost:8000/health" -UseBasicParsing -TimeoutSec 5
@@ -200,19 +200,19 @@ try {
 if (!$SkipWorker) {
     Write-Host "`n[Step 6] Starting RQ Worker" -ForegroundColor Yellow
     Write-Host "─────────────────────────────────────────────────────────────────" -ForegroundColor DarkGray
-    
+
     Write-Host "Starting RQ worker for follow-up jobs..." -ForegroundColor Cyan
     Write-Host "   (This will open a new window - don't close it!)" -ForegroundColor Gray
-    
+
     $env:PYTHONPATH = $ROOT
     $env:REDIS_URL = "redis://localhost:6379/0"
-    
+
     $workerProcess = Start-Process powershell -ArgumentList @(
         "-NoExit",
         "-Command",
         "cd '$ROOT'; `$env:PYTHONPATH='$ROOT'; `$env:REDIS_URL='redis://localhost:6379/0'; .\.venv\Scripts\python.exe pods\customer_ops\worker.py"
     ) -PassThru
-    
+
     Start-Sleep -Seconds 3
     Write-Host "✅ RQ Worker started (PID: $($workerProcess.Id))" -ForegroundColor Green
 } else {
@@ -254,7 +254,7 @@ Write-Host "──────────────────────�
 try {
     $experiments = Invoke-RestMethod -Uri "http://localhost:8000/ops/experiments" -TimeoutSec 10
     $followup = $experiments.experiments.followup_timing
-    
+
     if ($followup.enabled) {
         Write-Host "✅ Experiment 'followup_timing' is ENABLED" -ForegroundColor Green
         Write-Host "   Variants:" -ForegroundColor Gray
@@ -278,9 +278,9 @@ Write-Host "──────────────────────�
 if (Test-Path ".\test_ab_experiment.ps1") {
     Write-Host "Executing test_ab_experiment.ps1..." -ForegroundColor Cyan
     Write-Host ""
-    
+
     & ".\test_ab_experiment.ps1" -NumLeads $NumLeads -ApiBase "http://localhost:8000"
-    
+
     Write-Host ""
 } else {
     Write-Host "⚠️  Smoke test script not found: test_ab_experiment.ps1" -ForegroundColor Yellow

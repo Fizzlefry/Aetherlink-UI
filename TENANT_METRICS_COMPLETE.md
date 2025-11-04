@@ -17,7 +17,7 @@ All RAG metrics now include `tenant` labels for multi-tenant observability:
 - ✅ Updated `_cache_get()` to accept `tenant` parameter
 - ✅ Updated `_cache_put()` to accept `tenant` parameter
 - ✅ Updated all `.labels()` calls in `/search` endpoint
-- ✅ Updated all `.labels()` calls in `/answer` endpoint  
+- ✅ Updated all `.labels()` calls in `/answer` endpoint
 - ✅ Fixed `rerank` label format to use lowercase ("true"/"false")
 
 ### 2. Red Team Security Tests (-Strict Mode)
@@ -83,7 +83,7 @@ aether_rag_answers_total{mode="hybrid",rerank="true",tenant="expertco"} 15.0
 Create Grafana dashboards filtered by `tenant` label:
 ```promql
 # Cache hit rate per tenant
-rate(aether_rag_cache_hits_total{tenant="acme"}[5m]) 
+rate(aether_rag_cache_hits_total{tenant="acme"}[5m])
 / rate(aether_rag_cache_misses_total{tenant="acme"}[5m])
 
 # Answer volume per tenant

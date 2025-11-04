@@ -2,10 +2,10 @@
 
 ## 🚀 What Got Shipped
 
-✅ **Grafana Dashboard** - Error budget + SLO visualization (12 panels)  
-✅ **Kafka Consumer SSE** - Real-time event stream (Python + FastAPI)  
-✅ **EF Core Tables** - Outbox + Idempotency pattern (.NET migrations)  
-✅ **Next.js Page** - CRM Events live dashboard (React + SSE)  
+✅ **Grafana Dashboard** - Error budget + SLO visualization (12 panels)
+✅ **Kafka Consumer SSE** - Real-time event stream (Python + FastAPI)
+✅ **EF Core Tables** - Outbox + Idempotency pattern (.NET migrations)
+✅ **Next.js Page** - CRM Events live dashboard (React + SSE)
 
 **Total**: 1,737 lines of code across 13 files
 
@@ -159,11 +159,11 @@ docker exec kafka rpk topic consume aetherlink.events --num 1
 
 ## 💡 Pro Tips
 
-**Grafana**: Use `$__interval` variable for flexible time ranges  
-**SSE**: EventSource auto-reconnects on connection drop  
-**Idempotency**: Send same Idempotency-Key header for duplicate detection  
-**Outbox**: Events published within 5 seconds (configurable)  
-**Burn Alerts**: Fast burn = 14.4x = 5% monthly budget in 1 hour  
+**Grafana**: Use `$__interval` variable for flexible time ranges
+**SSE**: EventSource auto-reconnects on connection drop
+**Idempotency**: Send same Idempotency-Key header for duplicate detection
+**Outbox**: Events published within 5 seconds (configurable)
+**Burn Alerts**: Fast burn = 14.4x = 5% monthly budget in 1 hour
 
 ---
 
@@ -175,6 +175,6 @@ docker exec kafka rpk topic consume aetherlink.events --num 1
 
 ---
 
-**Status**: ✅ SHIPPED (13/13 components complete)  
-**Manual Steps**: 3 (Grafana import, Kafka topic, EF migration)  
+**Status**: ✅ SHIPPED (13/13 components complete)
+**Manual Steps**: 3 (Grafana import, Kafka topic, EF migration)
 **Ready For**: Production deployment + End-to-end testing

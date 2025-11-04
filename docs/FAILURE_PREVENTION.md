@@ -1,7 +1,7 @@
 # Failure Prevention: Uptime Probes, SLO Alerts & Configuration Linting
 
-**Status**: ✅ Production Ready  
-**Sprint**: Post-Sprint 5 Enhancement  
+**Status**: ✅ Production Ready
+**Sprint**: Post-Sprint 5 Enhancement
 **Last Updated**: 2025-11-02
 
 ---
@@ -27,8 +27,8 @@ This document describes the comprehensive failure prevention system added to cat
 
 ### 1. Blackbox Exporter (Uptime Probes)
 
-**Service**: `prom/blackbox-exporter:v0.25.0`  
-**Port**: `9115`  
+**Service**: `prom/blackbox-exporter:v0.25.0`
+**Port**: `9115`
 **Config**: `monitoring/blackbox.yml`
 
 **Monitored Endpoints** (5 total):
@@ -75,8 +75,8 @@ expr: (85 - crm:payment_rate_30d_pct) > 5
 for: 30m
 severity: warning
 ```
-**Triggers when**: Payment rate drops below 80% for 30 minutes  
-**SLO Target**: 85% payment conversion  
+**Triggers when**: Payment rate drops below 80% for 30 minutes
+**SLO Target**: 85% payment conversion
 **Use Case**: Early warning of payment rate degradation
 
 #### Alert: PaymentRateSLOBurnSlow
@@ -85,7 +85,7 @@ expr: (85 - crm:payment_rate_30d_pct) > 10
 for: 6h
 severity: critical
 ```
-**Triggers when**: Payment rate drops below 75% for 6 hours  
+**Triggers when**: Payment rate drops below 75% for 6 hours
 **Impact**: Sustained SLO violation, executive escalation required
 
 #### Alert: RevenueFlatlineFast
@@ -94,7 +94,7 @@ expr: sum(increase(crm_invoice_payments_cents_total[1h])) == 0
 for: 90m
 severity: warning
 ```
-**Triggers when**: Zero payments in last 1h, persisting for 90m  
+**Triggers when**: Zero payments in last 1h, persisting for 90m
 **Use Case**: Detect payment processing issues or genuine lulls
 
 #### Alert: RevenueFlatlineSlow
@@ -103,7 +103,7 @@ expr: sum(increase(crm_invoice_payments_cents_total[6h])) == 0
 for: 8h
 severity: critical
 ```
-**Triggers when**: Zero payments in last 6h, persisting for 8h  
+**Triggers when**: Zero payments in last 6h, persisting for 8h
 **Impact**: Half-business-day revenue outage, immediate escalation
 
 ---
@@ -165,7 +165,7 @@ promtool check rules monitoring/prometheus-alerts.yml
 promtool check rules monitoring/prometheus-recording-rules.yml
 ```
 
-**CI Workflow**: `.github/workflows/monitoring-smoke.yml`  
+**CI Workflow**: `.github/workflows/monitoring-smoke.yml`
 Runs on push to:
 - `monitoring/**`
 - `pods/crm/**`
@@ -325,8 +325,8 @@ make smoke-test
 - ✅ Blackbox: 5 probes configured and running
 
 ### Nightly CI Test
-**Workflow**: `.github/workflows/monitoring-nightly.yml`  
-**Schedule**: Daily at 03:17 UTC  
+**Workflow**: `.github/workflows/monitoring-nightly.yml`
+**Schedule**: Daily at 03:17 UTC
 **Purpose**: Zero-deploy validation (catches silent failures)
 
 **Steps**:
@@ -588,7 +588,7 @@ rate(crm_invoice_payments_cents_total[24h]) * 3600 / 100
 
 ---
 
-**Last Updated**: 2025-11-02  
-**Next Review**: Sprint 6 kickoff  
-**Owner**: Platform/SRE Team  
+**Last Updated**: 2025-11-02
+**Next Review**: Sprint 6 kickoff
+**Owner**: Platform/SRE Team
 **Contact**: #ops-alerts (Slack)

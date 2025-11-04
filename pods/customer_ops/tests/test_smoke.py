@@ -15,6 +15,7 @@ def test_health_ops_endpoints():
 
 def test_semantic_cache_roundtrip():
     from pods.customer_ops.api.semcache import get_semcache, set_semcache
+
     payload = {"answer": "Test", "sources": ["doc://1"]}
     set_semcache("What is warranty?", payload)
     got = get_semcache("what is warranty?")

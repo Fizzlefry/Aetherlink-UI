@@ -7,11 +7,12 @@ Usage:
 
 Returns exit code 0 if valid, 1 if tampered/invalid.
 """
-import sys
+
 import os
+import sys
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from pods.customer_ops.audit import verify_chain
 
@@ -22,29 +23,29 @@ def main():
         audit_file = sys.argv[1]
     else:
         audit_file = "data/audit/ops.jsonl"
-    
+
     print("=" * 70)
     print("🔒 Audit Log Integrity Verifier")
     print("=" * 70)
     print(f"\nFile: {audit_file}\n")
-    
+
     # Verify chain
     result = verify_chain(audit_file)
-    
+
     # Print results
     print(f"Total Entries: {result.get('total_entries', 0)}")
-    
+
     if result["valid"]:
-        print(f"✅ Status: VALID")
+        print("✅ Status: VALID")
         if result.get("message"):
             print(f"   {result['message']}")
     else:
-        print(f"❌ Status: INVALID (TAMPERED)")
+        print("❌ Status: INVALID (TAMPERED)")
         print(f"   First error at entry: {result.get('first_error_index')}")
         print(f"   Error: {result.get('error_message')}")
-    
+
     print("\n" + "=" * 70)
-    
+
     # Exit with appropriate code
     sys.exit(0 if result["valid"] else 1)
 

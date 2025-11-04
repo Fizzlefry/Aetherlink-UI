@@ -2,16 +2,16 @@
 
 This file intentionally keeps validations small and deterministic.
 """
+
 from __future__ import annotations
 
 import os
 import re
 from functools import lru_cache
-from typing import Any, Literal, List, Optional, Dict
+from typing import Any, Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
 
 Env = Literal["dev", "staging", "prod"]
 RATE_RE = re.compile(r"^\d+/(second|minute|hour|day)$", re.IGNORECASE)
@@ -38,17 +38,17 @@ class Settings(BaseSettings):
     REQUIRE_API_KEY: bool = True
 
     # Map of api_key -> tenant (e.g., {"ABC123": "EXPERTCO"})
-    API_KEYS: Dict[str, str] = Field(default_factory=dict)
+    API_KEYS: dict[str, str] = Field(default_factory=dict)
 
     # Optional legacy CSV support (comma-separated list)
     # e.g., API_KEYS_CSV="ABC123,XYZ789" (tenant becomes "LEGACY")
-    API_KEYS_CSV: Optional[str] = None
+    API_KEYS_CSV: str | None = None
 
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
 
     # Hosts and admin
     ALLOWED_HOSTS: str = "localhost,127.0.0.1"
-    API_ADMIN_KEY: Optional[str] = None
+    API_ADMIN_KEY: str | None = None
 
     # PII-safe memory flags
     ENABLE_PII_REDACTION: bool = True
@@ -68,8 +68,8 @@ class Settings(BaseSettings):
 
     # Connection strings
     REDIS_URL: str = "redis://localhost:6379/0"
-    DATABASE_URL: Optional[str] = "sqlite:///./local.db"
-    
+    DATABASE_URL: str | None = "sqlite:///./local.db"
+
     REDIS_SOCKET_TIMEOUT: float = 2.0
     REDIS_SOCKET_CONNECT_TIMEOUT: float = 2.0
 
@@ -79,7 +79,7 @@ class Settings(BaseSettings):
     UNCERTAINTY_THRESHOLD: float = 0.75
     ENABLE_PROACTIVE_FOLLOWUPS: bool = True
     ENABLE_MEMORY_SUMMARIES: bool = True
-    
+
     # Feature flags for A/B testing and hot-disable
     ENABLE_MEMORY: bool = True
     ENABLE_ENRICHMENT: bool = True
@@ -87,8 +87,8 @@ class Settings(BaseSettings):
     # --- Model provider config ---
     MODEL_PROVIDER: str = "ollama"  # "openai" | "gemini" | "ollama"
     MODEL_NAME: str = "llama3"
-    OPENAI_API_KEY: Optional[str] = None
-    GOOGLE_API_KEY: Optional[str] = None
+    OPENAI_API_KEY: str | None = None
+    GOOGLE_API_KEY: str | None = None
     OLLAMA_BASE_URL: str = "http://localhost:11434"
 
     # --- RAG / Embeddings ---
@@ -97,7 +97,9 @@ class Settings(BaseSettings):
     RAG_MIN_SCORE: float = 0.15  # cosine sim threshold 0..1
 
     EMBED_PROVIDER: str = "gemini"  # "openai" | "gemini" | "ollama"  (gemini has fallback for dev)
-    EMBED_MODEL: str = "text-embedding-3-small"  # openai default; e.g., "nomic-embed-text" for ollama
+    EMBED_MODEL: str = (
+        "text-embedding-3-small"  # openai default; e.g., "nomic-embed-text" for ollama
+    )
 
     @property
     def cors_origins_list(self) -> list[str]:
@@ -125,7 +127,10 @@ class Settings(BaseSettings):
         return v
 
     def model_post_init(self, __context: Any) -> None:
-        if getattr(self, "ENV", "dev") in ("prod", "staging") and (self.cors_origins or "").strip() == "*":
+        if (
+            getattr(self, "ENV", "dev") in ("prod", "staging")
+            and (self.cors_origins or "").strip() == "*"
+        ):
             raise ValueError("Wildcard CORS not allowed outside dev")
         for name in ("RATE_LIMIT_FALLBACK", "RATE_LIMIT_FAQ", "RATE_LIMIT_CHAT"):
             val = getattr(self, name, "")
@@ -136,7 +141,7 @@ class Settings(BaseSettings):
         prefix = "API_KEY_"
         for k, v in os.environ.items():
             if k.startswith(prefix) and v:
-                tenant = k[len(prefix):].strip()
+                tenant = k[len(prefix) :].strip()
                 key = v.strip()
                 if tenant and key:
                     self.API_KEYS[key] = tenant
@@ -152,7 +157,7 @@ class Settings(BaseSettings):
         # 3) Backward-compat: if someone set API_KEYS as CSV via env or .env
         # Pydantic may parse it as a string; treat like CSV above
         if isinstance(self.API_KEYS, str):
-            parsed: Dict[str, str] = {}
+            parsed: dict[str, str] = {}
             for token in self.API_KEYS.split(","):
                 key = token.strip()
                 if key:
@@ -165,6 +170,7 @@ class Settings(BaseSettings):
 def get_settings():
     # construct and return Settings()
     return Settings()
+
 
 def reload_settings():
     get_settings.cache_clear()

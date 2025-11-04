@@ -41,7 +41,7 @@ if (-not $AdminKey) {
 try {
     $keys = curl.exe -s -H "x-admin-key: $AdminKey" "$BaseUrl/admin/apikeys" | ConvertFrom-Json
     $editorKey = ($keys.items | Where-Object { $_.role -eq 'editor' } | Select-Object -First 1)
-  
+
     if ($editorKey) {
         Write-Host "  ✓ Found editor key for tenant: $($editorKey.tenant_id)" -ForegroundColor Green
         Write-Host "    Key: $($editorKey.key.Substring(0, 12))..." -ForegroundColor Gray
@@ -85,7 +85,7 @@ Start-Sleep -Seconds 1
 # Step 4: Fetch and parse metrics
 Write-Host "`n[5/6] Fetching metrics..." -ForegroundColor Yellow
 $metrics = curl.exe -s "$BaseUrl/metrics"
-$tenantMetrics = $metrics | Select-String 'aether_rag_.*tenant=' 
+$tenantMetrics = $metrics | Select-String 'aether_rag_.*tenant='
 
 if ($tenantMetrics) {
     Write-Host "  ✓ Found tenant-labeled metrics" -ForegroundColor Green

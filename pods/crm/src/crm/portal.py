@@ -1,10 +1,12 @@
 """
 Portal helpers for email and MinIO URL signing.
 """
+
+import datetime as dt
 import os
 import smtplib
-import datetime as dt
 from email.mime.text import MIMEText
+
 from minio import Minio
 
 # SMTP Configuration
@@ -30,10 +32,12 @@ def signed_proposal_url(object_name: str, expires_seconds: int = 3600) -> str:
     internal = Minio(INTERNAL_ENDPOINT, access_key=ACCESS_KEY, secret_key=SECRET_KEY, secure=False)
     if not internal.bucket_exists(BUCKET):
         internal.make_bucket(BUCKET)
-    
+
     # Sign the URL against the PUBLIC endpoint so browser links work
     public = Minio(PUBLIC_ENDPOINT, access_key=ACCESS_KEY, secret_key=SECRET_KEY, secure=False)
-    return public.presigned_get_object(BUCKET, object_name, expires=dt.timedelta(seconds=expires_seconds))
+    return public.presigned_get_object(
+        BUCKET, object_name, expires=dt.timedelta(seconds=expires_seconds)
+    )
 
 
 def send_proposal_email(to_email: str, proposal_url: str, org_name: str = "PeakPro CRM"):

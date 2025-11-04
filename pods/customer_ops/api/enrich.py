@@ -1,8 +1,6 @@
 # pods/customer_ops/api/enrich.py
 from __future__ import annotations
 
-from typing import Dict
-
 _POS = {"great", "thanks", "love", "awesome", "perfect"}
 _NEG = {"angry", "frustrated", "mad", "upset", "problem", "issue", "late"}
 _URG = {"urgent", "asap", "today", "now", "emergency", "leak", "active leak"}
@@ -18,7 +16,7 @@ def _contains(text: str, bag: set[str]) -> bool:
     return any(w in t for w in bag)
 
 
-def enrich_text(text: str) -> Dict[str, str | float]:
+def enrich_text(text: str) -> dict[str, str | float]:
     # intent
     intent = "lead_capture"
     best = 0

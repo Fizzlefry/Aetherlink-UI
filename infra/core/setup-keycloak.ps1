@@ -127,7 +127,7 @@ try {
             -Uri "http://localhost:8180/realms/aetherlink/protocol/openid-connect/token" `
             -ContentType "application/x-www-form-urlencoded" `
             -Body $body).access_token
-    
+
     Write-Host "Token obtained for user 'demo'" -ForegroundColor Green
     Write-Host ""
     Write-Host "Keycloak setup complete!" -ForegroundColor Green
@@ -141,7 +141,7 @@ try {
     Write-Host "To test ApexFlow with JWT authentication:" -ForegroundColor Cyan
     Write-Host '  $t = (irm -Method Post "http://localhost:8180/realms/aetherlink/protocol/openid-connect/token" -ContentType "application/x-www-form-urlencoded" -Body "grant_type=password&client_id=aetherlink-gateway&username=demo&password=demo").access_token' -ForegroundColor DarkGray
     Write-Host '  irm "http://localhost/leads" -Headers @{"Authorization"="Bearer $t"; "x-tenant-id"="acme"; "Host"="apexflow.aetherlink.local"}' -ForegroundColor DarkGray
-    
+
 }
 catch {
     Write-Host "Token test failed: $($_.Exception.Message)" -ForegroundColor Red

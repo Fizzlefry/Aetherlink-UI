@@ -284,4 +284,3 @@ Review output for first error index and message.
 | Version | Date       | Changes                                      |
 |---------|------------|----------------------------------------------|
 | v1.0.0  | 2024-01-XX | Initial production release with hardening    |
-

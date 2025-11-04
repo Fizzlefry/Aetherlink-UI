@@ -61,10 +61,10 @@ try {
     $autoheal_metrics = Invoke-RestMethod "http://localhost:9009/metrics"
     $enabled_line = $autoheal_metrics | Select-String -Pattern "autoheal_enabled"
     $actions_line = $autoheal_metrics | Select-String -Pattern "autoheal_actions_total"
-    
+
     Write-Host "  ✅ Autoheal metrics endpoint responding" -ForegroundColor Green
     Write-Host "  $enabled_line" -ForegroundColor White
-    
+
     if ($actions_line) {
         Write-Host "  $actions_line" -ForegroundColor White
     }

@@ -45,7 +45,7 @@ try {
         -TimeoutSec 10
 
     $leadId2 = $lead2.lead_id
-    
+
     $outcome2 = Invoke-RestMethod -Uri "$baseUrl/v1/lead/$leadId2/outcome" -Method Post `
         -ContentType 'application/json' `
         -Body '{"outcome":"ghosted","notes":"No response after 3 follow-ups"}' `
@@ -65,12 +65,12 @@ try {
     Write-Host "     Total Leads: $($analytics.total_leads)" -ForegroundColor Cyan
     Write-Host "     Total Outcomes: $($analytics.total_outcomes)" -ForegroundColor Cyan
     Write-Host "     Conversion Rate: $([math]::Round($analytics.conversion_rate * 100, 2))%" -ForegroundColor Cyan
-    
+
     if ($analytics.avg_time_to_conversion) {
         $avgMinutes = [math]::Round($analytics.avg_time_to_conversion / 60, 1)
         Write-Host "     Avg Time to Conversion: $avgMinutes minutes" -ForegroundColor Cyan
     }
-    
+
     Write-Host "     Outcome Breakdown:" -ForegroundColor Cyan
     foreach ($key in $analytics.outcome_breakdown.PSObject.Properties.Name) {
         Write-Host "       • $key : $($analytics.outcome_breakdown.$key)" -ForegroundColor White

@@ -52,7 +52,7 @@ try {
     if ($health.database -eq "ok") {
         Write-Host "  ✅ Grafana healthy" -ForegroundColor Green
     }
-    
+
     $dashboards = Invoke-RestMethod "http://admin:admin@localhost:3000/api/search?type=dash-db"
     $enhanced = $dashboards | Where-Object { $_.title -match "Enhanced" }
     if ($enhanced) {

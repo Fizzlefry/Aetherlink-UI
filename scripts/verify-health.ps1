@@ -27,12 +27,12 @@ try {
         tenant_id = "acme"
         raw_text  = "Jane Doe, VP Operations, Acme Corp, jane@acme.com, +1-555-123-4567"
     } | ConvertTo-Json
-    
+
     $extract = Invoke-RestMethod -Uri "http://localhost:9108/summaries/extract-lead" `
         -Method Post `
         -ContentType "application/json" `
         -Body $extractBody
-    
+
     Write-Host "✅ AI Extract: email=$($extract.email), name=$($extract.name)" -ForegroundColor Green
 }
 catch {

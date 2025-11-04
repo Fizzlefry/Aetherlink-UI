@@ -1,8 +1,8 @@
 # Autoheal Platform Integration – Implementation Summary
 
-**Date**: 2025-11-02  
-**Project**: Aetherlink Platform / PeakPro CRM  
-**Component**: Autoheal Auto-Remediation Service  
+**Date**: 2025-11-02
+**Project**: Aetherlink Platform / PeakPro CRM
+**Component**: Autoheal Auto-Remediation Service
 **Status**: ✅ **COMPLETE**
 
 ---
@@ -323,24 +323,24 @@ Quick Access:
 ## 🧪 Validation Results
 
 ### Audit Filtering Tests
-✅ **Kind filter**: `?kind=webhook_received` → 3 events  
-✅ **Alert filter**: `?alertname=TcpEndpointDownFast` → 3 events  
-✅ **Combined filters**: `?kind=decision_skip&alertname=TcpEndpointDownFast` → 2 events  
-✅ **Text search**: `?contains=cooldown` → 1 event  
-✅ **JSON response**: `{"count": N, "events": [...]}`  
+✅ **Kind filter**: `?kind=webhook_received` → 3 events
+✅ **Alert filter**: `?alertname=TcpEndpointDownFast` → 3 events
+✅ **Combined filters**: `?kind=decision_skip&alertname=TcpEndpointDownFast` → 2 events
+✅ **Text search**: `?contains=cooldown` → 1 event
+✅ **JSON response**: `{"count": N, "events": [...]}`
 
 ### Service Health Tests
-✅ **Autoheal health**: Status OK (enabled=False, dry_run=True, actions=3)  
-✅ **Audit endpoint**: Working (1 events)  
-✅ **SSE console**: Mounted and accessible  
-✅ **Alertmanager**: Restarted successfully  
-✅ **Prometheus**: Configuration reloaded  
+✅ **Autoheal health**: Status OK (enabled=False, dry_run=True, actions=3)
+✅ **Audit endpoint**: Working (1 events)
+✅ **SSE console**: Mounted and accessible
+✅ **Alertmanager**: Restarted successfully
+✅ **Prometheus**: Configuration reloaded
 
 ### Script Tests
-✅ **autoheal-provision.ps1**: Created data dir, started services, validated endpoints  
-✅ **open-autoheal.ps1**: Opens all interfaces  
-✅ **autoheal-audit.ps1**: Displays formatted audit trail (existing)  
-✅ **event-stream-smoke.ps1**: 7/7 tests passing (existing)  
+✅ **autoheal-provision.ps1**: Created data dir, started services, validated endpoints
+✅ **open-autoheal.ps1**: Opens all interfaces
+✅ **autoheal-audit.ps1**: Displays formatted audit trail (existing)
+✅ **event-stream-smoke.ps1**: 7/7 tests passing (existing)
 
 ---
 

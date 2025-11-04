@@ -42,7 +42,7 @@ Write-Host "[3/8] Checking new alerts loaded..." -ForegroundColor Yellow
 try {
     $response = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/rules" -UseBasicParsing
     $alerts = $response.data.groups.rules | Where-Object { $_.alert } | Select-Object -ExpandProperty alert
-    
+
     $newAlerts = @("CacheEffectivenessDrop", "LowConfidenceSpike", "LowConfidenceSpikeVIP", "CacheEffectivenessDropVIP")
     $found = 0
     foreach ($alert in $newAlerts) {
@@ -50,7 +50,7 @@ try {
             $found++
         }
     }
-    
+
     if ($found -eq 4) {
         Write-Host "  ✓ All 4 new alerts loaded" -ForegroundColor Green
         $checks += $true
@@ -71,7 +71,7 @@ Write-Host "[4/8] Checking recording rules..." -ForegroundColor Yellow
 try {
     $response = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/rules" -UseBasicParsing
     $recordingGroup = $response.data.groups | Where-Object { $_.name -eq "aetherlink.recording" }
-    
+
     if ($recordingGroup) {
         $ruleCount = $recordingGroup.rules.Count
         Write-Host "  ✓ Recording rules loaded ($ruleCount rules)" -ForegroundColor Green
@@ -112,7 +112,7 @@ Write-Host "[6/8] Checking Prometheus targets..." -ForegroundColor Yellow
 try {
     $response = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/targets" -UseBasicParsing
     $apiTarget = $response.data.activeTargets | Where-Object { $_.job -eq "aetherlink_api" }
-    
+
     if ($apiTarget -and $apiTarget.health -eq "up") {
         Write-Host "  ✓ Prometheus scraping API successfully" -ForegroundColor Green
         $checks += $true
@@ -132,7 +132,7 @@ Write-Host "[7/8] Testing PromQL queries..." -ForegroundColor Yellow
 try {
     $query = "(sum(rate(aether_cache_hits_total[5m]))/sum(rate(aether_cache_requests_total[5m])))*100"
     $response = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/query?query=$([uri]::EscapeDataString($query))" -UseBasicParsing
-    
+
     if ($response.status -eq "success") {
         Write-Host "  ✓ Cache hit ratio query works" -ForegroundColor Green
         $checks += $true

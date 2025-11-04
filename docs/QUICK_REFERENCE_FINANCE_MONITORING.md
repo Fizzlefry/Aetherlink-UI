@@ -58,7 +58,7 @@ crm:payment_rate_30d_pct:by_org{org_id="1"}
 ### Manual Alert Check
 ```powershell
 # PowerShell
-(Invoke-RestMethod 'http://localhost:9090/api/v1/alerts').data.alerts | 
+(Invoke-RestMethod 'http://localhost:9090/api/v1/alerts').data.alerts |
   Select-Object @{N='name';E={$_.labels.alertname}}, state | Format-Table
 ```
 

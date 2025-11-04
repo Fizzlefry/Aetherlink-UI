@@ -73,7 +73,7 @@
 
 2. **Verify Cache Config**:
    ```promql
-   rate(aether_cache_hits_total{tenant_id=~"vip-.*"}[5m]) / 
+   rate(aether_cache_hits_total{tenant_id=~"vip-.*"}[5m]) /
    rate(aether_cache_requests_total{tenant_id=~"vip-.*"}[5m])
    ```
 
@@ -273,6 +273,6 @@ histogram_quantile(0.95, rate(aether_query_duration_seconds_bucket[5m]))
 
 ---
 
-**Last Updated**: 2024-01-XX  
-**Version**: 1.0  
+**Last Updated**: 2024-01-XX
+**Version**: 1.0
 **Owner**: Platform Ops Team

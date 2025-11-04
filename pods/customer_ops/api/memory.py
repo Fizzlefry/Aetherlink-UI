@@ -5,7 +5,7 @@ import json
 import os
 import time
 from collections import deque
-from typing import Any, Deque, Dict, List, Optional
+from typing import Any
 
 import backoff
 
@@ -16,7 +16,7 @@ except Exception:  # pragma: no cover
 
 from .config import get_settings
 
-_MEM_FALLBACK: Dict[str, Deque[Dict[str, Any]]] = {}
+_MEM_FALLBACK: dict[str, deque[dict[str, Any]]] = {}
 _MAX_PER_THREAD = 100
 
 
@@ -24,7 +24,7 @@ def _key(tenant: str, lead_id: str) -> str:
     return f"mem:{tenant}:{lead_id}"
 
 
-def _client() -> Optional["redis.Redis"]:
+def _client() -> redis.Redis | None:
     s = get_settings()
     url = os.getenv("REDIS_URL", "") or (getattr(s, "REDIS_URL", None) or "")
     if not url or redis is None:
@@ -35,7 +35,7 @@ def _client() -> Optional["redis.Redis"]:
 
 
 @backoff.on_exception(backoff.expo, Exception, max_time=8, max_tries=3, jitter=None)
-def _push_redis(r: "redis.Redis", key: str, item: Dict[str, Any]) -> None:
+def _push_redis(r: redis.Redis, key: str, item: dict[str, Any]) -> None:
     r.lpush(key, json.dumps(item))
     r.ltrim(key, 0, _MAX_PER_THREAD - 1)
 
@@ -53,7 +53,7 @@ def append_history(tenant: str, lead_id: str, role: str, text: str) -> None:
     dq.appendleft(rec)
 
 
-def get_history(tenant: str, lead_id: str, limit: int = 20) -> List[Dict[str, Any]]:
+def get_history(tenant: str, lead_id: str, limit: int = 20) -> list[dict[str, Any]]:
     r = _client()
     key = _key(tenant, lead_id)
     if r:
@@ -72,10 +72,11 @@ def get_history(tenant: str, lead_id: str, limit: int = 20) -> List[Dict[str, An
 
 import hashlib
 import re
-from typing import Iterable, Tuple
+from collections.abc import Iterable
 
 try:
     from prometheus_client import Counter
+
     # Prometheus - safe registration (avoid pytest re-import issues)
     PII_REDACTIONS_TOTAL = Counter(
         "pii_redactions_total",
@@ -88,8 +89,10 @@ except Exception:
     class _NoOpCounter:
         def labels(self, *args, **kwargs):
             return self
+
         def inc(self, *args, **kwargs):
             pass
+
     PII_REDACTIONS_TOTAL = _NoOpCounter()
 
 # Reasonable defaults for US-style data; add more as needed
@@ -103,14 +106,16 @@ def _hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:10]
 
 
-def _iter_matches(text: str, patterns: List[Tuple[str, re.Pattern]]) -> Iterable[Tuple[str, Tuple[int, int], str]]:
+def _iter_matches(
+    text: str, patterns: list[tuple[str, re.Pattern]]
+) -> Iterable[tuple[str, tuple[int, int], str]]:
     for name, rx in patterns:
         for m in rx.finditer(text):
             yield name, m.span(), m.group(0)
 
 
-def _compile_extra(csv_patterns: str) -> List[Tuple[str, re.Pattern]]:
-    pats: List[Tuple[str, re.Pattern]] = []
+def _compile_extra(csv_patterns: str) -> list[tuple[str, re.Pattern]]:
+    pats: list[tuple[str, re.Pattern]] = []
     for idx, raw in enumerate([p.strip() for p in (csv_patterns or "").split(",") if p.strip()]):
         try:
             pats.append((f"extra_{idx}", re.compile(raw)))
@@ -120,18 +125,18 @@ def _compile_extra(csv_patterns: str) -> List[Tuple[str, re.Pattern]]:
     return pats
 
 
-def redact_pii(text: str, *, extra_csv: str = "") -> Tuple[str, Dict[str, str]]:
+def redact_pii(text: str, *, extra_csv: str = "") -> tuple[str, dict[str, str]]:
     """
     Returns (redacted_text, mapping) where mapping maps redaction token -> hash
     """
     base = [("email", _RE_EMAIL), ("phone", _RE_PHONE), ("card", _RE_CARD), ("ssn", _RE_SSN)]
-    patterns: List[Tuple[str, re.Pattern]] = base + _compile_extra(extra_csv)
+    patterns: list[tuple[str, re.Pattern]] = base + _compile_extra(extra_csv)
 
     # collect matches; avoid overlap by sorting & tracking ranges
-    hits: List[Tuple[str, Tuple[int, int], str]] = list(_iter_matches(text, patterns))
+    hits: list[tuple[str, tuple[int, int], str]] = list(_iter_matches(text, patterns))
     hits.sort(key=lambda x: x[1][0])
     redacted = []
-    mapping: Dict[str, str] = {}
+    mapping: dict[str, str] = {}
     last = 0
 
     for name, (s, e), val in hits:
@@ -162,7 +167,7 @@ def append_history_safe(
     Falls back to normal append if redis is None.
     """
     to_store = text
-    pii_meta: Dict[str, str] = {}
+    pii_meta: dict[str, str] = {}
     if enable_redaction:
         to_store, pii_meta = redact_pii(text, extra_csv=extra_patterns_csv)
 

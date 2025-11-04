@@ -1,8 +1,8 @@
 # ✅ CRM Events Service - HTTP/2 Fix Complete
 
-**Date**: November 2, 2025  
-**Issue**: HTTP 426 "Upgrade Required"  
-**Root Cause**: PowerShell Invoke-RestMethod defaulting to HTTP/2, but Uvicorn running HTTP/1.1  
+**Date**: November 2, 2025
+**Issue**: HTTP 426 "Upgrade Required"
+**Root Cause**: PowerShell Invoke-RestMethod defaulting to HTTP/2, but Uvicorn running HTTP/1.1
 **Solution**: Added /healthz endpoint + explicit HTTP/1.1 configuration
 
 ---
@@ -134,7 +134,7 @@ curl.exe -N http://localhost:9010/crm-events
 
 # Expected output (when events are published):
 # data: {"kind":"connected","topic":"aetherlink.events","group":"crm-events-sse"}
-# 
+#
 # data: {"kind":"domain_event","topic":"aetherlink.events","partition":0,"offset":0,...}
 ```
 
@@ -165,15 +165,15 @@ Invoke-RestMethod 'http://localhost:9010/healthz' -HttpVersion '1.1'
 ## 🔍 Troubleshooting
 
 ### Issue: 426 Upgrade Required
-**Cause**: Client using HTTP/2, server using HTTP/1.1  
-**Fix**: Use curl.exe or specify HTTP/1.1  
+**Cause**: Client using HTTP/2, server using HTTP/1.1
+**Fix**: Use curl.exe or specify HTTP/1.1
 ```powershell
 curl.exe http://localhost:9010/healthz  # ✅ Works
 Invoke-RestMethod 'http://localhost:9010/healthz'  # ❌ May fail in PS 5.1
 ```
 
 ### Issue: No events in SSE stream
-**Cause**: Kafka topic empty or Kafka not running  
+**Cause**: Kafka topic empty or Kafka not running
 **Check**:
 ```powershell
 # Check if Kafka is running
@@ -190,7 +190,7 @@ echo '{"test":true}' | docker exec -i kafka rpk topic produce aetherlink.events
 ```
 
 ### Issue: Consumer not connecting to Kafka
-**Cause**: Kafka broker not accessible  
+**Cause**: Kafka broker not accessible
 **Check**:
 ```powershell
 # Check service logs
@@ -207,11 +207,11 @@ docker network inspect aether-monitoring
 
 ## 🎯 Quick Wins Implemented
 
-✅ **Health endpoints** - /healthz for K8s readiness probes  
-✅ **Startup logging** - Shows Kafka config on startup  
-✅ **Configurable offset** - `earliest` in dev, `latest` in prod  
-✅ **HTTP/2 support** - Added h2 dependency  
-✅ **Validation script** - Automated testing  
+✅ **Health endpoints** - /healthz for K8s readiness probes
+✅ **Startup logging** - Shows Kafka config on startup
+✅ **Configurable offset** - `earliest` in dev, `latest` in prod
+✅ **HTTP/2 support** - Added h2 dependency
+✅ **Validation script** - Automated testing
 
 ---
 
@@ -244,7 +244,7 @@ docker network inspect aether-monitoring
 
 ---
 
-**Status**: ✅ FIXED & VALIDATED  
-**HTTP 426 Issue**: Resolved with explicit HTTP/1.1 handling  
-**Service Health**: All endpoints working  
+**Status**: ✅ FIXED & VALIDATED
+**HTTP 426 Issue**: Resolved with explicit HTTP/1.1 handling
+**Service Health**: All endpoints working
 **Ready For**: End-to-end testing when Kafka is available

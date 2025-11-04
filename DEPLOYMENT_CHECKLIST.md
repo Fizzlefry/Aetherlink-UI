@@ -319,9 +319,9 @@ sum by (strategy) (FOLLOWUP_JOBS_TOTAL)
 - [ ] Monitoring configured
 - [ ] Team trained on ops endpoints
 
-**Deployment Date**: ___________  
-**Deployed By**: ___________  
-**Verified By**: ___________  
+**Deployment Date**: ___________
+**Deployed By**: ___________
+**Verified By**: ___________
 
 ---
 

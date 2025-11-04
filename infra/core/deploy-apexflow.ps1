@@ -15,13 +15,13 @@ Write-Host "================================`n" -ForegroundColor Cyan
 # === Step 1: Add DNS Entry ===
 if (-not $SkipDNS) {
     Write-Host "📍 Step 1: Adding DNS entry for apexflow.aetherlink.local..." -ForegroundColor Yellow
-    
+
     $hostsFile = "C:\Windows\System32\drivers\etc\hosts"
     $entry = "127.0.0.1 apexflow.aetherlink.local"
-    
+
     # Check if running as admin
     $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-    
+
     if (-not $isAdmin) {
         Write-Host "   ⚠️  Not running as Administrator - skipping DNS modification" -ForegroundColor Yellow
         Write-Host "   Run this command manually as Admin:" -ForegroundColor Yellow
@@ -85,7 +85,7 @@ $healthy = $false
 while ($attempt -lt $maxAttempts -and -not $healthy) {
     Start-Sleep -Seconds 2
     $attempt++
-    
+
     try {
         $response = Invoke-WebRequest -Uri "http://apexflow.aetherlink.local/healthz" -UseBasicParsing -TimeoutSec 2 -ErrorAction SilentlyContinue
         if ($response.StatusCode -eq 200) {
@@ -95,7 +95,7 @@ while ($attempt -lt $maxAttempts -and -not $healthy) {
     catch {
         # Ignore errors, keep trying
     }
-    
+
     if ($attempt % 5 -eq 0) {
         Write-Host "   ⏳ Still waiting... ($attempt/$maxAttempts)" -ForegroundColor Gray
     }
@@ -140,13 +140,13 @@ try {
         phone  = "763-280-1272"
         email  = "john@roofing.com"
     } | ConvertTo-Json
-    
+
     $lead = Invoke-RestMethod -Uri "http://apexflow.aetherlink.local/leads" `
         -Method Post `
         -ContentType "application/json" `
         -Headers @{"x-tenant-id" = "acme" } `
         -Body $leadPayload
-    
+
     Write-Host "      ✅ Lead created: ID $($lead.lead.id)" -ForegroundColor Green
 }
 catch {
@@ -159,7 +159,7 @@ try {
     $leads = Invoke-RestMethod -Uri "http://apexflow.aetherlink.local/leads" `
         -Method Get `
         -Headers @{"x-tenant-id" = "acme" }
-    
+
     Write-Host "      ✅ Found $($leads.Count) lead(s)" -ForegroundColor Green
 }
 catch {

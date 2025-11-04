@@ -357,6 +357,6 @@ docker exec -it aether-tenancy-db psql -U tenancy -d tenancy
 
 ---
 
-**Documentation**: See `libs/contracts/README.md` for API specs  
-**Monitoring**: Integrated with existing Prometheus stack  
+**Documentation**: See `libs/contracts/README.md` for API specs
+**Monitoring**: Integrated with existing Prometheus stack
 **Security**: JWT-based auth + multi-tenancy built-in

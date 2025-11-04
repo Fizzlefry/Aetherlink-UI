@@ -316,5 +316,5 @@ Write-Host "Appointment: $(Invoke-RestMethod -Uri "http://apexflow.aetherlink.lo
 
 ---
 
-**Status**: MVP (In-Memory Storage)  
+**Status**: MVP (In-Memory Storage)
 **Next Upgrade**: PostgreSQL models + Alembic migrations → say "**DB me**"

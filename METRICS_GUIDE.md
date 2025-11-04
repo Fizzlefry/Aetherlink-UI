@@ -113,7 +113,7 @@ groups:
           severity: critical
         annotations:
           summary: "No active tenants configured"
-          
+
       - alert: LowConversionRate
         expr: lead_conversion_rate < 0.05
         for: 1h
@@ -121,7 +121,7 @@ groups:
           severity: warning
         annotations:
           summary: "Conversion rate below 5%"
-          
+
       - alert: HighPredictionLatency
         expr: |
           rate(lead_pred_latency_seconds_sum[5m]) /

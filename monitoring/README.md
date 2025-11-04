@@ -79,7 +79,7 @@ curl http://localhost:8000/metrics | grep 'tenant="expertco"'
 - Useful for: Volume tracking, billing, capacity planning
 
 ### 2. Cache Hit Ratio by Tenant
-**Query:** 
+**Query:**
 ```promql
 sum(rate(aether_rag_cache_hits_total{tenant=~"$tenant"}[5m])) by (tenant)
 / (sum(rate(aether_rag_cache_hits_total{tenant=~"$tenant"}[5m])) by (tenant)
@@ -90,7 +90,7 @@ sum(rate(aether_rag_cache_hits_total{tenant=~"$tenant"}[5m])) by (tenant)
 - Useful for: Performance optimization, cache tuning
 
 ### 3. Cache Activity by Endpoint
-**Queries:** 
+**Queries:**
 - Hits: `sum(rate(aether_rag_cache_hits_total{tenant=~"$tenant"}[5m])) by (endpoint)`
 - Misses: `sum(rate(aether_rag_cache_misses_total{tenant=~"$tenant"}[5m])) by (endpoint)`
 - Stacked area chart (green hits, red misses)
@@ -128,38 +128,38 @@ Single-value stats showing cumulative counts over selected time range.
 ## 🚨 Alert Rules
 
 ### 1. HighLowConfidenceRate
-**Triggers when:** Low confidence rate > 0.2/s for 10 minutes  
-**Severity:** Warning  
+**Triggers when:** Low confidence rate > 0.2/s for 10 minutes
+**Severity:** Warning
 **Action:** Check document quality, review query patterns
 
 ### 2. CacheIneffectiveForTenant
-**Triggers when:** Cache hit ratio < 30% for 15 minutes  
-**Severity:** Info  
+**Triggers when:** Cache hit ratio < 30% for 15 minutes
+**Severity:** Info
 **Action:** Increase cache TTL, review cache key strategy
 
 ### 3. HighAnswerVolumeForTenant
-**Triggers when:** Answer rate > 10/s for 10 minutes  
-**Severity:** Warning  
+**Triggers when:** Answer rate > 10/s for 10 minutes
+**Severity:** Warning
 **Action:** Check for abuse, verify billing, review rate limits
 
 ### 4. NoAnswerRequestsForTenant
-**Triggers when:** Zero requests for 30 minutes  
-**Severity:** Info  
+**Triggers when:** Zero requests for 30 minutes
+**Severity:** Info
 **Action:** Check customer health, verify expected downtime
 
 ### 5. CacheCompletelyMissing
-**Triggers when:** Zero cache hits with ongoing requests  
-**Severity:** Critical  
+**Triggers when:** Zero cache hits with ongoing requests
+**Severity:** Critical
 **Action:** Check Redis connection, restart cache service
 
 ### 6. HighRerankUsageForTenant
-**Triggers when:** >80% of answers use reranking for 30 minutes  
-**Severity:** Info (cost impact: high)  
+**Triggers when:** >80% of answers use reranking for 30 minutes
+**Severity:** Info (cost impact: high)
 **Action:** Review cost impact, optimize rerank threshold
 
 ### 7. SLABreachLowConfidenceVIP
-**Triggers when:** Low confidence rate >15% for VIP tenants (20 minutes)  
-**Severity:** Critical  
+**Triggers when:** Low confidence rate >15% for VIP tenants (20 minutes)
+**Severity:** Critical
 **Action:** Immediate investigation, notify customer success
 
 ---
@@ -206,7 +206,7 @@ REQUEST_LATENCY = Histogram(
 
 Panel query:
 ```promql
-histogram_quantile(0.95, 
+histogram_quantile(0.95,
   sum(rate(aether_rag_request_duration_seconds_bucket[5m])) by (tenant, le)
 )
 ```
@@ -338,9 +338,9 @@ curl http://localhost:9093/api/v2/alerts
 
 ### Label Values
 
-**endpoint:** `search`, `answer`  
-**mode:** `semantic`, `lexical`, `hybrid`  
-**rerank:** `true`, `false`  
+**endpoint:** `search`, `answer`
+**mode:** `semantic`, `lexical`, `hybrid`
+**rerank:** `true`, `false`
 **tenant:** Dynamic (from API key)
 
 ---

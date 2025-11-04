@@ -127,14 +127,14 @@ aether:rerank_utilization_pct:15m:all  # Tracked but not alerted
     summary: "Rerank usage at {{ $value }}% (target <50%)"
     description: |
       High rerank utilization increases costs 6x ($0.006 vs $0.001).
-      
+
       Impact: 30-day cost = ${{ query "aether:estimated_cost_30d_usd" | first | value }}
-      
+
       Possible causes:
       - Confidence thresholds too aggressive
       - Index quality degraded (more reranking needed)
       - Traffic shift to complex queries
-      
+
       Actions:
       - Review confidence cutoffs in chat_handler.py
       - Check index freshness: last update timestamp
@@ -153,7 +153,7 @@ aether:rerank_utilization_pct:15m:all  # Tracked but not alerted
     summary: "🚨 Rerank usage at {{ $value }}% - cost explosion risk"
     description: |
       Rerank usage critically high. Estimated 30-day cost: ${{ query "aether:estimated_cost_30d_usd" | first | value }}
-      
+
       Immediate action required:
       1. Check for runaway tenant: topk(5, rate(aether_rag_answers_total{rerank="true"}[15m]) by (tenant_id))
       2. Consider temporary rerank disable for non-VIP tenants
@@ -183,7 +183,7 @@ aether:rerank_utilization_pct:15m:all  # Tracked but not alerted
 + 0.2 * (100 - rerank_utilization_pct:15m:all)  # 20% weight (unchanged)
 ```
 
-**Rationale**: 
+**Rationale**:
 - **Cold cache** (low hit ratio) is annoying but **self-healing**
 - **Low confidence** (quality issue) directly impacts user experience
 - **Rerank %** (cost) is important but tertiary
@@ -314,16 +314,16 @@ curl -s http://localhost:9090/api/v1/rules | \
 
 ## 📅 Tuning Schedule
 
-**Week 1-2**: Baseline measurement  
-**Week 3-4**: VIP sensitivity tuning  
-**Week 5-6**: Rerank cost guards  
-**Week 7-8**: Health score reweighting  
+**Week 1-2**: Baseline measurement
+**Week 3-4**: VIP sensitivity tuning
+**Week 5-6**: Rerank cost guards
+**Week 7-8**: Health score reweighting
 **Month 3+**: Tenant-specific SLOs (if needed)
 
 **Review Cadence**: Monthly SLO review, quarterly alert tuning
 
 ---
 
-**Version**: 1.0  
-**Last Updated**: 2024-01-XX  
+**Version**: 1.0
+**Last Updated**: 2024-01-XX
 **Owner**: Platform Ops + ML Team

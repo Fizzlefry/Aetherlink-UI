@@ -12,6 +12,7 @@ def build_app():
     from pods.customer_ops.api.envelope import err
 
     app = FastAPI()
+
     # lightweight middleware to copy x-request-id header into request.state.request_id
     @app.middleware("http")
     async def _inject_request_id(request, call_next):
@@ -20,7 +21,10 @@ def build_app():
 
     async def _local_ratelimit_handler(request, exc):
         req_id = getattr(request.state, "request_id", "n/a")
-        return JSONResponse(status_code=429, content=err(req_id, "Too many requests — please slow down.", code="rate_limited"))
+        return JSONResponse(
+            status_code=429,
+            content=err(req_id, "Too many requests — please slow down.", code="rate_limited"),
+        )
 
     app.add_exception_handler(429, _local_ratelimit_handler)
 

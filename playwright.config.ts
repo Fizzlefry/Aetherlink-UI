@@ -16,7 +16,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { 
+      use: {
         ...devices['Desktop Chrome'],
         // Ignore HTTPS errors for local testing
         ignoreHTTPSErrors: true,

@@ -37,7 +37,7 @@ function Stop-Stack {
 
 function Test-Stack {
     Write-Host "Verifying stack health..." -ForegroundColor Blue
-    
+
     # Wait for services to be ready
     Start-Sleep -Seconds 5
 

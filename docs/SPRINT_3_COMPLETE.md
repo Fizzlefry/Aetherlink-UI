@@ -1,7 +1,7 @@
 # Sprint 3 Complete: Stripe "Approve & Pay Deposit" 🎉
 
-**Status**: ✅ DEPLOYED & VALIDATED  
-**Date**: 2025-11-02  
+**Status**: ✅ DEPLOYED & VALIDATED
+**Date**: 2025-11-02
 **Objective**: Turn portal approvals into cash events with full audit trail and metrics
 
 ---
@@ -103,9 +103,9 @@ All payment events are audited in `portal_activity_log`:
 
 **Query**:
 ```sql
-SELECT id, org_id, proposal_id, event, meta, created_at 
-FROM portal_activity_log 
-WHERE proposal_id = 7 
+SELECT id, org_id, proposal_id, event, meta, created_at
+FROM portal_activity_log
+WHERE proposal_id = 7
 ORDER BY id DESC;
 ```
 
@@ -420,6 +420,6 @@ Add these panels to `monitoring/grafana-provisioning/dashboards/peakpro-crm-kpis
 
 ---
 
-**Ship Date**: 2025-11-02  
-**Deployment**: monitoring/crm-api (port 8089)  
+**Ship Date**: 2025-11-02
+**Deployment**: monitoring/crm-api (port 8089)
 **Status**: ✅ VALIDATED & OPERATIONAL

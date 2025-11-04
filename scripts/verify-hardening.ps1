@@ -70,7 +70,7 @@ Write-Host "[3/6] Testing Manual Start (Dry Run)..." -ForegroundColor Yellow
 $startScript = "$env:USERPROFILE\OneDrive\Documents\AetherLink\scripts\start-monitoring.ps1"
 if (Test-Path $startScript) {
     Write-Host "   Running start-monitoring.ps1 in Silent mode..." -ForegroundColor Gray
-    
+
     try {
         & powershell -NoProfile -ExecutionPolicy Bypass -File $startScript -Silent -ErrorAction Stop
         if ($LASTEXITCODE -eq 0) {
@@ -104,7 +104,7 @@ try {
     if ($services) {
         $serviceList = $services -split "`n"
         $expectedServices = @("prometheus", "grafana", "alertmanager")
-        
+
         foreach ($svc in $expectedServices) {
             if ($serviceList -match $svc) {
                 Write-Host "   [OK] $svc running" -ForegroundColor Green

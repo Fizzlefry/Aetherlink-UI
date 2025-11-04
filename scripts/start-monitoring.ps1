@@ -77,7 +77,7 @@ Write-Host "`n[3/4] Verifying connections..." -ForegroundColor Yellow
 try {
     $targets = curl.exe -s "http://localhost:9090/api/v1/targets" | ConvertFrom-Json
     $apiTarget = $targets.data.activeTargets | Where-Object { $_.labels.job -eq "aetherlink_api" }
-    
+
     if ($apiTarget) {
         if ($apiTarget.health -eq "up") {
             Write-Host "  ✓ Prometheus scraping AetherLink API" -ForegroundColor Green

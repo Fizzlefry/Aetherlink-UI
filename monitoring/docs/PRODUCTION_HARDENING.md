@@ -59,11 +59,11 @@ receivers:
           - type: button
             text: "📊 View Dashboard"
             url: "http://grafana.aetherlink.local/d/crm-events-pipeline"
-          
+
           - type: button
             text: "🔍 Prometheus Alerts"
             url: "http://prometheus.aetherlink.local/alerts"
-          
+
           - type: button
             text: "🔕 Silence 1h"
             url: "http://alertmanager.aetherlink.local/#/silences/new?filter=%7Bservice%3D%22crm-events-sse%22%2Cteam%3D%22crm%22%7D"
@@ -92,11 +92,11 @@ receivers:
           - type: button
             text: "📊 View Dashboard"
             url: "https://grafana.aetherlink.com/d/crm-events-pipeline"
-          
+
           - type: button
             text: "🔍 Prometheus Alerts"
             url: "https://prometheus.aetherlink.com/alerts"
-          
+
           - type: button
             text: "🔕 Silence 1h"
             url: "https://alertmanager.aetherlink.com/#/silences/new?filter=%7Bservice%3D%22crm-events-sse%22%2Cteam%3D%22crm%22%7D"
@@ -594,11 +594,11 @@ receivers:
             text: "📊 View Dashboard"
             url: "http://grafana.aetherlink.local/d/crm-events-pipeline"
             style: "primary"
-          
+
           - type: button
             text: "🔍 Prometheus Alerts"
             url: "http://prometheus.aetherlink.local/alerts"
-          
+
           - type: button
             text: "🔕 Silence 1h"
             # ✅ Tighter filter with team + service
@@ -621,11 +621,11 @@ receivers:
             text: "📊 View Dashboard"
             url: "https://grafana.aetherlink.com/d/crm-events-pipeline"
             style: "primary"
-          
+
           - type: button
             text: "🔍 Prometheus Alerts"
             url: "https://prometheus.aetherlink.com/alerts"
-          
+
           - type: button
             text: "🔕 Silence 1h"
             url: "https://alertmanager.aetherlink.com/#/silences/new?filter=%7Bservice%3D%22crm-events-sse%22%2Cteam%3D%22crm%22%7D"

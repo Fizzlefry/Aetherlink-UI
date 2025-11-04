@@ -7,27 +7,27 @@
 ## 🔗 Quick Links
 
 ### Live Monitoring
-- **Live Events Console**: [http://localhost:9009/console](http://localhost:9009/console)  
+- **Live Events Console**: [http://localhost:9009/console](http://localhost:9009/console)
   Real-time SSE stream with filtering (kind, alertname)
 
-- **Grafana Dashboard**: [http://localhost:3000/d/autoheal](http://localhost:3000/d/autoheal)  
+- **Grafana Dashboard**: [http://localhost:3000/d/autoheal](http://localhost:3000/d/autoheal)
   Autoheal metrics, heartbeat, action rates, failure trends
 
 ### API Endpoints
-- **Health Check**: [http://localhost:9009/](http://localhost:9009/)  
+- **Health Check**: [http://localhost:9009/](http://localhost:9009/)
   Current status (enabled, dry_run, registered actions)
 
-- **Audit Trail** (last 200): [http://localhost:9009/audit?n=200](http://localhost:9009/audit?n=200)  
+- **Audit Trail** (last 200): [http://localhost:9009/audit?n=200](http://localhost:9009/audit?n=200)
   JSON audit log with filtering capabilities
 
-- **Metrics**: [http://localhost:9009/metrics](http://localhost:9009/metrics)  
+- **Metrics**: [http://localhost:9009/metrics](http://localhost:9009/metrics)
   Prometheus metrics endpoint
 
-- **SSE Stream**: [http://localhost:9009/events](http://localhost:9009/events)  
+- **SSE Stream**: [http://localhost:9009/events](http://localhost:9009/events)
   Server-Sent Events stream (text/event-stream)
 
 ### Alertmanager
-- **Alertmanager UI**: [http://localhost:9093](http://localhost:9093)  
+- **Alertmanager UI**: [http://localhost:9093](http://localhost:9093)
   Active alerts, silences, configuration
 
 ---
@@ -257,6 +257,6 @@ Invoke-RestMethod -Method POST -Uri 'http://localhost:9009/alert' `
 
 ---
 
-**Last Updated**: 2025-11-02  
-**Owner**: Aetherlink Platform Team  
+**Last Updated**: 2025-11-02
+**Owner**: Aetherlink Platform Team
 **Project**: PeakPro CRM Ops

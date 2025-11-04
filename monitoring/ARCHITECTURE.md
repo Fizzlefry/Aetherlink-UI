@@ -225,9 +225,9 @@ Team ──→ VPN ──→ .local hostnames ──→ Nginx (:80) ──→ Se
                                         └─→ Basic Auth (htpasswd)
 ```
 
-**Pros**: Simple, fast, no TLS needed  
-**Cons**: Requires VPN for remote access  
-**Deploy time**: 5 minutes  
+**Pros**: Simple, fast, no TLS needed
+**Cons**: Requires VPN for remote access
+**Deploy time**: 5 minutes
 
 ---
 
@@ -239,9 +239,9 @@ Team ──→ Internet ──→ .com domains ──→ Traefik (:443) ──�
                                          └─→ Basic Auth (middleware)
 ```
 
-**Pros**: Automatic TLS, remote access, centralized config  
-**Cons**: More complex, requires public DNS  
-**Deploy time**: 15 minutes  
+**Pros**: Automatic TLS, remote access, centralized config
+**Cons**: More complex, requires public DNS
+**Deploy time**: 15 minutes
 
 ---
 
@@ -253,9 +253,9 @@ Team ──→ Internet ──→ .com domains ──→ Caddy (:443) ──→ 
                                         └─→ Basic Auth (Caddyfile)
 ```
 
-**Pros**: Simplest TLS setup, automatic HTTPS  
-**Cons**: Less flexible than Traefik  
-**Deploy time**: 10 minutes  
+**Pros**: Simplest TLS setup, automatic HTTPS
+**Cons**: Less flexible than Traefik
+**Deploy time**: 10 minutes
 
 ---
 

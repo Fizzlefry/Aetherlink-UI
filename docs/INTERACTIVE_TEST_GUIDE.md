@@ -248,7 +248,7 @@
 2. **Add to VALIDATION_REPORT.md**
    ```markdown
    ## ❌ Failed Tests
-   
+
    ### Test X: [Name]
    - **Status**: FAILED
    - **Error**: [error message]

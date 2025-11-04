@@ -2,6 +2,7 @@ import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
+
 from alembic import context
 
 # ---------------------------------------------------------------------
@@ -29,17 +30,20 @@ if config.config_file_name is not None:
 # ---------------------------------------------------------------------
 try:
     from pods.customer_ops.models import Base  # <-- update if needed
+
     target_metadata = Base.metadata
 except Exception as e:
     # Fallback: no autogenerate if import fails
     target_metadata = None
     print(f"[alembic] WARN: could not import Base for autogenerate: {e}")
 
+
 # Optional: filter objects (e.g., skip alembic_version table)
 def include_object(object, name, type_, reflected, compare_to):
     if name == "alembic_version" and type_ == "table":
         return False
     return True
+
 
 # ---------------------------------------------------------------------
 # Offline migrations
@@ -52,12 +56,13 @@ def run_migrations_offline():
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         include_object=include_object,
-        compare_type=True,       # detect column type changes
+        compare_type=True,  # detect column type changes
         compare_server_default=True,
     )
 
     with context.begin_transaction():
         context.run_migrations()
+
 
 # ---------------------------------------------------------------------
 # Online migrations
@@ -81,6 +86,7 @@ def run_migrations_online():
 
         with context.begin_transaction():
             context.run_migrations()
+
 
 # ---------------------------------------------------------------------
 # Entrypoint

@@ -1,7 +1,7 @@
 # AetherVision: Predictive SLO Intelligence & Unified Operations View
 
-**Status**: ✅ **OPERATIONAL**  
-**Deployed**: 2025-11-03  
+**Status**: ✅ **OPERATIONAL**
+**Deployed**: 2025-11-03
 **Version**: 1.0
 
 ## Overview
@@ -350,9 +350,9 @@ Invoke-RestMethod -Method POST http://localhost:9090/-/reload
 Start-Sleep -Seconds 15
 
 # Check target health
-Invoke-RestMethod "http://localhost:9090/api/v1/targets" | 
-  Select-Object -ExpandProperty data | 
-  Select-Object -ExpandProperty activeTargets | 
+Invoke-RestMethod "http://localhost:9090/api/v1/targets" |
+  Select-Object -ExpandProperty data |
+  Select-Object -ExpandProperty activeTargets |
   Where-Object { $_.labels.job -eq 'autoheal' }
 ```
 
@@ -388,6 +388,6 @@ make vision-verify
 
 ---
 
-**Maintained By**: DevOps Team  
-**Review Cadence**: Monthly  
+**Maintained By**: DevOps Team
+**Review Cadence**: Monthly
 **Last Updated**: 2025-11-03

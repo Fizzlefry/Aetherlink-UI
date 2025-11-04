@@ -1,11 +1,10 @@
 """
 Test PII redaction in conversation memory.
 """
-import json
+
 import re
 
 import pytest
-
 from api.memory import redact_pii
 
 
@@ -88,9 +87,9 @@ def test_hash_consistency():
     txt2 = "Phone: 612-555-1212"
     red1, meta1 = redact_pii(txt1)
     red2, meta2 = redact_pii(txt2)
-    
+
     # Extract the hash from both redactions
     hash1 = re.search(r"\[PHONE:([0-9a-f]{10})\]", red1).group(1)
     hash2 = re.search(r"\[PHONE:([0-9a-f]{10})\]", red2).group(1)
-    
+
     assert hash1 == hash2  # Same phone number should produce same hash

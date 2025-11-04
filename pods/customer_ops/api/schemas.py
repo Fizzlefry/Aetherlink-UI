@@ -2,7 +2,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
 # Lead outcome types for tracking conversion funnel
 OutcomeType = Literal["booked", "ghosted", "qualified", "unqualified", "nurture", "spam"]
 
@@ -37,6 +36,7 @@ class LeadListResponse(BaseModel):
 
 class OutcomeRequest(BaseModel):
     """Record the outcome of a lead (for reward model training)."""
+
     outcome: OutcomeType
     notes: str = Field("", max_length=500)
     # Optional: time to conversion in seconds (for analytics)
@@ -45,6 +45,7 @@ class OutcomeRequest(BaseModel):
 
 class OutcomeResponse(BaseModel):
     """Response after recording an outcome."""
+
     lead_id: str
     outcome: OutcomeType
     recorded_at: int
@@ -52,6 +53,7 @@ class OutcomeResponse(BaseModel):
 
 class OutcomeItem(BaseModel):
     """Individual outcome record with metadata."""
+
     lead_id: str
     outcome: OutcomeType
     notes: str
@@ -61,6 +63,7 @@ class OutcomeItem(BaseModel):
 
 class AnalyticsResponse(BaseModel):
     """Aggregated outcome analytics."""
+
     total_leads: int
     total_outcomes: int
     conversion_rate: float  # booked / total_outcomes

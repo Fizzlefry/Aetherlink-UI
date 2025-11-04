@@ -4,33 +4,48 @@ import math
 import os
 import time
 from collections import deque
-from collections.abc import AsyncGenerator
-from typing import Any, Optional, cast, List, Dict, Tuple
-from typing_extensions import TypedDict
+from pathlib import Path
+from typing import Any
 
-import httpx
-import sentry_sdk  # type: ignore
 import rq
 import rq.job
-from redis import Redis
-from fastapi import Body, Depends, FastAPI, HTTPException, Request, Query, Header, UploadFile, File
-from fastapi.responses import JSONResponse
+from fastapi import (
+    Body,
+    Depends,
+    FastAPI,
+    File,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+)
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import ValidationError
-from sse_starlette.sse import EventSourceResponse
+from fastapi.responses import JSONResponse
 from prometheus_client import Counter, Gauge, Histogram, Summary
+from pydantic import ValidationError
+from redis import Redis
 from sqlalchemy.orm import Session
+from sse_starlette.sse import EventSourceResponse
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.status import HTTP_429_TOO_MANY_REQUESTS
+from typing_extensions import TypedDict
 
 from ..knowledge.rag import RAG
 from . import observability
-from .auth import require_api_key_dynamic, require_admin_key, require_role, ApiKeyRequired, AdminOnly, EditorOrAdmin
+from .auth import (
+    AdminOnly,
+    ApiKeyRequired,
+    EditorOrAdmin,
+    require_admin_key,
+    require_api_key_dynamic,
+    require_role,
+)
 from .config import get_settings, reload_settings
-from .model_client import build_model_client
 from .crud import create_lead as create_lead_crud
 from .deps import get_db
+from .embeddings import build_embedder
 from .enrich import enrich_text
 from .envelope import err, ok
 from .health import get_health
@@ -38,11 +53,13 @@ from .lead_store import create_lead as store_create_lead
 from .lead_store import list_leads as store_list_leads
 from .limiter import chat_limit_dep, faq_limit_dep, init_rate_limiter, ops_limit_dep
 from .logger import log_chat, log_faq, logger
-from .middleware_request_id import RequestIdMiddleware
 from .logging_setup import setup_json_logging
-from .memory import append_history, append_history_safe, get_history
+from .memory import append_history_safe, get_history
 from .metrics import INTENT_COUNT
 from .metrics import router as metrics_router
+from .middleware_pii import redact_json
+from .middleware_request_id import RequestIdMiddleware
+from .model_client import ToolSpec, build_model_client
 from .models import Base, ChatRequest, ChatResponse, FaqAnswer, FaqRequest
 from .schemas import (
     AnalyticsResponse,
@@ -55,12 +72,8 @@ from .schemas import (
 )
 from .semcache import get_semcache, set_semcache
 from .session import engine
-from .tools import TOOLS, TOOL_FUNCS
-from .model_client import ToolSpec
-from .middleware_pii import redact_json, redact_text
-from .embeddings import build_embedder
+from .tools import TOOL_FUNCS, TOOLS
 from .vector_store import SQLiteVectorStore
-from pathlib import Path
 
 settings = get_settings()
 # Configure JSON logging early (non-fatal on failure)
@@ -77,65 +90,69 @@ SEARCH_WINDOW_SECONDS = 60
 
 # Hot query cache (per tenant, configurable TTL)
 # Maps (namespace, cache_key) -> (expiry_time, response)
-_CACHE_STORE: Dict[Tuple[str, Tuple], Tuple[float, Dict[str, Any]]] = {}
+_CACHE_STORE: dict[tuple[str, tuple], tuple[float, dict[str, Any]]] = {}
 CACHE_TTL_SEC = int(os.getenv("ANSWER_CACHE_TTL", "60"))
 
 # Cache metrics (with tenant labels for per-tenant observability)
 AETHER_CACHE_HITS = Counter("aether_rag_cache_hits_total", "RAG cache hits", ["endpoint", "tenant"])
-AETHER_CACHE_MISSES = Counter("aether_rag_cache_misses_total", "RAG cache misses", ["endpoint", "tenant"])
+AETHER_CACHE_MISSES = Counter(
+    "aether_rag_cache_misses_total", "RAG cache misses", ["endpoint", "tenant"]
+)
 
 # Hybrid search weighting (0.0 = all lexical, 1.0 = all semantic)
 HYBRID_ALPHA = float(os.getenv("HYBRID_ALPHA", "0.6"))
 
 
-def _cache_get(ns: str, key: Tuple, tenant: str = "default") -> Optional[Dict[str, Any]]:
+def _cache_get(ns: str, key: tuple, tenant: str = "default") -> dict[str, Any] | None:
     """Get cached response with metrics tracking"""
     now = time.time()
     cache_key = (ns, key)
     entry = _CACHE_STORE.get(cache_key)
-    
+
     if not entry:
         AETHER_CACHE_MISSES.labels(endpoint=ns, tenant=tenant).inc()
         return None
-    
+
     expires_at, payload = entry
     if now > expires_at:
         _CACHE_STORE.pop(cache_key, None)
         AETHER_CACHE_MISSES.labels(endpoint=ns, tenant=tenant).inc()
         return None
-    
+
     AETHER_CACHE_HITS.labels(endpoint=ns, tenant=tenant).inc()
     return payload
 
 
-def _cache_put(ns: str, key: Tuple, payload: Dict[str, Any], tenant: str = "default"):
+def _cache_put(ns: str, key: tuple, payload: dict[str, Any], tenant: str = "default"):
     """Store response in cache with TTL"""
     cache_key = (ns, key)
     _CACHE_STORE[cache_key] = (time.time() + CACHE_TTL_SEC, payload)
+
 
 def rate_limit_search(request: Request):
     """Rate limit /search endpoint to prevent abuse of embedding operations"""
     client_ip = request.client.host if request.client else "unknown"
     now = time.time()
-    
+
     # Initialize deque for this IP if needed
     if client_ip not in _search_rate_limiter:
         _search_rate_limiter[client_ip] = deque()
-    
+
     # Remove timestamps outside the sliding window
     timestamps = _search_rate_limiter[client_ip]
     while timestamps and timestamps[0] < now - SEARCH_WINDOW_SECONDS:
         timestamps.popleft()
-    
+
     # Check if limit exceeded
     if len(timestamps) >= SEARCH_RATE_LIMIT:
         raise HTTPException(
             status_code=HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Rate limit exceeded: {SEARCH_RATE_LIMIT} requests per minute"
+            detail=f"Rate limit exceeded: {SEARCH_RATE_LIMIT} requests per minute",
         )
-    
+
     # Record this request
     timestamps.append(now)
+
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -156,10 +173,12 @@ async def lifespan(app: FastAPI):
     app.state.RAG_MIN_SCORE = settings.RAG_MIN_SCORE
     yield
 
+
 app = FastAPI(title="AetherLink CustomerOps API", lifespan=lifespan)
 app.add_middleware(RequestIdMiddleware)
 
 # Metrics are handled by observability.PrometheusMiddleware (see observability.py)
+
 
 # Access log middleware for observability
 @app.middleware("http")
@@ -169,7 +188,7 @@ async def access_log_middleware(request: Request, call_next):
     response = await call_next(request)
     latency_ms = int((time.time() - t0) * 1000)
     client_ip = request.client.host if request.client else "unknown"
-    
+
     logger.info(
         "access",
         extra={
@@ -179,9 +198,10 @@ async def access_log_middleware(request: Request, call_next):
             "latency_ms": latency_ms,
             "client_ip": client_ip,
             "request_id": getattr(request.state, "request_id", ""),
-        }
+        },
     )
     return response
+
 
 # PII redaction middleware
 @app.middleware("http")
@@ -191,9 +211,11 @@ async def pii_redaction_middleware(request: Request, call_next):
     response = await call_next(request)
     return response
 
+
 # Error helpers
 def _req_id(request: Request) -> str:
     return getattr(getattr(request, "state", object()), "request_id", "")
+
 
 def error_response(request: Request, err_type: str, message: str, status: int) -> JSONResponse:
     try:
@@ -206,32 +228,38 @@ def error_response(request: Request, err_type: str, message: str, status: int) -
         content={"error": {"type": err_type, "message": message, "trace_id": _req_id(request)}},
     )
 
+
 @app.exception_handler(HTTPException)
 async def http_exc_handler(request: Request, exc: HTTPException):
     return error_response(request, "http_error", exc.detail or "HTTP error", exc.status_code)
+
 
 @app.exception_handler(ValidationError)
 async def validation_exc_handler(request: Request, exc: ValidationError):
     return error_response(request, "validation_error", str(exc.errors()), 422)
 
+
 @app.exception_handler(Exception)
 async def unhandled_exc_handler(request: Request, exc: Exception):
     return error_response(request, "internal_error", "Internal server error", 500)
 
+
 # Legacy auth (kept for backward compatibility with existing code)
 _ApiKeyRequired_legacy = require_api_key_dynamic(enabled=settings.REQUIRE_API_KEY)
-AdminGuard     = require_admin_key(getattr(settings, "API_ADMIN_KEY", None))
+AdminGuard = require_admin_key(getattr(settings, "API_ADMIN_KEY", None))
 
 # RBAC dependencies - now imported from auth.py with API key support
 # AdminOnly, EditorOrAdmin, ApiKeyRequired are imported from .auth
 AnyRole = require_role("admin", "editor", "viewer")
 
+
 # Admin-only dependency for control plane (legacy, kept for backward compat)
-def AdminRequired(x_admin_key: Optional[str] = Header(None)) -> None:
+def AdminRequired(x_admin_key: str | None = Header(None)) -> None:
     """Require admin key for sensitive operations (dashboard, evals)."""
     expected = getattr(settings, "API_ADMIN_KEY", None)
     if not expected or x_admin_key != expected:
         raise HTTPException(status_code=403, detail="admin_required")
+
 
 # RQ (Redis Queue) helpers for background jobs
 def _rq() -> rq.Queue:
@@ -239,7 +267,8 @@ def _rq() -> rq.Queue:
     conn = Redis.from_url(settings.REDIS_URL, decode_responses=False)
     return rq.Queue("ingest", connection=conn, default_timeout=600)
 
-def _rq_job(job_id: str) -> Optional[rq.job.Job]:
+
+def _rq_job(job_id: str) -> rq.job.Job | None:
     """Fetch job by ID from Redis."""
     try:
         conn = Redis.from_url(settings.REDIS_URL, decode_responses=False)
@@ -247,25 +276,31 @@ def _rq_job(job_id: str) -> Optional[rq.job.Job]:
     except Exception:
         return None
 
+
 class HealthResp(TypedDict):
     ok: bool
+
 
 @app.get("/health")
 async def health():
     """Enhanced health check with uptime and service status"""
     return await get_health()
 
+
 @app.get("/healthz")
 async def healthz():
     """Kubernetes-style health check (simple OK response)"""
     return {"ok": True}
 
+
 @app.get("/metrics")
 def metrics():
     """Prometheus metrics endpoint"""
-    from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
     from fastapi.responses import Response
+    from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
 
 # --- RAG helpers ---
 def _simple_chunk(text: str, max_len: int = 800) -> list[str]:
@@ -283,10 +318,15 @@ def _simple_chunk(text: str, max_len: int = 800) -> list[str]:
         parts.append(" ".join(buf).strip())
     return [p for p in parts if p]
 
+
 # --- Tool helpers ---
 def _tool_specs() -> list[ToolSpec]:
     """Convert registry to ToolSpec list"""
-    return [ToolSpec(name=t["name"], description=t["description"], input_schema=t["input_schema"]) for t in TOOLS]
+    return [
+        ToolSpec(name=t["name"], description=t["description"], input_schema=t["input_schema"])
+        for t in TOOLS
+    ]
+
 
 async def _execute_tool_call(tool_call: dict) -> dict:
     """
@@ -304,7 +344,11 @@ async def _execute_tool_call(tool_call: dict) -> dict:
             return {"ok": False, "error": "Invalid tool arguments JSON"}
     return await TOOL_FUNCS[name](raw_args)
 
-@app.post("/ops/reload-auth", dependencies=[Depends(AdminGuard), Depends(ApiKeyRequired), Depends(ops_limit_dep())])
+
+@app.post(
+    "/ops/reload-auth",
+    dependencies=[Depends(AdminGuard), Depends(ApiKeyRequired), Depends(ops_limit_dep())],
+)
 async def reload_auth():
     s = reload_settings()
     app.state.AUTH_KEYS.clear()
@@ -314,23 +358,38 @@ async def reload_auth():
     TENANTS_COUNT.set(tenant_count)
     return {"ok": True, "keys": len(app.state.AUTH_KEYS), "tenants": tenant_count}
 
-@app.get("/ops/tenants", dependencies=[Depends(ApiKeyRequired), Depends(AdminGuard), Depends(ops_limit_dep())], tags=["ops"])
+
+@app.get(
+    "/ops/tenants",
+    dependencies=[Depends(ApiKeyRequired), Depends(AdminGuard), Depends(ops_limit_dep())],
+    tags=["ops"],
+)
 async def list_tenants(request: Request):
     # Only expose tenant names; never keys
     tenants = sorted(set(request.app.state.AUTH_KEYS.values()))
     return {"tenants": tenants, "count": len(tenants)}
 
+
 # Mount routers (admin-only for security - RBAC protected)
-from .ui import router as ui_router
 from .evals import router as evals_router
+from .ui import router as ui_router
+
 app.include_router(ui_router, tags=["ui"], dependencies=[Depends(AdminOnly)])
 app.include_router(evals_router, tags=["evals"], dependencies=[Depends(AdminOnly)])
 
 # Constants
 CONFIDENCE_THRESHOLD = 0.75
 BOOKING_WORDS = [
-    "book", "schedule", "appointment", "consult", "meeting",
-    "consultation", "demo", "available", "time", "slot"
+    "book",
+    "schedule",
+    "appointment",
+    "consult",
+    "meeting",
+    "consultation",
+    "demo",
+    "available",
+    "time",
+    "slot",
 ]
 
 Base.metadata.create_all(bind=engine)
@@ -346,7 +405,9 @@ TENANTS_COUNT = Gauge(
 # RAG metrics (with tenant labels for multi-tenant observability)
 RAG_RETRIEVAL_LATENCY = Summary("rag_retrieval_latency_ms", "Latency of RAG retrieval in ms")
 RAG_HITS = Counter("rag_hits_total", "Number of retrieved context chunks", ["tenant"])
-ANSWERS_TOTAL = Counter("aether_rag_answers_total", "RAG answers generated", ["mode", "rerank", "tenant"])
+ANSWERS_TOTAL = Counter(
+    "aether_rag_answers_total", "RAG answers generated", ["mode", "rerank", "tenant"]
+)
 LOWCONF_TOTAL = Counter("aether_rag_lowconfidence_total", "Low confidence answers", ["tenant"])
 
 # Error metrics
@@ -382,6 +443,7 @@ PRED_LATENCY = Summary(
     "Latency of prediction inference",
 )
 
+
 def _parse_schedules(csv: str) -> list[int]:
     """Parse FOLLOWUP_SCHEDULES like '30m,2h,1d' into seconds list."""
     units = {"s": 1, "m": 60, "h": 3600, "d": 86400}
@@ -400,16 +462,20 @@ def _parse_schedules(csv: str) -> list[int]:
             continue
     return out
 
+
 @app.exception_handler(HTTP_429_TOO_MANY_REQUESTS)
 async def _ratelimit_handler(request: Request, exc: Any):
     from fastapi.responses import JSONResponse
+
     req_id = getattr(request.state, "request_id", "n/a")
     return JSONResponse(
         status_code=HTTP_429_TOO_MANY_REQUESTS,
         content=err(req_id, "Too many requests — please slow down.", code="rate_limited"),
     )
 
+
 SENSITIVE_HEADERS = {"x-api-key", "x-admin-key", "authorization"}
+
 
 class ScrubAuthHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint):
@@ -419,7 +485,9 @@ class ScrubAuthHeadersMiddleware(BaseHTTPMiddleware):
                 del response.headers[h]
         return response
 
+
 app.add_middleware(ScrubAuthHeadersMiddleware)
+
 
 # Security headers (safe defaults for APIs)
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -428,15 +496,21 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         resp.headers.setdefault("X-Content-Type-Options", "nosniff")
         resp.headers.setdefault("X-Frame-Options", "DENY")
         resp.headers.setdefault("Referrer-Policy", "no-referrer-when-downgrade")
-        resp.headers.setdefault("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none';")
+        resp.headers.setdefault(
+            "Content-Security-Policy",
+            "default-src 'none'; frame-ancestors 'none'; base-uri 'none';",
+        )
         return resp
+
 
 app.add_middleware(SecurityHeadersMiddleware)
 
 s = get_settings()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[x.strip() for x in s.cors_origins.split(",") if x.strip()] if (s.cors_origins or "").strip() != "*" else ["*"],
+    allow_origins=[x.strip() for x in s.cors_origins.split(",") if x.strip()]
+    if (s.cors_origins or "").strip() != "*"
+    else ["*"],
     allow_credentials=s.CORS_ALLOW_CREDENTIALS,
     allow_methods=[x.strip() for x in s.CORS_METHODS.split(",") if x.strip()],
     allow_headers=[x.strip() for x in s.CORS_HEADERS.split(",") if x.strip()],
@@ -446,6 +520,7 @@ allowed_hosts = ["localhost", "127.0.0.1", "*.aetherlink.dev"]
 if hasattr(s, "ALLOWED_HOSTS") and s.ALLOWED_HOSTS:
     allowed_hosts = [x.strip() for x in s.ALLOWED_HOSTS.split(",") if x.strip()]
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
+
 
 @app.middleware("http")
 async def tenant_in_state(request: Request, call_next: RequestResponseEndpoint):
@@ -458,8 +533,10 @@ async def tenant_in_state(request: Request, call_next: RequestResponseEndpoint):
         request.state.tenant = "public"
     return await call_next(request)
 
+
 observability.init(app)
 app.include_router(metrics_router, tags=["ops"])
+
 
 @app.get("/ops/reload", tags=["ops"], dependencies=[Depends(ops_limit_dep())])
 async def reload() -> dict[str, object]:
@@ -468,6 +545,7 @@ async def reload() -> dict[str, object]:
     request_app.state._settings = new
     logger.info("settings_reloaded", extra={"env": new.ENV, "log_level": new.LOG_LEVEL})
     return {"ok": True, "env": new.ENV, "log_level": new.LOG_LEVEL}
+
 
 @app.get("/ops/config", tags=["ops"], dependencies=[Depends(ops_limit_dep())])
 async def ops_config() -> dict[str, object]:
@@ -486,6 +564,7 @@ async def ops_config() -> dict[str, object]:
         "enable_enrichment": s.ENABLE_ENRICHMENT,
     }
 
+
 @app.post("/ops/reload", tags=["ops"], dependencies=[Depends(ops_limit_dep())])
 def ops_reload():
     try:
@@ -494,56 +573,83 @@ def ops_reload():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"reload_failed: {e}")
 
-@app.get("/ops/export/outcomes.csv", tags=["ops"], dependencies=[Depends(ApiKeyRequired), Depends(ops_limit_dep())])
+
+@app.get(
+    "/ops/export/outcomes.csv",
+    tags=["ops"],
+    dependencies=[Depends(ApiKeyRequired), Depends(ops_limit_dep())],
+)
 def export_outcomes_csv(tenant: str = Depends(ApiKeyRequired), limit: int = 1000):
+    import csv
     from datetime import datetime
     from io import StringIO
-    import csv
-    from .lead_store import list_leads, get_outcome, list_outcomes
+
     from fastapi.responses import StreamingResponse
+
+    from .lead_store import list_outcomes
+
     outcomes = list_outcomes(limit=limit)
     output = StringIO()
-    writer = csv.DictWriter(output, fieldnames=[
-        'lead_id', 'tenant_hash', 'intent', 'sentiment', 'urgency', 'score',
-        'details_len', 'hour_of_day', 'outcome', 'label'
-    ])
+    writer = csv.DictWriter(
+        output,
+        fieldnames=[
+            "lead_id",
+            "tenant_hash",
+            "intent",
+            "sentiment",
+            "urgency",
+            "score",
+            "details_len",
+            "hour_of_day",
+            "outcome",
+            "label",
+        ],
+    )
     writer.writeheader()
     for outcome_rec in outcomes:
-        lead_id = outcome_rec.get('lead_id')
-        outcome = outcome_rec.get('outcome', 'unknown')
+        lead_id = outcome_rec.get("lead_id")
+        outcome = outcome_rec.get("outcome", "unknown")
         from .lead_store import get_lead
+
         lead = get_lead(lead_id)
         if not lead:
             continue
-        details = lead.get('details', '')
-        created_at = lead.get('created_at', 0)
+        details = lead.get("details", "")
+        created_at = lead.get("created_at", 0)
         hour = datetime.fromtimestamp(created_at).hour if created_at else 12
-        tenant_id = lead.get('tenant', 'public')
+        tenant_id = lead.get("tenant", "public")
         tenant_hash = str(hash(tenant_id) % 10000)
-        intent = lead.get('intent', 'unknown')
-        sentiment = lead.get('sentiment', 'neutral')
-        urgency = lead.get('urgency', 'medium')
-        score = lead.get('score', 0.5)
-        writer.writerow({
-            'lead_id': lead_id,
-            'tenant_hash': tenant_hash,
-            'intent': intent,
-            'sentiment': sentiment,
-            'urgency': urgency,
-            'score': float(score),
-            'details_len': len(details),
-            'hour_of_day': hour,
-            'outcome': outcome,
-            'label': 1 if outcome == 'booked' else 0,
-        })
+        intent = lead.get("intent", "unknown")
+        sentiment = lead.get("sentiment", "neutral")
+        urgency = lead.get("urgency", "medium")
+        score = lead.get("score", 0.5)
+        writer.writerow(
+            {
+                "lead_id": lead_id,
+                "tenant_hash": tenant_hash,
+                "intent": intent,
+                "sentiment": sentiment,
+                "urgency": urgency,
+                "score": float(score),
+                "details_len": len(details),
+                "hour_of_day": hour,
+                "outcome": outcome,
+                "label": 1 if outcome == "booked" else 0,
+            }
+        )
     output.seek(0)
     return StreamingResponse(
         iter([output.getvalue()]),
-        media_type='text/csv',
-        headers={'Content-Disposition': 'attachment; filename=outcomes.csv'}
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=outcomes.csv"},
     )
 
-@app.post("/ops/followup-hook", tags=["ops"], dependencies=[Depends(ApiKeyRequired), Depends(ops_limit_dep())])
+
+@app.post(
+    "/ops/followup-hook",
+    tags=["ops"],
+    dependencies=[Depends(ApiKeyRequired), Depends(ops_limit_dep())],
+)
 async def followup_hook(request: Request, tenant: str = Depends(ApiKeyRequired)):
     request_id = getattr(request.state, "request_id", "n/a")
     try:
@@ -564,12 +670,18 @@ async def followup_hook(request: Request, tenant: str = Depends(ApiKeyRequired))
     )
     return {"ok": True, "message": "Follow-up hook received"}
 
-@app.get("/ops/followup/queue", tags=["ops"], dependencies=[Depends(ApiKeyRequired), Depends(ops_limit_dep())])
+
+@app.get(
+    "/ops/followup/queue",
+    tags=["ops"],
+    dependencies=[Depends(ApiKeyRequired), Depends(ops_limit_dep())],
+)
 def followup_queue_status(tenant: str = Depends(ApiKeyRequired)):
     if not app.state.q_followups:
         return {"enabled": False, "queue": None, "jobs": 0}
     try:
         from rq.registry import ScheduledJobRegistry
+
         q = app.state.q_followups
         scheduled_registry = ScheduledJobRegistry(queue=q)
         return {
@@ -584,33 +696,50 @@ def followup_queue_status(tenant: str = Depends(ApiKeyRequired)):
         logger.warning("queue_status_error", extra={"error": str(e)})
         return {"enabled": True, "queue": s.FOLLOWUP_QUEUE, "error": str(e)}
 
-@app.post("/ops/reload-model", tags=["ops"], dependencies=[Depends(ApiKeyRequired), Depends(ops_limit_dep())])
+
+@app.post(
+    "/ops/reload-model",
+    tags=["ops"],
+    dependencies=[Depends(ApiKeyRequired), Depends(ops_limit_dep())],
+)
 def reload_model_endpoint(
     min_auc: float = 0.65,
     tenant: str = Depends(ApiKeyRequired),
 ):
     try:
         from .predict import reload_model
+
         result = reload_model(min_auc=min_auc)
         if result.get("ok"):
-            logger.info("model_reloaded", extra={
-                "version": result.get("version"),
-                "auc": result.get("auc"),
-                "n_train": result.get("n_train"),
-                "min_auc": min_auc,
-            })
+            logger.info(
+                "model_reloaded",
+                extra={
+                    "version": result.get("version"),
+                    "auc": result.get("auc"),
+                    "n_train": result.get("n_train"),
+                    "min_auc": min_auc,
+                },
+            )
         else:
-            logger.warning("model_reload_rejected", extra={
-                "reason": result.get("error"),
-                "auc": result.get("auc"),
-                "min_auc": min_auc,
-            })
+            logger.warning(
+                "model_reload_rejected",
+                extra={
+                    "reason": result.get("error"),
+                    "auc": result.get("auc"),
+                    "min_auc": min_auc,
+                },
+            )
         return result
     except Exception as e:
         logger.error("model_reload_failed", extra={"error": str(e)})
         return {"ok": False, "error": str(e)}
 
-@app.get("/ops/model-status", tags=["ops"], dependencies=[Depends(ApiKeyRequired), Depends(ops_limit_dep())])
+
+@app.get(
+    "/ops/model-status",
+    tags=["ops"],
+    dependencies=[Depends(ApiKeyRequired), Depends(ops_limit_dep())],
+)
 async def model_status_endpoint(request: Request, tenant: str = Depends(ApiKeyRequired)) -> Any:
     mc = request.app.state.model_client
     t0 = time.time()
@@ -627,24 +756,28 @@ async def model_status_endpoint(request: Request, tenant: str = Depends(ApiKeyRe
     out.update(info)
     return out
 
+
 class AgentChatRequest(TypedDict, total=False):
     message: str  # required
     system: str
     context: Any
 
-@app.post("/chat", tags=["agent"], dependencies=[Depends(ApiKeyRequired), Depends(chat_limit_dep())])
+
+@app.post(
+    "/chat", tags=["agent"], dependencies=[Depends(ApiKeyRequired), Depends(chat_limit_dep())]
+)
 async def chat_endpoint(
     request: Request,
     body: AgentChatRequest = Body(...),
     tenant: str = Depends(ApiKeyRequired),
 ) -> Any:
     req_id = getattr(request.state, "request_id", "n/a")
-    
+
     # PII redaction
     body_redacted = request.state.redact(body)
     if body_redacted != body:
         REDACTIONS_TOTAL.inc()
-    
+
     msg = body_redacted.get("message")
     if not msg:
         return JSONResponse(
@@ -656,7 +789,7 @@ async def chat_endpoint(
     ctx: Any = ctx_raw if isinstance(ctx_raw, dict) else {}
     tools = _tool_specs()
     mc = request.app.state.model_client
-    
+
     # RAG retrieval hook
     context_blocks: list[str] = []
     if app.state.RAG_ENABLED:
@@ -678,15 +811,19 @@ async def chat_endpoint(
         except Exception:
             # don't block chat if retrieval fails
             pass
-    
+
     # Prepend context for the model
     if context_blocks:
-        msg = "Use the following context if relevant:\n\n" + "\n\n---\n\n".join(context_blocks) + f"\n\n---\n\nUser: {msg}"
-    
+        msg = (
+            "Use the following context if relevant:\n\n"
+            + "\n\n---\n\n".join(context_blocks)
+            + f"\n\n---\n\nUser: {msg}"
+        )
+
     t0 = time.time()
     result = await mc.chat(prompt=msg, system=sys_prompt, context=ctx, tools=tools)
     latency = time.time() - t0
-    
+
     # Tool requested?
     tc = result.get("tool_call")
     if tc:
@@ -707,7 +844,7 @@ async def chat_endpoint(
             "provider": settings.MODEL_PROVIDER,
             "model": settings.MODEL_NAME,
         }
-    
+
     # Text response
     reply_text = result.get("text", "")
     logger.info(
@@ -728,30 +865,36 @@ async def chat_endpoint(
         "model": settings.MODEL_NAME,
     }
 
-@app.post("/chat/stream", tags=["agent"], dependencies=[Depends(ApiKeyRequired), Depends(chat_limit_dep())])
+
+@app.post(
+    "/chat/stream",
+    tags=["agent"],
+    dependencies=[Depends(ApiKeyRequired), Depends(chat_limit_dep())],
+)
 async def chat_stream_endpoint(
     request: Request,
     body: AgentChatRequest = Body(...),
     tenant: str = Depends(ApiKeyRequired),
 ):
     req_id = getattr(request.state, "request_id", "n/a")
-    
+
     # PII redaction
     body_redacted = request.state.redact(body)
     if body_redacted != body:
         REDACTIONS_TOTAL.inc()
-    
+
     msg = body_redacted.get("message")
     if not msg:
         from starlette.responses import PlainTextResponse
+
         return PlainTextResponse("message is required", status_code=400)
-    
+
     sys_prompt = body_redacted.get("system") or settings.AGENT_PERSONALITY
     ctx_raw = body_redacted.get("context")
     ctx: Any = ctx_raw if isinstance(ctx_raw, dict) else {}
     tools = _tool_specs()
     mc = request.app.state.model_client
-    
+
     # RAG retrieval hook (same as /chat)
     context_blocks: list[str] = []
     if app.state.RAG_ENABLED:
@@ -772,10 +915,14 @@ async def chat_stream_endpoint(
                     context_blocks.append(f"[score={score:.3f} source={src or 'N/A'}]\n{chunk}")
         except Exception:
             pass
-    
+
     if context_blocks:
-        msg = "Use the following context if relevant:\n\n" + "\n\n---\n\n".join(context_blocks) + f"\n\n---\n\nUser: {msg}"
-    
+        msg = (
+            "Use the following context if relevant:\n\n"
+            + "\n\n---\n\n".join(context_blocks)
+            + f"\n\n---\n\nUser: {msg}"
+        )
+
     async def event_gen():
         try:
             async for chunk in mc.stream(prompt=msg, system=sys_prompt, context=ctx, tools=tools):
@@ -795,10 +942,15 @@ async def chat_stream_endpoint(
         except Exception:
             err = {"type": "internal_error", "message": "Internal server error", "trace_id": req_id}
             yield {"event": "error", "data": json.dumps(err)}
-    
+
     return EventSourceResponse(event_gen(), ping=15000)
 
-@app.post("/knowledge/ingest", tags=["knowledge"], dependencies=[Depends(ApiKeyRequired), Depends(EditorOrAdmin)])
+
+@app.post(
+    "/knowledge/ingest",
+    tags=["knowledge"],
+    dependencies=[Depends(ApiKeyRequired), Depends(EditorOrAdmin)],
+)
 async def knowledge_ingest(payload: dict, request: Request, tenant: str = Depends(ApiKeyRequired)):
     """
     Ingest text chunks into RAG knowledge base.
@@ -808,44 +960,54 @@ async def knowledge_ingest(payload: dict, request: Request, tenant: str = Depend
     if not text:
         raise HTTPException(status_code=400, detail="text is required")
     source = payload.get("source")
-    
+
     # Get tenant from dependency or fallback
     tenant_name = tenant or getattr(request.state, "tenant", None) or "unknown"
-    
+
     chunks = _simple_chunk(text)
     embedder = app.state.EMBEDDER
     vectors = embedder.embed(chunks)
     app.state.VSTORE.upsert(tenant_name, source, chunks, vectors)
     return {"ok": True, "ingested_chunks": len(chunks), "source": source, "tenant": tenant_name}
 
-@app.get("/knowledge/list", tags=["knowledge"], dependencies=[Depends(ApiKeyRequired), Depends(AnyRole)])
+
+@app.get(
+    "/knowledge/list", tags=["knowledge"], dependencies=[Depends(ApiKeyRequired), Depends(AnyRole)]
+)
 async def knowledge_list(
-    tenant: str = Depends(ApiKeyRequired),
-    limit: int = 50,
-    q: Optional[str] = None
+    tenant: str = Depends(ApiKeyRequired), limit: int = 50, q: str | None = None
 ):
     """List knowledge entries for tenant with optional text search."""
     vs = app.state.VSTORE  # type: ignore[attr-defined]
     items = vs.list(tenant=tenant, limit=limit, q=q)
     return {"ok": True, "count": len(items), "items": items}
 
-@app.delete("/knowledge/delete", tags=["knowledge"], dependencies=[Depends(ApiKeyRequired), Depends(EditorOrAdmin)])
-async def knowledge_delete(
-    ids: List[str] = Query(...),
-    tenant: str = Depends(ApiKeyRequired)
-):
+
+@app.delete(
+    "/knowledge/delete",
+    tags=["knowledge"],
+    dependencies=[Depends(ApiKeyRequired), Depends(EditorOrAdmin)],
+)
+async def knowledge_delete(ids: list[str] = Query(...), tenant: str = Depends(ApiKeyRequired)):
     """Delete knowledge entries by IDs for tenant."""
     vs = app.state.VSTORE  # type: ignore[attr-defined]
     deleted = vs.delete(tenant=tenant, ids=ids)
     return {"ok": True, "deleted": deleted}
 
-@app.get("/knowledge/export", tags=["knowledge"], dependencies=[Depends(ApiKeyRequired), Depends(AnyRole)])
+
+@app.get(
+    "/knowledge/export",
+    tags=["knowledge"],
+    dependencies=[Depends(ApiKeyRequired), Depends(AnyRole)],
+)
 async def knowledge_export(tenant: str = Depends(ApiKeyRequired)):
     """Export knowledge entries as CSV."""
     from fastapi.responses import PlainTextResponse
+
     vs = app.state.VSTORE  # type: ignore[attr-defined]
     csv = vs.export_csv(tenant=tenant)
     return PlainTextResponse(csv, media_type="text/csv")
+
 
 @app.get("/search", tags=["knowledge"], dependencies=[Depends(ApiKeyRequired), Depends(AnyRole)])
 async def semantic_search(
@@ -855,82 +1017,87 @@ async def semantic_search(
     mode: str = Query("hybrid", description="Search mode: 'semantic', 'lexical', or 'hybrid'"),
     rerank: bool = Query(False, description="Apply reranking to improve result quality"),
     rerank_topk: int = Query(10, ge=3, le=50, description="Number of candidates for reranking"),
-    tenant: Optional[str] = Depends(ApiKeyRequired)
+    tenant: str | None = Depends(ApiKeyRequired),
 ):
     """
     Hybrid search combining semantic (vector) and lexical (keyword) retrieval.
     Rate limited to 60 requests per minute per IP.
-    
+
     Args:
         q: Search query text
         k: Maximum number of results (default: 5)
         mode: Search mode - "semantic" (vector only), "lexical" (keyword only), or "hybrid" (both)
         tenant: Optional tenant filter (defaults to "default")
-    
+
     Returns:
         Results with id, content, metadata, and combined score
     """
-    from pods.customer_ops.db_duck import query_embeddings as duck_query, query_lexical
-    
+    from pods.customer_ops.db_duck import query_embeddings as duck_query
+    from pods.customer_ops.db_duck import query_lexical
+
     # Apply rate limiting
     rate_limit_search(request)
-    
+
     # Default to "default" tenant if not specified
     tenant_id = tenant or "default"
-    
+
     # Check cache
     cache_key = (tenant_id, q.strip().lower(), mode, str(rerank), str(k), str(rerank_topk))
     cached = _cache_get("search", cache_key, tenant=tenant_id)
     if cached:
         return cached
-    
+
     # Validate mode
     if mode not in ["semantic", "lexical", "hybrid"]:
-        raise HTTPException(status_code=400, detail=f"Invalid mode: {mode}. Use 'semantic', 'lexical', or 'hybrid'")
-    
+        raise HTTPException(
+            status_code=400, detail=f"Invalid mode: {mode}. Use 'semantic', 'lexical', or 'hybrid'"
+        )
+
     results_dict = {}  # id -> {content, metadata, score_semantic, score_lex}
-    
+
     # Semantic search (vector similarity)
     if mode in ["semantic", "hybrid"]:
         embedder = app.state.EMBEDDER
         query_vec = embedder.embed([q])[0]
-        semantic_rows = duck_query(query_vec, tenant_id=tenant_id, top_k=k*2)  # Get more for merging
-        
+        semantic_rows = duck_query(
+            query_vec, tenant_id=tenant_id, top_k=k * 2
+        )  # Get more for merging
+
         for row in semantic_rows:
             doc_id = row["id"]
             score_semantic = max(0.0, 1.0 - row["distance"])  # Convert distance to similarity
-            
+
             if doc_id not in results_dict:
                 results_dict[doc_id] = {
                     "id": doc_id,
                     "content": row["content"],
                     "metadata": row["metadata"],
                     "score_semantic": 0.0,
-                    "score_lex": 0.0
+                    "score_lex": 0.0,
                 }
             results_dict[doc_id]["score_semantic"] = score_semantic
-    
+
     # Lexical search (keyword matching)
     if mode in ["lexical", "hybrid"]:
-        lexical_rows = query_lexical(q, tenant_id=tenant_id, top_k=k*2)
-        
+        lexical_rows = query_lexical(q, tenant_id=tenant_id, top_k=k * 2)
+
         # Normalize lexical scores to 0-1 range
         max_lex = max([r["score_lex"] for r in lexical_rows], default=1)
-        
+
         for row in lexical_rows:
             doc_id = row["id"]
             score_lex_normalized = row["score_lex"] / max_lex if max_lex > 0 else 0.0
-            
+
             if doc_id not in results_dict:
                 results_dict[doc_id] = {
                     "id": doc_id,
                     "content": row["content"],
                     "metadata": row["metadata"],
                     "score_semantic": 0.0,
-                    "score_lex": 0.0
+                    "score_lex": 0.0,
                 }
             results_dict[doc_id]["score_lex"] = score_lex_normalized
-    
+
     # Combine scores and rank
     results = []
     for doc in results_dict.values():
@@ -940,21 +1107,25 @@ async def semantic_search(
             final_score = doc["score_lex"]
         else:  # hybrid
             # Weighted blend: HYBRID_ALPHA controls semantic vs lexical balance
-            final_score = HYBRID_ALPHA * doc["score_semantic"] + (1 - HYBRID_ALPHA) * doc["score_lex"]
-        
-        results.append({
-            "id": doc["id"],
-            "content": doc["content"],
-            "metadata": doc["metadata"],
-            "score": round(final_score, 4),
-            "score_semantic": round(doc["score_semantic"], 4),
-            "score_lex": round(doc["score_lex"], 4)
-        })
-    
+            final_score = (
+                HYBRID_ALPHA * doc["score_semantic"] + (1 - HYBRID_ALPHA) * doc["score_lex"]
+            )
+
+        results.append(
+            {
+                "id": doc["id"],
+                "content": doc["content"],
+                "metadata": doc["metadata"],
+                "score": round(final_score, 4),
+                "score_semantic": round(doc["score_semantic"], 4),
+                "score_lex": round(doc["score_lex"], 4),
+            }
+        )
+
     # Sort by final score
     results.sort(key=lambda x: x["score"], reverse=True)
-    results = results[:k if not rerank else rerank_topk]
-    
+    results = results[: k if not rerank else rerank_topk]
+
     # Apply reranking if requested
     rerank_used = "none"
     if rerank and results:
@@ -965,7 +1136,7 @@ async def semantic_search(
             results = _rerank_token(q, results, topk=rerank_topk)
             rerank_used = "token"
         results = results[:k]
-    
+
     response = {
         "ok": True,
         "mode": mode,
@@ -973,30 +1144,33 @@ async def semantic_search(
         "results": results,
         "count": len(results),
         "reranked": rerank,
-        "rerank_used": rerank_used
+        "rerank_used": rerank_used,
     }
-    
+
     # Cache response
     _cache_put("search", cache_key, response, tenant=tenant_id)
-    
+
     return response
 
 
 # --- RERANK SUPPORT -----------------------------------------------------------
 
-def _cosine(a: List[float], b: List[float]) -> float:
+
+def _cosine(a: list[float], b: list[float]) -> float:
     """Compute cosine similarity between two vectors"""
     if not a or not b or len(a) != len(b):
         return 0.0
-    num = sum(x*y for x, y in zip(a, b))
-    da = math.sqrt(sum(x*x for x in a))
-    db = math.sqrt(sum(y*y for y in b))
+    num = sum(x * y for x, y in zip(a, b, strict=False))
+    da = math.sqrt(sum(x * x for x in a))
+    db = math.sqrt(sum(y * y for y in b))
     if da == 0.0 or db == 0.0:
         return 0.0
     return num / (da * db)
 
 
-def _rerank_embed(query: str, candidates: List[Dict[str, Any]], topk: int = 10) -> List[Dict[str, Any]]:
+def _rerank_embed(
+    query: str, candidates: list[dict[str, Any]], topk: int = 10
+) -> list[dict[str, Any]]:
     """
     Re-scores candidates by cosine(query_emb, passage_emb) using the existing embedder.
     Only touches the top 'topk' items; preserves other fields; adds 'rerank_score'.
@@ -1004,47 +1178,51 @@ def _rerank_embed(query: str, candidates: List[Dict[str, Any]], topk: int = 10) 
     embedder = app.state.EMBEDDER
     if not embedder:
         raise RuntimeError("embedder-unavailable")
-    
+
     # Embed query
     qv = embedder.embed([query])[0]
-    
+
     # Embed top-k passages
     pool = candidates[:topk]
     passages = [c.get("content", "") for c in pool]
     pv_list = embedder.embed(passages)
-    
+
     # Compute cosine scores
-    for c, pv in zip(pool, pv_list):
+    for c, pv in zip(pool, pv_list, strict=False):
         c["rerank_score"] = float(_cosine(qv, pv))
-    
+
     # Re-sort by rerank score
     pool.sort(key=lambda x: x.get("rerank_score", 0.0), reverse=True)
-    
+
     return pool + candidates[topk:]
 
 
-def _rerank_token(query: str, candidates: List[Dict[str, Any]], topk: int = 10) -> List[Dict[str, Any]]:
+def _rerank_token(
+    query: str, candidates: list[dict[str, Any]], topk: int = 10
+) -> list[dict[str, Any]]:
     """
     Deterministic fallback: counts token hits; adds 'rerank_score_token'.
     """
     toks = [t for t in query.lower().split() if len(t) > 2][:8]
-    
+
     def hits(txt: str) -> int:
         L = txt.lower()
         return sum(1 for t in toks if t in L)
-    
+
     pool = candidates[:topk]
     for c in pool:
         c["rerank_score_token"] = hits(c.get("content", ""))
-    
+
     # Re-sort by token hits
     pool.sort(key=lambda x: x.get("rerank_score_token", 0), reverse=True)
-    
+
     return pool + candidates[topk:]
+
 
 # --- ANSWER HELPERS -----------------------------------------------------------
 
-def _uniq_by(results: List[Dict[str, Any]], key: str) -> List[Dict[str, Any]]:
+
+def _uniq_by(results: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:
     """Remove duplicate results by a metadata key (e.g., 'url' or 'source')"""
     seen, out = set(), []
     for r in results:
@@ -1058,75 +1236,66 @@ def _uniq_by(results: List[Dict[str, Any]], key: str) -> List[Dict[str, Any]]:
 
 
 def _make_citations(
-    results: List[Dict[str, Any]],
-    used_by_url: Dict[str, List[str]] = None,
+    results: list[dict[str, Any]],
+    used_by_url: dict[str, list[str]] = None,
     max_cites: int = 3,
-    snippet_chars: int = 220
-) -> List[Dict[str, Any]]:
+    snippet_chars: int = 220,
+) -> list[dict[str, Any]]:
     """
     Format citations with URL grouping, hit counts, and merged highlights.
-    
+
     Args:
         results: Search results with content and metadata
         used_by_url: Map of URL -> list of sentences used from that source
         max_cites: Max number of unique sources to include
         snippet_chars: Max chars for each snippet
-    
+
     Returns:
         List of citation dicts with {url, snippet, count, highlights}
     """
-    url_data: Dict[str, Dict[str, Any]] = {}
-    
+    url_data: dict[str, dict[str, Any]] = {}
+
     for r in results:
         meta = r.get("metadata") or {}
         url = (meta.get("url") or meta.get("source") or "unknown").strip()
         content = r.get("content", "")
-        
+
         if url not in url_data:
-            url_data[url] = {
-                "url": url,
-                "content": content,
-                "count": 0,
-                "used_sentences": []
-            }
-        
+            url_data[url] = {"url": url, "content": content, "count": 0, "used_sentences": []}
+
         # Track used sentences for this URL
         if used_by_url and url in used_by_url:
             url_data[url]["count"] += len(used_by_url[url])
             url_data[url]["used_sentences"].extend(used_by_url[url])
-    
+
     # Sort by count (most cited first), take top max_cites
     ranked = sorted(url_data.values(), key=lambda x: x["count"], reverse=True)[:max_cites]
-    
+
     out = []
     for item in ranked:
         used_sents = item["used_sentences"]
         content = item["content"]
-        
+
         # Create smart snippet centered around first used sentence
         if used_sents:
             snippet = _centered_snippet(content, used_sents[0], snippet_chars)
         else:
             snippet = content[:snippet_chars].replace("\n", " ").strip()
-        
-        citation: Dict[str, Any] = {
-            "url": item["url"],
-            "snippet": snippet,
-            "count": item["count"]
-        }
-        
+
+        citation: dict[str, Any] = {"url": item["url"], "snippet": snippet, "count": item["count"]}
+
         # Extract highlights for the snippet
         if used_sents:
             highlights = _extract_highlights(snippet, used_sents)
             if highlights:
                 citation["highlights"] = highlights
-        
+
         out.append(citation)
-    
+
     return out
 
 
-def _confidence(query: str, topk: List[Dict[str, Any]], used: List[str]) -> float:
+def _confidence(query: str, topk: list[dict[str, Any]], used: list[str]) -> float:
     """
     Calculate confidence score based on token coverage and retrieval strength.
     Returns value between 0.0 and 1.0.
@@ -1134,30 +1303,33 @@ def _confidence(query: str, topk: List[Dict[str, Any]], used: List[str]) -> floa
     toks = [t for t in query.lower().split() if len(t) > 2]
     if not toks or not topk:
         return 0.0
-    
+
     # Token coverage from answer sentences
     hit = sum(1 for t in toks for s in used if t in s.lower())
     cov = hit / (len(toks) * max(1, len(used)))
-    
+
     # Retrieval strength (use final fused score field)
     ret = sum(float(r.get("score", 0.0)) for r in topk[:3]) / max(1, min(3, len(topk)))
-    
+
     # Blend (60% coverage, 40% retrieval strength)
     return 0.6 * cov + 0.4 * min(1.0, ret)
 
 
-def _pii_guard(answer: str) -> Tuple[bool, str]:
+def _pii_guard(answer: str) -> tuple[bool, str]:
     """
     Check if answer contains PII placeholders and refuse to surface them.
     Returns (ok, safe_answer) tuple.
     """
     pii_tags = ["[SSN]", "[CARD]", "[EMAIL]", "[PHONE]"]
     if any(tag in answer for tag in pii_tags):
-        return False, "This answer contains sensitive PII. Please open the cited source with proper permissions."
+        return (
+            False,
+            "This answer contains sensitive PII. Please open the cited source with proper permissions.",
+        )
     return True, answer
 
 
-def _extract_highlights(snippet: str, used_sentences: List[str]) -> List[Dict[str, int]]:
+def _extract_highlights(snippet: str, used_sentences: list[str]) -> list[dict[str, int]]:
     """
     Find character offsets for sentences used in the answer.
     Returns list of {start, end} dicts for UI highlighting (capped at 6).
@@ -1181,19 +1353,19 @@ def _centered_snippet(text: str, needle: str, max_len: int) -> str:
     idx = text.find(needle)
     if idx < 0 or max_len <= 0:
         return text[:max_len]
-    
+
     # Center window around the needle
     left = max(0, idx - max_len // 3)
     right = min(len(text), left + max_len)
     window = text[left:right]
-    
+
     # Try to trim to sentence boundaries (lightweight heuristic)
     if "." in window:
         first = window.find(".")
         last = window.rfind(".")
         if 0 < first < len(window) - 1 and 0 < last <= len(window):
             window = window[first + 1 : last + 1].strip()
-    
+
     return window
 
 
@@ -1203,7 +1375,7 @@ def _fetch_neighbor_chunks(
     chunk_index: int,
     around_chunk_id: str,
     window: int = 1,
-    max_chars: int = 1800
+    max_chars: int = 1800,
 ) -> str:
     """
     Fetch ±window chunks from the same document for richer context.
@@ -1218,14 +1390,11 @@ def _fetch_neighbor_chunks(
               AND chunk_index BETWEEN ? AND ?
             ORDER BY chunk_index
         """
-        rows = conn.execute(
-            query,
-            (doc_key, chunk_index - window, chunk_index + window)
-        ).fetchall()
-        
+        rows = conn.execute(query, (doc_key, chunk_index - window, chunk_index + window)).fetchall()
+
         if not rows:
             return ""
-        
+
         # Concatenate neighbor content
         texts = [r[1] for r in rows if r[1]]
         combined = " ".join(texts)
@@ -1235,12 +1404,14 @@ def _fetch_neighbor_chunks(
         return ""
 
 
-def _synthetic_answer(query: str, chunks: List[Dict[str, Any]], max_chars: int = 700) -> Tuple[str, List[str]]:
+def _synthetic_answer(
+    query: str, chunks: list[dict[str, Any]], max_chars: int = 700
+) -> tuple[str, list[str]]:
     """Extract key sentences matching query tokens (LLM-free baseline)"""
     # Extract meaningful query tokens
     q_toks = [t for t in query.lower().split() if len(t) > 2][:6]
     picks = []
-    
+
     for r in chunks:
         content = r.get("content", "")
         for sent in content.split(". "):
@@ -1253,21 +1424,21 @@ def _synthetic_answer(query: str, chunks: List[Dict[str, Any]], max_chars: int =
                 picks.append(s)
         if len(" ".join(picks)) > max_chars:
             break
-    
+
     if not picks:
         # Fallback: first chunk head
         head = (chunks[0].get("content", "") if chunks else "")[:max_chars]
         fallback = head.strip() or "I couldn't find enough information in the indexed documents."
         return fallback, [fallback]
-    
+
     # Trim and tidy
     ans = " ".join(picks)[:max_chars].strip()
-    
+
     # Ensure 60-120 words-ish
     words = ans.split()
     if len(words) > 130:
         ans = " ".join(words[:120]) + "..."
-    
+
     return ans, picks
 
 
@@ -1279,12 +1450,12 @@ async def answer_endpoint(
     mode: str = Query("hybrid", description="Search mode: semantic, lexical, or hybrid"),
     rerank: bool = Query(False, description="Apply reranking to improve result quality"),
     rerank_topk: int = Query(10, ge=3, le=50, description="Number of candidates for reranking"),
-    tenant: Optional[str] = Depends(ApiKeyRequired)
+    tenant: str | None = Depends(ApiKeyRequired),
 ):
     """
     Answer question using RAG with citations.
     Retrieves relevant chunks and synthesizes a grounded answer with source citations.
-    
+
     Args:
         q: Question text
         k: Number of chunks to retrieve (1-10)
@@ -1292,70 +1463,71 @@ async def answer_endpoint(
         rerank: Apply reranking (embed strategy with token fallback)
         rerank_topk: Number of candidates to rerank
         tenant: Tenant ID from API key
-    
+
     Returns:
         Answer text with citations (url/source + snippet) and confidence score
     """
-    from pods.customer_ops.db_duck import query_embeddings as duck_query, query_lexical
-    
+    from pods.customer_ops.db_duck import query_embeddings as duck_query
+    from pods.customer_ops.db_duck import query_lexical
+
     # Apply rate limiting (reuse search rate limiter)
     rate_limit_search(request)
-    
+
     # Default tenant
     tenant_id = tenant or "default"
-    
+
     # Check cache
     cache_key = (tenant_id, q.strip().lower(), mode, str(rerank), str(k), str(rerank_topk))
     cached = _cache_get("answer", cache_key, tenant=tenant_id)
     if cached:
         return cached
-    
+
     # Validate mode
     if mode not in ["semantic", "lexical", "hybrid"]:
         mode = "hybrid"
-    
+
     # Internal search (same logic as /search endpoint)
     results_dict = {}
-    
+
     # Semantic search
     if mode in ["semantic", "hybrid"]:
         embedder = app.state.EMBEDDER
         query_vec = embedder.embed([q])[0]
-        semantic_rows = duck_query(query_vec, tenant_id=tenant_id, top_k=max(k, 5)*2)
-        
+        semantic_rows = duck_query(query_vec, tenant_id=tenant_id, top_k=max(k, 5) * 2)
+
         for row in semantic_rows:
             doc_id = row["id"]
             score_semantic = max(0.0, 1.0 - row["distance"])
-            
+
             if doc_id not in results_dict:
                 results_dict[doc_id] = {
                     "id": doc_id,
                     "content": row["content"],
                     "metadata": row["metadata"],
                     "score_semantic": 0.0,
-                    "score_lex": 0.0
+                    "score_lex": 0.0,
                 }
             results_dict[doc_id]["score_semantic"] = score_semantic
-    
+
     # Lexical search
     if mode in ["lexical", "hybrid"]:
-        lexical_rows = query_lexical(q, tenant_id=tenant_id, top_k=max(k, 5)*2)
+        lexical_rows = query_lexical(q, tenant_id=tenant_id, top_k=max(k, 5) * 2)
         max_lex = max([r["score_lex"] for r in lexical_rows], default=1)
-        
+
         for row in lexical_rows:
             doc_id = row["id"]
             score_lex_normalized = row["score_lex"] / max_lex if max_lex > 0 else 0.0
-            
+
             if doc_id not in results_dict:
                 results_dict[doc_id] = {
                     "id": doc_id,
                     "content": row["content"],
                     "metadata": row["metadata"],
                     "score_semantic": 0.0,
-                    "score_lex": 0.0
+                    "score_lex": 0.0,
                 }
             results_dict[doc_id]["score_lex"] = score_lex_normalized
-    
+
     # Combine and rank
     results = []
     for doc in results_dict.values():
@@ -1365,17 +1537,19 @@ async def answer_endpoint(
             final_score = doc["score_lex"]
         else:  # hybrid
             final_score = max(doc["score_semantic"], doc["score_lex"])
-        
-        results.append({
-            "id": doc["id"],
-            "content": doc["content"],
-            "metadata": doc["metadata"],
-            "score": final_score
-        })
-    
+
+        results.append(
+            {
+                "id": doc["id"],
+                "content": doc["content"],
+                "metadata": doc["metadata"],
+                "score": final_score,
+            }
+        )
+
     results.sort(key=lambda x: x["score"], reverse=True)
-    results = results[:max(k, 5) if not rerank else max(k, rerank_topk)]
-    
+    results = results[: max(k, 5) if not rerank else max(k, rerank_topk)]
+
     # Rerank if requested
     rerank_used = "none"
     if rerank and results:
@@ -1385,11 +1559,11 @@ async def answer_endpoint(
         except Exception:
             results = _rerank_token(q, results, topk=rerank_topk)
             rerank_used = "token"
-        results = results[:max(k, 5)]
-    
+        results = results[: max(k, 5)]
+
     # Deduplicate by URL/source
     results = _uniq_by(results, "url")
-    
+
     # No results found
     if not results:
         ANSWERS_TOTAL.labels(mode=mode, rerank=str(bool(rerank)).lower(), tenant=tenant_id).inc()
@@ -1398,11 +1572,12 @@ async def answer_endpoint(
             "citations": [],
             "used_mode": mode,
             "rerank_used": rerank_used,
-            "confidence": 0.0
+            "confidence": 0.0,
         }
-    
+
     # Enrich results with neighbor chunks (±1 for richer context)
     from pods.customer_ops.db_duck import get_conn as get_duck_conn
+
     try:
         conn = get_duck_conn()
         for r in results[:5]:  # Only enrich top 5 for performance
@@ -1410,7 +1585,7 @@ async def answer_endpoint(
             doc_key = meta.get("doc_key", "")
             chunk_index = meta.get("chunk_index", 0)
             chunk_id = r.get("id", "")
-            
+
             if doc_key and isinstance(chunk_index, int):
                 neighbors = _fetch_neighbor_chunks(conn, doc_key, chunk_index, chunk_id, window=1)
                 if neighbors:
@@ -1418,12 +1593,12 @@ async def answer_endpoint(
                     r["content"] = r["content"] + "\n\n[Context] " + neighbors
     except Exception as e:
         logger.warning(f"Failed to enrich with neighbor chunks: {e}")
-    
+
     # Synthesize answer
     answer_text, used_sentences = _synthetic_answer(q, results)
-    
+
     # Track which URLs contributed sentences
-    used_by_url: Dict[str, List[str]] = {}
+    used_by_url: dict[str, list[str]] = {}
     for sent in used_sentences:
         for r in results:
             if sent in r.get("content", ""):
@@ -1433,10 +1608,10 @@ async def answer_endpoint(
                     used_by_url[url] = []
                 used_by_url[url].append(sent)
                 break  # Each sentence comes from one source
-    
+
     # Generate citations with URL grouping and merged highlights
     citations = _make_citations(results, used_by_url=used_by_url, max_cites=3)
-    
+
     # PII guard check
     pii_ok, safe_answer = _pii_guard(answer_text)
     if not pii_ok:
@@ -1447,12 +1622,12 @@ async def answer_endpoint(
             "used_mode": mode,
             "rerank_used": rerank_used,
             "confidence": 0.0,
-            "pii_blocked": True
+            "pii_blocked": True,
         }
-    
+
     # Calculate confidence
     conf = _confidence(q, results, used_sentences)
-    
+
     # Check confidence threshold
     if conf < 0.25:
         LOWCONF_TOTAL.labels(tenant=tenant_id).inc()
@@ -1462,52 +1637,63 @@ async def answer_endpoint(
             "citations": citations,
             "used_mode": mode,
             "rerank_used": rerank_used,
-            "confidence": conf
+            "confidence": conf,
         }
-    
+
     # Success: emit metrics
     ANSWERS_TOTAL.labels(mode=mode, rerank=str(bool(rerank)).lower(), tenant=tenant_id).inc()
-    
+
     response = {
         "answer": answer_text,
         "citations": citations,
         "used_mode": mode,
         "rerank_used": rerank_used,
-        "confidence": round(conf, 3)
+        "confidence": round(conf, 3),
     }
-    
+
     # Cache response
     _cache_put("answer", cache_key, response, tenant=tenant_id)
-    
+
     return response
 
 
-@app.get("/embed/project", tags=["knowledge"], dependencies=[Depends(ApiKeyRequired), Depends(AnyRole)])
+@app.get(
+    "/embed/project", tags=["knowledge"], dependencies=[Depends(ApiKeyRequired), Depends(AnyRole)]
+)
 async def embed_project(tenant: str = Depends(ApiKeyRequired), k: int = 200):
     """Project embeddings to 2D using UMAP or PCA fallback."""
     vs = app.state.VSTORE  # type: ignore[attr-defined]
     pts = vs.project_umap(tenant=tenant, k=k)
     return {"ok": True, "n": len(pts), "points": pts}
 
-@app.get("/embed/project.csv", tags=["knowledge"], dependencies=[Depends(ApiKeyRequired), Depends(AnyRole)])
+
+@app.get(
+    "/embed/project.csv",
+    tags=["knowledge"],
+    dependencies=[Depends(ApiKeyRequired), Depends(AnyRole)],
+)
 async def embed_project_csv(tenant: str = Depends(ApiKeyRequired), k: int = 200):
     """Export 2D projection as CSV."""
     from fastapi.responses import PlainTextResponse
+
     vs = app.state.VSTORE  # type: ignore[attr-defined]
     csv = vs.project_umap_csv(tenant=tenant, k=k)
     return PlainTextResponse(csv, media_type="text/csv")
 
-@app.post("/knowledge/ingest-url", tags=["knowledge"], dependencies=[Depends(ApiKeyRequired), Depends(EditorOrAdmin)])
+
+@app.post(
+    "/knowledge/ingest-url",
+    tags=["knowledge"],
+    dependencies=[Depends(ApiKeyRequired), Depends(EditorOrAdmin)],
+)
 async def knowledge_ingest_url(
-    url: str,
-    source: str = "url",
-    tenant: str = Depends(ApiKeyRequired)
+    url: str, source: str = "url", tenant: str = Depends(ApiKeyRequired)
 ):
     """Ingest knowledge from a URL with HTML text extraction."""
-    import re
     import html
+    import re
     from urllib.request import urlopen
-    
+
     def _strip_html(data: bytes) -> str:
         # naive HTML text extractor
         s = data.decode("utf-8", errors="ignore")
@@ -1516,48 +1702,58 @@ async def knowledge_ingest_url(
         s = re.sub(r"(?is)<.*?>", " ", s)
         s = html.unescape(s)
         return re.sub(r"\s+", " ", s).strip()
-    
+
     try:
         data = urlopen(url, timeout=10).read()
         text = _strip_html(data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {str(e)}")
-    
+
     chunks = _simple_chunk(text)
     embedder = app.state.EMBEDDER
     vectors = embedder.embed(chunks)
     app.state.VSTORE.upsert(tenant, source, chunks, vectors)
     return {"ok": True, "ingested_chunks": len(chunks), "source": source, "tenant": tenant}
 
+
 def _read_text_from_pdf(data: bytes) -> str:
     """Extract text from PDF bytes."""
     try:
-        from pypdf import PdfReader
         import io
+
+        from pypdf import PdfReader
+
         r = PdfReader(io.BytesIO(data))
         return "\n".join([p.extract_text() or "" for p in r.pages])
     except Exception:
         return ""
 
-@app.post("/knowledge/ingest-file", tags=["knowledge"], dependencies=[Depends(ApiKeyRequired), Depends(EditorOrAdmin)])
+
+@app.post(
+    "/knowledge/ingest-file",
+    tags=["knowledge"],
+    dependencies=[Depends(ApiKeyRequired), Depends(EditorOrAdmin)],
+)
 async def knowledge_ingest_file(
     file: UploadFile = File(...),
     source: str = "upload",
-    tenant: Optional[str] = Depends(ApiKeyRequired)
+    tenant: str | None = Depends(ApiKeyRequired),
 ):
     """Ingest knowledge from uploaded file (PDF, TXT, MD, DOCX)."""
     raw = await file.read()
     text = ""
     name = (file.filename or "").lower()
-    
+
     if name.endswith(".pdf"):
         text = _read_text_from_pdf(raw)
     elif name.endswith(".txt") or name.endswith(".md"):
         text = raw.decode("utf-8", errors="ignore")
     elif name.endswith(".docx"):
         try:
-            import docx  # python-docx (optional)
             from io import BytesIO
+
+            import docx  # python-docx (optional)
+
             d = docx.Document(BytesIO(raw))
             text = "\n".join([p.text for p in d.paragraphs])
         except Exception:
@@ -1566,33 +1762,39 @@ async def knowledge_ingest_file(
     else:
         # Default: treat as text
         text = raw.decode("utf-8", errors="ignore")
-    
+
     if not text.strip():
         raise HTTPException(status_code=400, detail="No text extracted from file")
-    
+
     chunks = _simple_chunk(text)
     embedder = app.state.EMBEDDER
     vectors = embedder.embed(chunks)
     tenant_id = tenant or "default"
     app.state.VSTORE.upsert(tenant_id, source or "upload", chunks, vectors)
-    
+
     return {
         "ok": True,
         "filename": file.filename,
         "ingested_chunks": len(chunks),
         "source": source or "upload",
-        "tenant": tenant_id
+        "tenant": tenant_id,
     }
+
 
 # ============================================================================
 # Background Ingestion (Async with Job Queue)
 # ============================================================================
 
-@app.post("/knowledge/ingest-text-async", tags=["knowledge"], dependencies=[Depends(ApiKeyRequired), Depends(EditorOrAdmin)])
+
+@app.post(
+    "/knowledge/ingest-text-async",
+    tags=["knowledge"],
+    dependencies=[Depends(ApiKeyRequired), Depends(EditorOrAdmin)],
+)
 async def ingest_text_async(
     text: str = Body(..., embed=True),
     source: str = Body("upload", embed=True),
-    tenant: Optional[str] = Depends(ApiKeyRequired),
+    tenant: str | None = Depends(ApiKeyRequired),
 ):
     """
     Enqueue text ingestion to background worker.
@@ -1607,14 +1809,19 @@ async def ingest_text_async(
         "queued": True,
         "type": "text",
         "tenant": tenant_id,
-        "source": source
+        "source": source,
     }
 
-@app.post("/knowledge/ingest-url-async", tags=["knowledge"], dependencies=[Depends(ApiKeyRequired), Depends(EditorOrAdmin)])
+
+@app.post(
+    "/knowledge/ingest-url-async",
+    tags=["knowledge"],
+    dependencies=[Depends(ApiKeyRequired), Depends(EditorOrAdmin)],
+)
 async def ingest_url_async(
     url: str = Body(..., embed=True),
     source: str = Body("web", embed=True),
-    tenant: Optional[str] = Depends(ApiKeyRequired),
+    tenant: str | None = Depends(ApiKeyRequired),
 ):
     """
     Enqueue URL ingestion to background worker.
@@ -1630,14 +1837,19 @@ async def ingest_url_async(
         "type": "url",
         "tenant": tenant_id,
         "source": source,
-        "url": url
+        "url": url,
     }
 
-@app.post("/knowledge/ingest-file-async", tags=["knowledge"], dependencies=[Depends(ApiKeyRequired), Depends(EditorOrAdmin)])
+
+@app.post(
+    "/knowledge/ingest-file-async",
+    tags=["knowledge"],
+    dependencies=[Depends(ApiKeyRequired), Depends(EditorOrAdmin)],
+)
 async def ingest_file_async(
     file: UploadFile = File(...),
     source: str = "upload",
-    tenant: Optional[str] = Depends(ApiKeyRequired)
+    tenant: str | None = Depends(ApiKeyRequired),
 ):
     """
     Enqueue file ingestion to background worker.
@@ -1646,9 +1858,11 @@ async def ingest_file_async(
     tenant_id = tenant or "default"
     file_bytes = await file.read()
     filename = file.filename or "upload"
-    
+
     q = _rq()
-    job = q.enqueue("pods.customer_ops.worker.ingest_file_job", file_bytes, filename, source, tenant_id)
+    job = q.enqueue(
+        "pods.customer_ops.worker.ingest_file_job", file_bytes, filename, source, tenant_id
+    )
     return {
         "ok": True,
         "job_id": job.id,
@@ -1656,8 +1870,9 @@ async def ingest_file_async(
         "type": "file",
         "filename": filename,
         "tenant": tenant_id,
-        "source": source
+        "source": source,
     }
+
 
 @app.get("/ops/jobs/{job_id}", tags=["ops"], dependencies=[Depends(AdminOnly)])
 async def job_status(job_id: str):
@@ -1668,7 +1883,7 @@ async def job_status(job_id: str):
     job = _rq_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="job_not_found")
-    
+
     data = {
         "id": job_id,
         "status": job.get_status(),
@@ -1676,13 +1891,14 @@ async def job_status(job_id: str):
         "started_at": str(job.started_at) if job.started_at else None,
         "ended_at": str(job.ended_at) if job.ended_at else None,
     }
-    
+
     if job.is_finished:
         data["result"] = job.result
     if job.is_failed:
         data["error"] = str(job.exc_info)[-1000:] if job.exc_info else "failed"
-    
+
     return data
+
 
 def _count_pii_hits(conn, doc_key: str):
     """Count PII placeholder occurrences for a document."""
@@ -1705,12 +1921,14 @@ async def admin_overview(limit: int = Query(20, description="Number of recent in
     Admin dashboard: recent ingestion summary.
     Returns metadata-rich view of last N documents ingested.
     """
-    from pods.customer_ops.db_duck import recent_ingests, get_conn as get_duck_conn
-    
+    from pods.customer_ops.db_duck import get_conn as get_duck_conn
+    from pods.customer_ops.db_duck import recent_ingests
+
     docs = recent_ingests(limit=limit)
-    
+
     # Add human-readable timestamps and PII info
     import datetime
+
     conn = get_duck_conn()
     try:
         for doc in docs:
@@ -1718,19 +1936,24 @@ async def admin_overview(limit: int = Query(20, description="Number of recent in
                 doc["ingested_at_human"] = datetime.datetime.fromtimestamp(
                     doc["ingested_at"]
                 ).strftime("%Y-%m-%d %H:%M:%S")
-            
+
             # Add PII stats
             doc_key = doc.get("doc_key", "")
             hits = _count_pii_hits(conn, doc_key)
-            
+
             # Try to get PII metadata from a representative chunk
-            meta_row = conn.execute("""
-                SELECT metadata FROM chunks 
+            meta_row = conn.execute(
+                """
+                SELECT metadata FROM chunks
                 WHERE metadata LIKE ? OR metadata LIKE ?
                 LIMIT 1
-            """, [f'%"url": "{doc_key.replace(chr(34), chr(34)+chr(34))}%', 
-                  f'%"source": "{doc_key.replace(chr(34), chr(34)+chr(34))}%']).fetchone()
-            
+            """,
+                [
+                    f'%"url": "{doc_key.replace(chr(34), chr(34)+chr(34))}%',
+                    f'%"source": "{doc_key.replace(chr(34), chr(34)+chr(34))}%',
+                ],
+            ).fetchone()
+
             pii_cfg = None
             if meta_row:
                 try:
@@ -1738,36 +1961,35 @@ async def admin_overview(limit: int = Query(20, description="Number of recent in
                     pii_cfg = meta.get("pii_redaction")
                 except:
                     pass
-            
+
             doc["pii"] = {
-                "enabled": bool(pii_cfg.get("enabled")) if (isinstance(pii_cfg, dict) and "enabled" in pii_cfg) else any(hits.values()),
+                "enabled": bool(pii_cfg.get("enabled"))
+                if (isinstance(pii_cfg, dict) and "enabled" in pii_cfg)
+                else any(hits.values()),
                 "types": sorted(pii_cfg.get("types", [])) if isinstance(pii_cfg, dict) else [],
                 "hits": hits,
             }
     finally:
         conn.close()
-    
-    return {
-        "ok": True,
-        "count": len(docs),
-        "documents": docs
-    }
+
+    return {"ok": True, "count": len(docs), "documents": docs}
+
 
 @app.get("/admin/doc", tags=["admin"], dependencies=[Depends(AdminOnly)])
 async def admin_doc(
-    source: Optional[str] = Query(None, description="Filter by document source"),
-    url: Optional[str] = Query(None, description="Filter by URL"),
-    limit: int = Query(5, ge=1, le=50, description="Max chunks to return")
+    source: str | None = Query(None, description="Filter by document source"),
+    url: str | None = Query(None, description="Filter by URL"),
+    limit: int = Query(5, ge=1, le=50, description="Max chunks to return"),
 ):
     """
     Admin endpoint: fetch raw chunk snippets for inspection.
     Useful for verifying PII redaction and content quality.
     """
     from pods.customer_ops.db_duck import get_conn as get_duck_conn
-    
+
     if not source and not url:
         return {"count": 0, "items": []}
-    
+
     where = []
     params = []
     if source:
@@ -1777,21 +1999,25 @@ async def admin_doc(
     if url:
         where.append("metadata LIKE ?")
         params.append(f'%"url": "{url}"%')
-    
+
     w = " AND ".join(where)
     conn = get_duck_conn()
-    rows = conn.execute(f"""
+    rows = conn.execute(
+        f"""
       SELECT substr(content,1,1000) AS snippet,
              metadata
       FROM chunks
       WHERE {w}
       LIMIT ?
-    """, params + [limit]).fetchall()
-    
+    """,
+        params + [limit],
+    ).fetchall()
+
     return {
-      "count": len(rows),
-      "items": [{"snippet": r[0], "metadata": json.loads(r[1])} for r in rows]
+        "count": len(rows),
+        "items": [{"snippet": r[0], "metadata": json.loads(r[1])} for r in rows],
     }
+
 
 @app.get("/admin/ui", tags=["admin"], dependencies=[Depends(AdminOnly)])
 async def admin_ui():
@@ -1799,7 +2025,7 @@ async def admin_ui():
     Admin dashboard UI: lightweight HTML page for monitoring ingests and searching.
     """
     from fastapi.responses import HTMLResponse
-    
+
     html_content = """
 <!DOCTYPE html>
 <html>
@@ -1907,7 +2133,7 @@ async def admin_ui():
 <body>
     <div class="container">
         <h1>🚀 AetherLink Admin Dashboard</h1>
-        
+
         <div class="section">
             <h2 style="margin-bottom: 15px;">🔍 Search Knowledge Base</h2>
             <div class="search-box">
@@ -1916,7 +2142,7 @@ async def admin_ui():
             </div>
             <div id="searchResults" class="search-results"></div>
         </div>
-        
+
         <div class="section">
             <h2 style="margin-bottom: 15px;">📊 Recent Ingestions</h2>
             <div id="loading" class="loading">Loading...</div>
@@ -1940,47 +2166,47 @@ async def admin_ui():
             </table>
         </div>
     </div>
-    
+
     <script>
         async function loadOverview() {
             try {
                 const response = await fetch('/admin/overview');
                 const data = await response.json();
-                
+
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('ingestsTable').style.display = 'table';
-                
+
                 const tbody = document.getElementById('ingestsBody');
                 tbody.innerHTML = '';
-                
+
                 data.documents.forEach(doc => {
                     const row = tbody.insertRow();
-                    
+
                     // Title / Source
                     const titleCell = row.insertCell();
-                    titleCell.innerHTML = doc.title 
+                    titleCell.innerHTML = doc.title
                         ? `<strong>${escapeHtml(doc.title)}</strong><br><small>${escapeHtml(doc.doc_key)}</small>`
                         : escapeHtml(doc.doc_key);
-                    
+
                     // URL
                     const urlCell = row.insertCell();
-                    urlCell.innerHTML = doc.url 
+                    urlCell.innerHTML = doc.url
                         ? `<a href="${escapeHtml(doc.url)}" target="_blank" style="color: #3498db;">${truncate(doc.url, 40)}</a>`
                         : '-';
-                    
+
                     // Lang
                     row.insertCell().textContent = doc.lang || '-';
-                    
+
                     // Published
                     row.insertCell().textContent = doc.published || '-';
-                    
+
                     // Chunks
                     const chunksCell = row.insertCell();
                     chunksCell.innerHTML = `<span class="badge badge-info">${doc.chunks}</span>`;
-                    
+
                     // Chars
                     row.insertCell().textContent = doc.total_chars.toLocaleString();
-                    
+
                     // Extraction
                     const extractCell = row.insertCell();
                     if (doc.extraction) {
@@ -1989,17 +2215,17 @@ async def admin_ui():
                     } else {
                         extractCell.textContent = '-';
                     }
-                    
+
                     // PII
                     const piiCell = row.insertCell();
                     const p = doc.pii || {enabled:false, hits:{EMAIL:0,PHONE:0,SSN:0,CARD:0}};
                     const txt = `E:${p.hits.EMAIL||0} P:${p.hits.PHONE||0} S:${p.hits.SSN||0} C:${p.hits.CARD||0}`;
                     const cls = p.enabled ? "pill pill-ok" : "pill pill-off";
                     piiCell.innerHTML = `<span class="${cls}" title="${txt}">PII</span> <span style="font-size:11px;color:#6b7280">${txt}</span>`;
-                    
+
                     // Ingested
                     row.insertCell().textContent = doc.ingested_at_human || '-';
-                    
+
                     // Actions
                     const actionsCell = row.insertCell();
                     if (doc.url) {
@@ -2012,25 +2238,25 @@ async def admin_ui():
                 document.getElementById('error').textContent = 'Error loading data: ' + err.message;
             }
         }
-        
+
         async function performSearch() {
             const query = document.getElementById('searchQuery').value.trim();
             if (!query) return;
-            
+
             const resultsDiv = document.getElementById('searchResults');
             resultsDiv.innerHTML = '<div class="loading">Searching...</div>';
-            
+
             try {
                 const response = await fetch(`/search?q=${encodeURIComponent(query)}&k=5`);
                 const data = await response.json();
-                
+
                 if (data.results.length === 0) {
                     resultsDiv.innerHTML = '<p style="color: #999;">No results found.</p>';
                     return;
                 }
-                
+
                 resultsDiv.innerHTML = `<p style="margin-bottom: 10px;"><strong>${data.count} results found:</strong></p>`;
-                
+
                 data.results.forEach(result => {
                     const div = document.createElement('div');
                     div.className = 'result-item';
@@ -2046,7 +2272,7 @@ async def admin_ui():
                 resultsDiv.innerHTML = `<div class="error">Search error: ${err.message}</div>`;
             }
         }
-        
+
         function copyUrl(url) {
             navigator.clipboard.writeText(url).then(() => {
                 alert('URL copied to clipboard!');
@@ -2054,29 +2280,29 @@ async def admin_ui():
                 alert('Failed to copy: ' + err);
             });
         }
-        
+
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
-        
+
         function truncate(str, maxLen) {
             return str.length > maxLen ? str.substring(0, maxLen) + '...' : str;
         }
-        
+
         // Allow Enter key to trigger search
         document.getElementById('searchQuery').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') performSearch();
         });
-        
+
         // Load on page load
         loadOverview();
     </script>
 </body>
 </html>
     """
-    
+
     return HTMLResponse(content=html_content)
 
 
@@ -2084,29 +2310,31 @@ async def admin_ui():
 # Admin: API Key Management
 # ============================================================================
 
+
 @app.post("/admin/apikeys", tags=["admin"], dependencies=[Depends(AdminOnly)])
 async def create_api_key(
     tenant_id: str = Body(...),
     role: str = Body(...),
-    name: Optional[str] = Body(None),
-    rpm_limit: Optional[int] = Body(None),
-    daily_quota: Optional[int] = Body(None)
+    name: str | None = Body(None),
+    rpm_limit: int | None = Body(None),
+    daily_quota: int | None = Body(None),
 ):
     """
     Create new API key with specified tenant and role.
-    
+
     Generates a secure random key and stores with quotas/limits.
     """
     import secrets
+
     from pods.customer_ops.db_duck import upsert_api_key
-    
+
     # Validate role
     if role not in ("viewer", "editor", "admin"):
         raise HTTPException(status_code=400, detail=f"Invalid role: {role}")
-    
+
     # Generate secure key
     key = secrets.token_urlsafe(30)
-    
+
     # Store in database
     key_data = upsert_api_key(
         key=key,
@@ -2115,59 +2343,56 @@ async def create_api_key(
         name=name,
         rpm_limit=rpm_limit,
         daily_quota=daily_quota,
-        enabled=True
+        enabled=True,
     )
-    
-    return {
-        "ok": True,
-        "key": key_data
-    }
+
+    return {"ok": True, "key": key_data}
 
 
 @app.get("/admin/apikeys", tags=["admin"], dependencies=[Depends(AdminOnly)])
 async def list_api_keys(limit: int = Query(100, le=500)):
     """
     List all API keys.
-    
+
     Returns keys with usage stats and configuration.
     """
     from pods.customer_ops.db_duck import list_api_keys as db_list_keys
-    
+
     keys = db_list_keys(limit=limit)
-    
-    return {
-        "ok": True,
-        "count": len(keys),
-        "keys": keys
-    }
+
+    return {"ok": True, "count": len(keys), "keys": keys}
 
 
 @app.patch("/admin/apikeys/{key}", tags=["admin"], dependencies=[Depends(AdminOnly)])
 async def update_api_key(
     key: str,
-    enabled: Optional[bool] = Body(None),
-    name: Optional[str] = Body(None),
-    role: Optional[str] = Body(None),
-    rpm_limit: Optional[int] = Body(None),
-    daily_quota: Optional[int] = Body(None)
+    enabled: bool | None = Body(None),
+    name: str | None = Body(None),
+    role: str | None = Body(None),
+    rpm_limit: int | None = Body(None),
+    daily_quota: int | None = Body(None),
 ):
     """
     Update API key configuration.
-    
+
     Can toggle enabled status, update limits, or change role.
     """
-    from pods.customer_ops.db_duck import get_api_key, upsert_api_key, set_api_key_enabled
-    
+    from pods.customer_ops.db_duck import (
+        get_api_key,
+        set_api_key_enabled,
+        upsert_api_key,
+    )
+
     # Get current key
     key_data = get_api_key(key)
     if not key_data:
         raise HTTPException(status_code=404, detail="API key not found")
-    
+
     # Handle simple enabled toggle
     if enabled is not None and all(x is None for x in [name, role, rpm_limit, daily_quota]):
         set_api_key_enabled(key, enabled)
         return {"ok": True, "key": get_api_key(key)}
-    
+
     # Full update
     updated = upsert_api_key(
         key=key,
@@ -2176,40 +2401,40 @@ async def update_api_key(
         name=name if name is not None else key_data["name"],
         rpm_limit=rpm_limit if rpm_limit is not None else key_data["rpm_limit"],
         daily_quota=daily_quota if daily_quota is not None else key_data["daily_quota"],
-        enabled=enabled if enabled is not None else key_data["enabled"]
+        enabled=enabled if enabled is not None else key_data["enabled"],
     )
-    
-    return {
-        "ok": True,
-        "key": updated
-    }
+
+    return {"ok": True, "key": updated}
 
 
 @app.delete("/admin/apikeys/{key}", tags=["admin"], dependencies=[Depends(AdminOnly)])
 async def delete_api_key(key: str):
     """
     Delete an API key.
-    
+
     Permanently removes the key from the database.
     """
-    from pods.customer_ops.db_duck import delete_api_key as db_delete_key, get_api_key
-    
+    from pods.customer_ops.db_duck import delete_api_key as db_delete_key
+    from pods.customer_ops.db_duck import get_api_key
+
     # Check if exists
     if not get_api_key(key):
         raise HTTPException(status_code=404, detail="API key not found")
-    
+
     db_delete_key(key)
-    
-    return {
-        "ok": True,
-        "deleted": key
-    }
+
+    return {"ok": True, "deleted": key}
 
 
-@app.get("/ops/experiments", tags=["ops"], dependencies=[Depends(ApiKeyRequired), Depends(ops_limit_dep())])
+@app.get(
+    "/ops/experiments",
+    tags=["ops"],
+    dependencies=[Depends(ApiKeyRequired), Depends(ops_limit_dep())],
+)
 def experiments_dashboard(tenant: str = Depends(ApiKeyRequired)):
     try:
-        from .experiments import list_experiments, calculate_significance
+        from .experiments import calculate_significance, list_experiments
+
         experiments = list_experiments()
         for exp_name, exp_info in experiments.items():
             if exp_info.get("enabled"):
@@ -2223,34 +2448,51 @@ def experiments_dashboard(tenant: str = Depends(ApiKeyRequired)):
         logger.error("experiments_dashboard_failed", extra={"error": str(e)})
         return {"experiments": {}, "error": str(e)}
 
-@app.post("/ops/experiments/{experiment_name}/promote", tags=["ops"], dependencies=[Depends(ApiKeyRequired), Depends(ops_limit_dep())])
+
+@app.post(
+    "/ops/experiments/{experiment_name}/promote",
+    tags=["ops"],
+    dependencies=[Depends(ApiKeyRequired), Depends(ops_limit_dep())],
+)
 def promote_experiment(experiment_name: str, tenant: str = Depends(ApiKeyRequired)):
     try:
         from .experiments import promote_winner
+
         result = promote_winner(experiment_name)
         if result.get("ok"):
-            logger.info("experiment_promoted", extra={
-                "experiment": experiment_name,
-                "winner": result.get("promoted"),
-            })
+            logger.info(
+                "experiment_promoted",
+                extra={
+                    "experiment": experiment_name,
+                    "winner": result.get("promoted"),
+                },
+            )
         else:
-            logger.warning("experiment_promotion_failed", extra={
-                "experiment": experiment_name,
-                "error": result.get("error"),
-            })
+            logger.warning(
+                "experiment_promotion_failed",
+                extra={
+                    "experiment": experiment_name,
+                    "error": result.get("error"),
+                },
+            )
         return result
     except Exception as e:
-        logger.error("promote_experiment_failed", extra={
-            "experiment": experiment_name,
-            "error": str(e),
-        })
+        logger.error(
+            "promote_experiment_failed",
+            extra={
+                "experiment": experiment_name,
+                "error": str(e),
+            },
+        )
         return {"ok": False, "error": str(e)}
+
 
 @app.post("/v1/lead", response_model=dict, dependencies=[Depends(faq_limit_dep())])
 def create_lead(req: LeadRequest, request: Request, tenant: str = Depends(ApiKeyRequired)):
     request_id = getattr(request.state, "request_id", "n/a")
     s = get_settings()
     from .experiments import get_variant, get_variant_config
+
     enrichment_variant = get_variant(tenant or "public", "enrichment_model")
     followup_variant = get_variant(tenant or "public", "followup_timing")
     prediction_variant = get_variant(tenant or "public", "prediction_threshold")
@@ -2263,6 +2505,7 @@ def create_lead(req: LeadRequest, request: Request, tenant: str = Depends(ApiKey
     if s.ENABLE_ENRICHMENT:
         try:
             from .predict import predict
+
             pred_start = time.time()
             pred_prob = predict(
                 score=float(enr.get("score", 0.5)),
@@ -2313,7 +2556,9 @@ def create_lead(req: LeadRequest, request: Request, tenant: str = Depends(ApiKey
     if app.state.q_followups and pred_prob is not None and pred_prob >= followup_threshold:
         try:
             from datetime import timedelta
+
             from .tasks_followup import run_followup
+
             base_url = str(request.base_url).rstrip("/")
             api_key = request.headers.get("x-api-key", "")
             if followup_config and "delay_seconds" in followup_config:
@@ -2359,6 +2604,7 @@ def create_lead(req: LeadRequest, request: Request, tenant: str = Depends(ApiKey
         confidence=float(enr["score"]),
     )
 
+
 @app.get("/v1/lead", response_model=dict, dependencies=[Depends(faq_limit_dep())])
 def list_lead(request: Request, tenant: str = Depends(ApiKeyRequired)):
     request_id = getattr(request.state, "request_id", "n/a")
@@ -2372,8 +2618,16 @@ def list_lead(request: Request, tenant: str = Depends(ApiKeyRequired)):
         except Exception:
             lead_item.last_messages = []
         lead_items.append(lead_item)
-    logger.info("lead_list", extra={"request_id": request_id, "tenant": tenant, "count": len(items)})
-    return ok(request_id, LeadListResponse(items=lead_items).model_dump(), intent="lead_list", confidence=1.0)
+    logger.info(
+        "lead_list", extra={"request_id": request_id, "tenant": tenant, "count": len(items)}
+    )
+    return ok(
+        request_id,
+        LeadListResponse(items=lead_items).model_dump(),
+        intent="lead_list",
+        confidence=1.0,
+    )
+
 
 @app.get("/v1/lead/{lead_id}/history", response_model=dict)
 def lead_history(
@@ -2385,11 +2639,20 @@ def lead_history(
     request_id = getattr(request.state, "request_id", "n/a")
     try:
         items = get_history(tenant or "public", lead_id, limit=limit)
-        logger.info("lead_history", extra={"request_id": request_id, "lead_id": lead_id, "count": len(items)})
-        return ok(request_id, {"lead_id": lead_id, "items": items}, intent="lead_history", confidence=1.0)
+        logger.info(
+            "lead_history",
+            extra={"request_id": request_id, "lead_id": lead_id, "count": len(items)},
+        )
+        return ok(
+            request_id, {"lead_id": lead_id, "items": items}, intent="lead_history", confidence=1.0
+        )
     except Exception as e:
-        logger.error("lead_history_failed", extra={"request_id": request_id, "lead_id": lead_id, "error": str(e)})
+        logger.error(
+            "lead_history_failed",
+            extra={"request_id": request_id, "lead_id": lead_id, "error": str(e)},
+        )
         raise HTTPException(status_code=500, detail=f"Failed to retrieve history: {e}")
+
 
 @app.get("/v1/search", response_model=dict, dependencies=[Depends(faq_limit_dep())])
 def search_leads(
@@ -2409,19 +2672,29 @@ def search_leads(
             score = sum(text.count(tok) for tok in query_tokens)
             if score > 0:
                 preview = " ".join(m.get("text", "") for m in msgs)[:240]
-                hits.append({
-                    "lead_id": lead["id"],
-                    "name": lead.get("name", ""),
-                    "phone": lead.get("phone", ""),
-                    "score": score,
-                    "preview": preview,
-                })
+                hits.append(
+                    {
+                        "lead_id": lead["id"],
+                        "name": lead.get("name", ""),
+                        "phone": lead.get("phone", ""),
+                        "score": score,
+                        "preview": preview,
+                    }
+                )
         except Exception:
             pass
     hits.sort(key=lambda x: x["score"], reverse=True)
     results = hits[:limit]
-    logger.info("search_leads", extra={"request_id": request_id, "query": q, "results": len(results)})
-    return ok(request_id, {"query": q, "count": len(results), "results": results}, intent="search", confidence=1.0)
+    logger.info(
+        "search_leads", extra={"request_id": request_id, "query": q, "results": len(results)}
+    )
+    return ok(
+        request_id,
+        {"query": q, "count": len(results), "results": results},
+        intent="search",
+        confidence=1.0,
+    )
+
 
 @app.post("/v1/lead/{lead_id}/outcome", response_model=dict)
 def record_outcome(
@@ -2431,6 +2704,7 @@ def record_outcome(
     tenant: str = Depends(ApiKeyRequired),
 ):
     from .lead_store import get_lead, set_outcome
+
     request_id = getattr(request.state, "request_id", "n/a")
     lead = get_lead(lead_id)
     if not lead:
@@ -2441,7 +2715,9 @@ def record_outcome(
         notes=req.notes,
         time_to_conversion=req.time_to_conversion,
     )
-    from .experiments import get_variant, track_outcome as track_experiment_outcome
+    from .experiments import get_variant
+    from .experiments import track_outcome as track_experiment_outcome
+
     lead_tenant = lead.get("tenant", "public")
     enrichment_variant = get_variant(lead_tenant, "enrichment_model")
     followup_variant = get_variant(lead_tenant, "followup_timing")
@@ -2452,12 +2728,14 @@ def record_outcome(
     OUTCOME_TOTAL.labels(outcome=req.outcome).inc()
     try:
         from .lead_store import list_outcomes
+
         recent = list_outcomes(limit=1000)
         if recent:
             booked_count = sum(1 for r in recent if r.get("outcome") == "booked")
             conversion_rate = booked_count / len(recent)
             CONVERSION_RATE.set(conversion_rate)
             from .experiments import EXPERIMENT_CONVERSION_RATE, EXPERIMENT_SAMPLE_SIZE
+
             for exp_name in ["enrichment_model", "followup_timing", "prediction_threshold"]:
                 variant_counts = {}
                 for outcome_rec in recent:
@@ -2469,16 +2747,14 @@ def record_outcome(
                     if outcome_rec.get("outcome") == "booked":
                         variant_counts[variant]["booked"] += 1
                 for variant, counts in variant_counts.items():
-                    EXPERIMENT_SAMPLE_SIZE.labels(
-                        experiment=exp_name,
-                        variant=variant
-                    ).set(counts["total"])
+                    EXPERIMENT_SAMPLE_SIZE.labels(experiment=exp_name, variant=variant).set(
+                        counts["total"]
+                    )
                     if counts["total"] > 0:
                         rate = counts["booked"] / counts["total"]
-                        EXPERIMENT_CONVERSION_RATE.labels(
-                            experiment=exp_name,
-                            variant=variant
-                        ).set(rate)
+                        EXPERIMENT_CONVERSION_RATE.labels(experiment=exp_name, variant=variant).set(
+                            rate
+                        )
     except Exception:
         pass
     logger.info(
@@ -2504,6 +2780,7 @@ def record_outcome(
         confidence=1.0,
     )
 
+
 @app.get("/v1/analytics/outcomes", response_model=dict)
 def get_outcome_analytics(
     request: Request,
@@ -2511,6 +2788,7 @@ def get_outcome_analytics(
     tenant: str = Depends(ApiKeyRequired),
 ):
     from .lead_store import list_leads, list_outcomes
+
     request_id = getattr(request.state, "request_id", "n/a")
     outcomes = list_outcomes(limit=limit)
     total_outcomes = len(outcomes)
@@ -2550,9 +2828,11 @@ def get_outcome_analytics(
         confidence=1.0,
     )
 
+
 def check_booking_intent(text: str) -> bool:
     text = text.lower()
     return any(word in text for word in BOOKING_WORDS)
+
 
 @app.post("/v1/faq", response_model=FaqAnswer, dependencies=[Depends(faq_limit_dep())])
 def faq_endpoint(request: Request, query: FaqRequest, tenant: str = Depends(ApiKeyRequired)):
@@ -2574,11 +2854,18 @@ def faq_endpoint(request: Request, query: FaqRequest, tenant: str = Depends(ApiK
     response = {"answer": answer, "citations": [citation], "score": score}
     set_semcache(query.query, response)
     INTENT_COUNT.labels("faq", "/v1/faq").inc()
-    return ok(request_id, {**response, "cached": False}, intent="faq", confidence=round(score or 0.0, 2))
+    return ok(
+        request_id, {**response, "cached": False}, intent="faq", confidence=round(score or 0.0, 2)
+    )
 
 
 @app.post("/v1/chat", response_model=ChatResponse, dependencies=[Depends(chat_limit_dep())])
-def chat_endpoint(request: Request, payload: ChatRequest, db: Session = Depends(get_db), tenant: str = Depends(ApiKeyRequired)):
+def chat_endpoint(
+    request: Request,
+    payload: ChatRequest,
+    db: Session = Depends(get_db),
+    tenant: str = Depends(ApiKeyRequired),
+):
     request_id = getattr(request.state, "request_id", "n/a")
     results = rag.query(payload.message, k=1)
     if results and results[0][2] > CONFIDENCE_THRESHOLD:
@@ -2598,7 +2885,12 @@ def chat_endpoint(request: Request, payload: ChatRequest, db: Session = Depends(
         )
         logger.info("chat_request", extra={"request_id": request_id, "tenant": tenant})
         INTENT_COUNT.labels("faq", "/v1/faq").inc()
-        return ok(request_id, {"reply": answer, "intent": "faq", "confidence": score, "lead_id": lead.id}, intent="faq", confidence=score)
+        return ok(
+            request_id,
+            {"reply": answer, "intent": "faq", "confidence": score, "lead_id": lead.id},
+            intent="faq",
+            confidence=score,
+        )
     if check_booking_intent(payload.message):
         lead = create_lead_crud(
             db=db,
@@ -2614,7 +2906,17 @@ def chat_endpoint(request: Request, payload: ChatRequest, db: Session = Depends(
         )
         logger.info("chat_request", extra={"request_id": request_id, "tenant": tenant})
         INTENT_COUNT.labels("booking", "/v1/chat").inc()
-        return ok(request_id, {"reply": "I can help you schedule an appointment. Let me transfer you to our booking system.", "intent": "booking", "confidence": 1.0, "lead_id": lead.id}, intent="booking", confidence=1.0)
+        return ok(
+            request_id,
+            {
+                "reply": "I can help you schedule an appointment. Let me transfer you to our booking system.",
+                "intent": "booking",
+                "confidence": 1.0,
+                "lead_id": lead.id,
+            },
+            intent="booking",
+            confidence=1.0,
+        )
     lead = create_lead_crud(
         db=db,
         name=payload.user_id,
@@ -2629,4 +2931,14 @@ def chat_endpoint(request: Request, payload: ChatRequest, db: Session = Depends(
     )
     logger.info("chat_request", extra={"request_id": request_id, "tenant": tenant})
     INTENT_COUNT.labels("human", "/v1/chat").inc()
-    return ok(request_id, {"reply": "I'll connect you with one of our team members who can help you better.", "intent": "human", "confidence": 0.0, "lead_id": lead.id}, intent="human", confidence=0.0)
+    return ok(
+        request_id,
+        {
+            "reply": "I'll connect you with one of our team members who can help you better.",
+            "intent": "human",
+            "confidence": 0.0,
+            "lead_id": lead.id,
+        },
+        intent="human",
+        confidence=0.0,
+    )

@@ -99,3 +99,14 @@ services:
       APEXFLOW_URL: "http://aether-apexflow:9109/health"
       KAFKA_URL: "http://aether-kafka:9010/health"
     restart: unless-stopped
+
+  ai-orchestrator:
+    build:
+      context: ../services/ai-orchestrator
+    container_name: aether-ai-orchestrator
+    ports:
+      - "8011:8001"
+    environment:
+      AI_SUMMARIZER_URL: "http://aether-ai-summarizer:9108"
+      # GRAFANA_ANNOTATIONS_URL: "http://aether-grafana:3000/api/annotations"
+    restart: unless-stopped

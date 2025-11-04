@@ -25,16 +25,16 @@ function Get-MetricValue {
         [string]$MetricName,
         [string]$Labels
     )
-    
+
     $response = Invoke-WebRequest -Uri "$ApiUrl/metrics" -UseBasicParsing
     $lines = $response.Content -split "`n"
-    
+
     foreach ($line in $lines) {
         if ($line -match "^$MetricName\{$Labels\}\s+(\d+(\.\d+)?)") {
             return [double]$matches[1]
         }
     }
-    
+
     return $null
 }
 
@@ -119,7 +119,7 @@ $lowconfMetrics = (Invoke-WebRequest -Uri "$ApiUrl/metrics" -UseBasicParsing).Co
 # Check metric definition (may not have actual data yet)
 if ($lowconfMetrics -match '# HELP aether_rag_lowconfidence_total Low confidence answers' `
         -and $lowconfMetrics -match '# TYPE aether_rag_lowconfidence_total counter') {
-    
+
     # Try to find actual metric with labels (may be 0)
     if ($lowconfMetrics -match 'aether_rag_lowconfidence_total\{tenant="[^"]+"\}') {
         Write-Host "  ✓ LOWCONF_TOTAL has tenant label (with data)" -ForegroundColor Green

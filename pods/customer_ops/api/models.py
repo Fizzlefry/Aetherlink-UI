@@ -1,8 +1,6 @@
-
 from pydantic import BaseModel
 from sqlalchemy import Column, DateTime, Integer, String, func
 from sqlalchemy.orm import declarative_base
-
 
 # SQLAlchemy models
 Base = declarative_base()
@@ -36,6 +34,7 @@ class FaqAnswer(BaseModel):
 
 class ChatResponse(BaseModel):
     """Response for /chat endpoint"""
+
     reply: str  # The text response to send to the user
     intent: str  # "faq" | "booking" | "human"
     confidence: float  # 0-1 score of how confident we are in the intent

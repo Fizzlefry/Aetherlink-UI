@@ -1,7 +1,7 @@
 -- Add replay tracking to event_journal
 -- Allows distinguishing original events from replayed events in analytics
 
-ALTER TABLE event_journal 
+ALTER TABLE event_journal
 ADD COLUMN replay_count INTEGER DEFAULT 0 NOT NULL,
 ADD COLUMN replay_source TEXT DEFAULT NULL;
 
@@ -15,14 +15,14 @@ COMMENT ON COLUMN event_journal.replay_source IS 'Source of replay: "operator_ap
 -- Example queries after this migration:
 
 -- Count original vs replayed events
--- SELECT 
+-- SELECT
 --   CASE WHEN replay_count = 0 THEN 'original' ELSE 'replayed' END AS event_type,
---   COUNT(*) 
--- FROM event_journal 
+--   COUNT(*)
+-- FROM event_journal
 -- GROUP BY event_type;
 
 -- Find all replayed events
 -- SELECT id, topic, tenant_id, replay_count, replay_source, received_at
--- FROM event_journal 
+-- FROM event_journal
 -- WHERE replay_count > 0
 -- ORDER BY received_at DESC;

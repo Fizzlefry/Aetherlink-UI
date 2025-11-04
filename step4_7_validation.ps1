@@ -61,11 +61,11 @@ Write-Host "──────────────────────�
 try {
     $experiments = Invoke-RestMethod -Uri "http://localhost:8000/ops/experiments" -TimeoutSec 10
     $followup = $experiments.experiments.followup_timing
-    
+
     Write-Host "`nExperiment: followup_timing" -ForegroundColor Cyan
     Write-Host "  Enabled: $($followup.enabled)" -ForegroundColor $(if ($followup.enabled) { "Green" } else { "Red" })
     Write-Host "  Description: $($followup.description)" -ForegroundColor Gray
-    
+
     if ($followup.variants) {
         Write-Host "  Variants:" -ForegroundColor Gray
         foreach ($variant in $followup.variants) {
@@ -73,16 +73,16 @@ try {
             Write-Host "    - $($variant.name): $weight% traffic, delay=$($variant.config.delay_seconds)s" -ForegroundColor Gray
         }
     }
-    
+
     if (!$followup.enabled) {
         Write-Host "`n❌ Experiment NOT enabled!" -ForegroundColor Red
         Write-Host "   Edit: pods\customer_ops\api\experiments.py line 104" -ForegroundColor Yellow
         Write-Host "   Change: enabled=False → enabled=True" -ForegroundColor Yellow
         exit 1
     }
-    
+
     Write-Host "`n✅ Experiment is ready!" -ForegroundColor Green
-    
+
 } catch {
     Write-Host "❌ Could not fetch experiments: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
@@ -114,7 +114,7 @@ Write-Host "`nPrometheus experiment metrics:" -ForegroundColor Cyan
 try {
     $metrics = Invoke-WebRequest -Uri "http://localhost:8000/metrics" -UseBasicParsing -TimeoutSec 10
     $experimentMetrics = $metrics.Content | Select-String "experiment_variant_assigned_total|experiment_outcome_total|experiment_conversion_rate|experiment_sample_size"
-    
+
     if ($experimentMetrics) {
         Write-Host $experimentMetrics -ForegroundColor Green
     } else {

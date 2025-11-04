@@ -24,7 +24,7 @@ try {
     $has_enabled = $metrics -match 'autoheal_enabled'
     $has_actions = $metrics -match 'autoheal_actions_total'
     $has_cooldown = $metrics -match 'autoheal_cooldown_remaining_seconds'
-    
+
     Write-Host "  autoheal_enabled: $(if ($has_enabled) {'OK'} else {'MISSING'})" -ForegroundColor $(if ($has_enabled) { "Green" } else { "Red" })
     Write-Host "  autoheal_actions_total: $(if ($has_actions) {'OK'} else {'MISSING'})" -ForegroundColor $(if ($has_actions) { "Green" } else { "Red" })
     Write-Host "  autoheal_cooldown_remaining_seconds: $(if ($has_cooldown) {'OK'} else {'MISSING'})" -ForegroundColor $(if ($has_cooldown) { "Green" } else { "Red" })
@@ -39,7 +39,7 @@ Write-Host "`n[Test 3: Prometheus Recording Rules]" -ForegroundColor Yellow
 try {
     $cooldown = Invoke-RestMethod 'http://localhost:9090/api/v1/query?query=autoheal:cooldown_active'
     $rate = Invoke-RestMethod 'http://localhost:9090/api/v1/query?query=autoheal:actions:rate_5m'
-    
+
     Write-Host "  autoheal:cooldown_active: $(if ($cooldown.data.result.Count -ge 0) {'OK'} else {'FAIL'})" -ForegroundColor Green
     Write-Host "  autoheal:actions:rate_5m: $(if ($rate.data.result.Count -ge 0) {'OK'} else {'FAIL'})" -ForegroundColor Green
 }
@@ -53,7 +53,7 @@ try {
     $ack = Invoke-RestMethod 'http://localhost:9009/ack?labels=%7B%22alertname%22%3A%22TestAlert%22%7D&duration=5m&comment=SmokeTest'
     Write-Host "  Silence created: $($ack.silenceId.Substring(0,8))..." -ForegroundColor Green
     Write-Host "  OK: $(if ($ack.ok) {'true'} else {'false'})" -ForegroundColor Green
-    
+
     # Clean up - delete the test silence
     Start-Sleep -Seconds 2
     Invoke-RestMethod -Method DELETE "http://localhost:9093/api/v2/silence/$($ack.silenceId)" | Out-Null

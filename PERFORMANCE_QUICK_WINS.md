@@ -128,7 +128,7 @@ _make_citations(results, used_by_url, max_cites=3, snippet_chars=220)  # Top 3 s
      -H "Content-Type: application/json" `
      -H "X-API-Key: test-key" `
      -d '{"q": "What are the refund policies?"}'
-   
+
    # Check metrics (should see 1 hit)
    Invoke-WebRequest http://localhost:8000/metrics | Select-String "aether_rag_cache"
    ```
@@ -140,7 +140,7 @@ _make_citations(results, used_by_url, max_cites=3, snippet_chars=220)  # Top 3 s
      -H "Content-Type: application/json" `
      -H "X-API-Key: test-key" `
      -d '{"q": "How do I contact support?"}' | ConvertFrom-Json
-   
+
    $response.citations | Format-List url, count, highlights
    ```
 

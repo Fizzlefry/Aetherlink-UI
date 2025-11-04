@@ -48,12 +48,12 @@ schtasks /Create `
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "   ✅ Auto-start task created" -ForegroundColor Green
-    
+
     # Harden: Run whether user is logged on or not + 1-minute delay for Docker Desktop
     Write-Host "   � Hardening task (run even when not logged in + 1-min delay)..." -ForegroundColor Yellow
     schtasks /Change /TN "AetherLink-Monitoring-Autostart" /RU "$env:USERNAME" /RL HIGHEST /ENABLE | Out-Null
     schtasks /Change /TN "AetherLink-Monitoring-Autostart" /DELAY 0001:00 | Out-Null
-    
+
     Write-Host "   �� Task Name: AetherLink-Monitoring-Autostart" -ForegroundColor Gray
     Write-Host "   🔄 Trigger: On user logon (+1 min delay for Docker)" -ForegroundColor Gray
     Write-Host "   📜 Action: Start monitoring stack (silent mode)" -ForegroundColor Gray
@@ -88,11 +88,11 @@ schtasks /Create `
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "   ✅ Nightly backup task created" -ForegroundColor Green
-    
+
     # Harden: Run whether user is logged on or not
     Write-Host "   🔒 Hardening task (run even when not logged in)..." -ForegroundColor Yellow
     schtasks /Change /TN "AetherLink-Monitoring-Backup" /RU "$env:USERNAME" /RL HIGHEST /ENABLE | Out-Null
-    
+
     Write-Host "   📋 Task Name: AetherLink-Monitoring-Backup" -ForegroundColor Gray
     Write-Host "   🔄 Trigger: Daily at 1:30 AM" -ForegroundColor Gray
     Write-Host "   📜 Action: Backup dashboards + configs" -ForegroundColor Gray
@@ -131,10 +131,10 @@ if ($createStartup -eq "Y" -or $createStartup -eq "y") {
 
     if ($LASTEXITCODE -eq 0) {
         Write-Host "   ✅ Startup task created" -ForegroundColor Green
-        
+
         # Harden: Run whether user is logged on or not
         schtasks /Change /TN "AetherLink-Monitoring-AtStartup" /RU "$env:USERNAME" /RL HIGHEST /ENABLE | Out-Null
-        
+
         Write-Host "   📋 Task Name: AetherLink-Monitoring-AtStartup" -ForegroundColor Gray
         Write-Host "   🔄 Trigger: On system startup" -ForegroundColor Gray
         Write-Host "   🛡️  Resilient: Runs even if not logged in" -ForegroundColor Gray
@@ -202,7 +202,7 @@ $importDashboard = Read-Host
 if ($importDashboard -eq "Y" -or $importDashboard -eq "y") {
     Write-Host ""
     Write-Host "   📤 Importing dashboard via API..." -ForegroundColor Yellow
-    
+
     $importScript = Join-Path $scriptsPath "import-exec-dashboard.ps1"
     if (Test-Path $importScript) {
         & $importScript

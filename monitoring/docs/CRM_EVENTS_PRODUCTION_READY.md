@@ -125,7 +125,7 @@ crm_events_http_requests_total{path="/crm-events",method="GET"} 0.0
 ```yaml
 scrape_configs:
   # ... existing jobs ...
-  
+
   - job_name: 'crm-events'
     static_configs:
       - targets: ['crm-events:9010']
@@ -168,7 +168,7 @@ command-center:
 ## Troubleshooting
 
 ### Issue: SSE stream times out
-**Cause**: Kafka not running or topic doesn't exist  
+**Cause**: Kafka not running or topic doesn't exist
 **Fix**:
 ```powershell
 # Check Kafka status
@@ -179,7 +179,7 @@ docker exec kafka rpk topic create aetherlink.events --partitions 3
 ```
 
 ### Issue: "Empty reply from server"
-**Cause**: Service crashed or not started  
+**Cause**: Service crashed or not started
 **Fix**:
 ```powershell
 # Check logs
@@ -190,7 +190,7 @@ docker compose -f monitoring/docker-compose.yml restart crm-events
 ```
 
 ### Issue: No events showing in Command Center
-**Cause**: EventSource connection failed  
+**Cause**: EventSource connection failed
 **Fix**:
 1. Check browser console (F12) for errors
 2. Verify API proxy: `curl.exe http://localhost:3001/api/ops/crm-events`

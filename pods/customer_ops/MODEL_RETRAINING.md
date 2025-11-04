@@ -1,8 +1,8 @@
 # Model Retraining Pipeline 🔄
 
-**Status**: ✅ Shipped  
-**Impact**: Automated nightly model retraining with hot-reload (zero downtime)  
-**Architecture**: GitHub Actions + `/ops/reload-model` endpoint + Prometheus monitoring  
+**Status**: ✅ Shipped
+**Impact**: Automated nightly model retraining with hot-reload (zero downtime)
+**Architecture**: GitHub Actions + `/ops/reload-model` endpoint + Prometheus monitoring
 
 ---
 
@@ -140,12 +140,12 @@ Automated monitoring rules:
   expr: lead_model_auc < 0.65
   for: 30m
   severity: warning
-  
+
 - alert: LeadModelAUCCritical
   expr: lead_model_auc < 0.55
   for: 10m
   severity: critical
-  
+
 - alert: LeadPredLatencyHigh
   expr: (rate(lead_pred_latency_seconds_sum[5m]) / ...) > 0.1
   for: 10m

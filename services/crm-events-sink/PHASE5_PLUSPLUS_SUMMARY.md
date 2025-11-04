@@ -17,7 +17,7 @@ Added **replay tracking** to distinguish original events from replayed events in
 
 Added two columns to `event_journal`:
 ```sql
-ALTER TABLE event_journal 
+ALTER TABLE event_journal
 ADD COLUMN replay_count INTEGER DEFAULT 0 NOT NULL,
 ADD COLUMN replay_source TEXT DEFAULT NULL;
 ```
@@ -88,21 +88,21 @@ Replayed From: Event #1
 
 **Count original vs replayed**:
 ```sql
-SELECT 
+SELECT
   CASE WHEN replay_count = 0 THEN 'Original' ELSE 'Replayed' END AS type,
-  COUNT(*) 
-FROM event_journal 
+  COUNT(*)
+FROM event_journal
 GROUP BY type;
 ```
 
 **Find all replays**:
 ```sql
-SELECT 
-  id, 
-  topic, 
-  replay_source, 
+SELECT
+  id,
+  topic,
+  replay_source,
   payload->>'_replayed_from_event_id' as original_event_id
-FROM event_journal 
+FROM event_journal
 WHERE replay_count > 0;
 ```
 
@@ -136,7 +136,7 @@ WHERE replay_count > 0;
 
 **Query**:
 ```sql
-SELECT 
+SELECT
   DATE(received_at),
   SUM(CASE WHEN replay_count = 0 THEN 1 ELSE 0 END) as original,
   SUM(CASE WHEN replay_count > 0 THEN 1 ELSE 0 END) as replayed
@@ -151,15 +151,15 @@ GROUP BY DATE(received_at);
 
 **Query**:
 ```sql
-SELECT 
+SELECT
   id,
   topic,
   tenant_id,
   payload->>'_replayed_from_event_id' as source_event,
   received_at
 FROM event_journal
-WHERE 
-  replay_count > 0 
+WHERE
+  replay_count > 0
   AND received_at BETWEEN '2025-11-03 14:00' AND '2025-11-03 15:00';
 ```
 
@@ -182,10 +182,10 @@ WHERE payload->>'_replayed_from_event_id' = '42';
 
 **Query**:
 ```sql
-SELECT 
+SELECT
   replay_source,
-  COUNT(*) 
-FROM event_journal 
+  COUNT(*)
+FROM event_journal
 WHERE replay_count > 0
 GROUP BY replay_source;
 ```
@@ -204,7 +204,7 @@ GROUP BY replay_source;
 ### Created
 1. `services/crm-events-sink/sql/003_replay_tracking.sql`
    - Schema migration for replay tracking columns
-   
+
 2. `services/crm-events-sink/GRAFANA_REPLAY_QUERIES.md`
    - Complete Grafana query reference
    - Dashboard layout examples
@@ -256,11 +256,11 @@ GROUP BY replay_source;
 
 4. **Audit in database**:
    ```sql
-   SELECT 
+   SELECT
      payload->>'_replayed_from_event_id' as source,
      COUNT(*) as replays
    FROM event_journal
-   WHERE replay_count > 0 
+   WHERE replay_count > 0
      AND received_at > NOW() - INTERVAL '1 hour'
    GROUP BY source;
    ```
@@ -346,15 +346,15 @@ Database:
 
 **Phase 5++ is complete.** The event-driven platform now includes:
 
-✅ Event publishing (ApexFlow → Kafka)  
-✅ Event persistence (Sink → PostgreSQL)  
-✅ Event metrics (Prometheus)  
-✅ Event visualization (Grafana)  
-✅ Event replay (HTTP API → Kafka)  
-✅ Dead letter queue (Error capture)  
-✅ **Replay tracking (Original vs Replayed)** ⭐ NEW  
-✅ **Audit trail (Source tracking)** ⭐ NEW  
-✅ **Enhanced observability (Grafana queries)** ⭐ NEW  
+✅ Event publishing (ApexFlow → Kafka)
+✅ Event persistence (Sink → PostgreSQL)
+✅ Event metrics (Prometheus)
+✅ Event visualization (Grafana)
+✅ Event replay (HTTP API → Kafka)
+✅ Dead letter queue (Error capture)
+✅ **Replay tracking (Original vs Replayed)** ⭐ NEW
+✅ **Audit trail (Source tracking)** ⭐ NEW
+✅ **Enhanced observability (Grafana queries)** ⭐ NEW
 
 This is a **mature, production-grade, event-sourced platform** with:
 - Full recovery capabilities

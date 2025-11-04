@@ -293,7 +293,7 @@ make smoke-test
 ### Monitoring Stack Components
 
 - **Prometheus** (http://localhost:9090): Metrics collection & alerting
-- **Grafana** (http://localhost:3000): Dashboards & visualization  
+- **Grafana** (http://localhost:3000): Dashboards & visualization
   - Default login: admin/admin
   - Dashboard: PeakPro CRM - KPIs
 - **Alertmanager** (http://localhost:9093): Alert routing & Slack notifications
@@ -333,7 +333,7 @@ make restart-all        # Restart all monitoring services
 The monitoring stack includes automated smoke tests that run on every push:
 
 - ✅ Validates Prometheus rule groups & recording rules
-- ✅ Checks Grafana datasource connectivity  
+- ✅ Checks Grafana datasource connectivity
 - ✅ Verifies Alertmanager configuration
 - ✅ Tests CRM API metrics exposure
 - ✅ Optional: Sends synthetic Slack alert

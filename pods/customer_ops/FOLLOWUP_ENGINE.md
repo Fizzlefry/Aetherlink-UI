@@ -1,8 +1,8 @@
 # Auto Follow-Up Engine 🚀
 
-**Status**: ✅ Shipped  
-**Impact**: High-probability leads (pred_prob ≥ 0.70) receive automated follow-ups at configurable intervals  
-**Architecture**: RQ-based background task system with fail-open resilience  
+**Status**: ✅ Shipped
+**Impact**: High-probability leads (pred_prob ≥ 0.70) receive automated follow-ups at configurable intervals
+**Architecture**: RQ-based background task system with fail-open resilience
 
 ---
 
@@ -144,7 +144,7 @@ if app.state.q_followups and pred_prob >= s.FOLLOWUP_RULE_TOP_P:
     try:
         from datetime import timedelta
         from .tasks_followup import run_followup
-        
+
         schedules = _parse_schedules(s.FOLLOWUP_SCHEDULES)
         for delay in schedules:
             app.state.q_followups.enqueue_in(

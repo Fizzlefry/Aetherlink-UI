@@ -48,7 +48,7 @@ while (-not $ok -and $attempts -lt $maxAttempts) {
     catch {
         # Ignore errors and retry
     }
-    
+
     $attempts++
     Start-Sleep -Seconds 1
 }
@@ -70,7 +70,7 @@ Write-Host "[3/5] Testing /health Endpoint..." -ForegroundColor Yellow
 
 try {
     $health = Invoke-RestMethod http://localhost:8088/health
-    
+
     Write-Host "   [OK] Health check passed" -ForegroundColor Green
     Write-Host "   Status: ok=$($health.ok)" -ForegroundColor Gray
     Write-Host "   Health Score: $($health.health_score)" -ForegroundColor Gray
@@ -91,12 +91,12 @@ try {
     $queryBody = @{
         ql = "aether:health_score:15m"
     } | ConvertTo-Json
-    
+
     $queryResult = Invoke-RestMethod -Method Post `
         -Uri http://localhost:8088/query `
         -ContentType "application/json" `
         -Body $queryBody
-    
+
     Write-Host "   [OK] Query executed successfully" -ForegroundColor Green
     Write-Host "   Query: $($queryResult.query)" -ForegroundColor Gray
     Write-Host "   Value: $($queryResult.value)" -ForegroundColor Gray
@@ -114,10 +114,10 @@ Write-Host "[5/5] Testing /metrics Endpoint..." -ForegroundColor Yellow
 
 try {
     $metrics = (Invoke-WebRequest http://localhost:8088/metrics -TimeoutSec 3).Content
-    
+
     # Look for agent-specific metrics
     $agentMetrics = $metrics | Select-String "aether_agent_" | Out-String
-    
+
     if ($agentMetrics) {
         Write-Host "   [OK] Metrics endpoint working" -ForegroundColor Green
         Write-Host ""

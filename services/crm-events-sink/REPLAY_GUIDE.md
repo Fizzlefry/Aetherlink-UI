@@ -95,7 +95,7 @@ When adding a new consumer service that needs historical events:
 
 ```sql
 -- Get event IDs for a specific time range
-SELECT id FROM event_journal 
+SELECT id FROM event_journal
 WHERE received_at >= '2025-11-03 00:00:00'
 ORDER BY id;
 ```
@@ -124,24 +124,24 @@ Each replay increments both `crm_events_ingested_total` and `crm_events_persiste
 
 ### Find Events by Tenant
 ```sql
-SELECT id, topic, payload->>'name', received_at 
-FROM event_journal 
-WHERE tenant_id = 'acme' 
+SELECT id, topic, payload->>'name', received_at
+FROM event_journal
+WHERE tenant_id = 'acme'
 ORDER BY received_at DESC;
 ```
 
 ### Find Events by Topic
 ```sql
-SELECT id, tenant_id, payload, received_at 
-FROM event_journal 
+SELECT id, tenant_id, payload, received_at
+FROM event_journal
 WHERE topic = 'apexflow.leads.created'
-ORDER BY received_at DESC 
+ORDER BY received_at DESC
 LIMIT 20;
 ```
 
 ### Check for DLQ Entries
 ```sql
-SELECT * FROM event_dlq 
+SELECT * FROM event_dlq
 ORDER BY received_at DESC;
 ```
 

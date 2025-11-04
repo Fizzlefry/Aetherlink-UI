@@ -2,8 +2,8 @@
 
 ## Executive Summary
 
-**Status**: Production-Ready ✅  
-**Validation**: All features tested and working  
+**Status**: Production-Ready ✅
+**Validation**: All features tested and working
 **Performance**: Graceful fallback, efficient scoring, safety guardrails
 
 ---
@@ -249,22 +249,22 @@ if any(tag in answer for tag in pii_tags):
 ## 🔍 Common Gotchas & Fixes
 
 ### Issue: Rerank not applying
-**Symptom**: Results don't change with `rerank=true`  
+**Symptom**: Results don't change with `rerank=true`
 **Fix**: Restart API container to pick up code changes
 ```bash
 docker compose restart api
 ```
 
 ### Issue: Low confidence on good queries
-**Symptom**: Confidence < 0.25 on queries that should work  
+**Symptom**: Confidence < 0.25 on queries that should work
 **Fix**: Check that you have relevant documents ingested. The eval harness fails when test data is limited.
 
 ### Issue: Embedder unavailable
-**Symptom**: `rerank_used: "token"` instead of `"embed"`  
+**Symptom**: `rerank_used: "token"` instead of `"embed"`
 **Fix**: This is expected fallback behavior. Check embedder config if you want embed strategy.
 
 ### Issue: PII not blocking
-**Symptom**: Answer contains PII placeholders  
+**Symptom**: Answer contains PII placeholders
 **Fix**: Ensure placeholders match exactly: `[SSN]`, `[CARD]`, `[EMAIL]`, `[PHONE]`
 
 ---
@@ -323,6 +323,6 @@ docker compose restart api
 
 ---
 
-**Built**: November 2, 2025  
-**Status**: Production-Ready ✅  
+**Built**: November 2, 2025
+**Status**: Production-Ready ✅
 **Next**: Deploy to staging and monitor metrics 🚀

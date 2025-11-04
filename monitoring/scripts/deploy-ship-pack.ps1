@@ -19,15 +19,15 @@ Set-Location $RepoRoot
 # ============================================================================
 if (-not $SkipKafka) {
     Write-Host "`n📨 Creating Kafka topic: aetherlink.events" -ForegroundColor Yellow
-    
+
     try {
         docker exec kafka rpk topic create aetherlink.events --partitions 3 --replicas 1 2>&1 | Out-Null
-        
+
         # Verify topic creation
         $topics = docker exec kafka rpk topic list 2>&1
         if ($topics -match "aetherlink.events") {
             Write-Host "   ✅ Topic created successfully" -ForegroundColor Green
-            
+
             # Show topic details
             Write-Host "   Topic details:" -ForegroundColor Gray
             docker exec kafka rpk topic describe aetherlink.events | Select-Object -First 5
@@ -47,25 +47,25 @@ if (-not $SkipKafka) {
 # ============================================================================
 if (-not $SkipMigration) {
     Write-Host "`n🗄️  Applying EF Core migrations (Outbox + Idempotency)" -ForegroundColor Yellow
-    
+
     $PeakProPath = Join-Path $RepoRoot "peakpro"
-    
+
     if (Test-Path $PeakProPath) {
         Set-Location $PeakProPath
-        
+
         Write-Host "   Checking for existing migrations..." -ForegroundColor Gray
-        
+
         # Note: This requires .NET SDK and EF Core tools installed
         # dotnet tool install --global dotnet-ef
-        
+
         try {
             # Check if migration already exists
             $migrationExists = Test-Path "Migrations\*Init_Outbox_Idempotency*"
-            
+
             if ($migrationExists) {
                 Write-Host "   Migration file already exists, applying to database..." -ForegroundColor Gray
                 dotnet ef database update 2>&1
-                
+
                 if ($LASTEXITCODE -eq 0) {
                     Write-Host "   ✅ Migration applied successfully" -ForegroundColor Green
                 }
@@ -77,11 +77,11 @@ if (-not $SkipMigration) {
                 Write-Host "   ⚠️  Migration file not found in Migrations folder" -ForegroundColor Yellow
                 Write-Host "   Expected: Migrations\20251102_Init_Outbox_Idempotency.cs" -ForegroundColor Gray
             }
-            
+
             # Verify tables created
             Write-Host "   Verifying tables..." -ForegroundColor Gray
             $tables = docker exec postgres-crm psql -U crm -d crm -t -c "\dt" 2>&1
-            
+
             if ($tables -match "outbox_events" -and $tables -match "idempotency_keys") {
                 Write-Host "   ✅ Tables verified: outbox_events, idempotency_keys" -ForegroundColor Green
             }
@@ -93,7 +93,7 @@ if (-not $SkipMigration) {
             Write-Host "   ❌ Migration failed: $_" -ForegroundColor Red
             Write-Host "   Install EF tools: dotnet tool install --global dotnet-ef" -ForegroundColor Gray
         }
-        
+
         Set-Location $RepoRoot
     }
     else {
@@ -106,27 +106,27 @@ if (-not $SkipMigration) {
 # ============================================================================
 if (-not $SkipService) {
     Write-Host "`n🔧 Building and starting crm-events service" -ForegroundColor Yellow
-    
+
     Set-Location (Join-Path $RepoRoot "monitoring")
-    
+
     try {
         # Build the service
         Write-Host "   Building crm-events container..." -ForegroundColor Gray
         docker compose build crm-events 2>&1 | Out-Null
-        
+
         if ($LASTEXITCODE -eq 0) {
             Write-Host "   ✅ Build successful" -ForegroundColor Green
-            
+
             # Start the service
             Write-Host "   Starting crm-events service..." -ForegroundColor Gray
             docker compose up -d crm-events 2>&1 | Out-Null
-            
+
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "   ✅ Service started" -ForegroundColor Green
-                
+
                 # Wait for service to be ready
                 Start-Sleep -Seconds 3
-                
+
                 # Health check
                 try {
                     $health = Invoke-RestMethod 'http://localhost:9010/' -ErrorAction Stop
@@ -149,7 +149,7 @@ if (-not $SkipService) {
     catch {
         Write-Host "   ❌ Error: $_" -ForegroundColor Red
     }
-    
+
     Set-Location $RepoRoot
 }
 

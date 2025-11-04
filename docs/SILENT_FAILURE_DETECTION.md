@@ -165,13 +165,13 @@ docker start crm-api
 ### Alerts Loaded ✅
 
 ```
-name                     severity      
-----                     --------      
-LowInvoicePaymentRate    warning       
-RevenueZeroStreak        critical      
-InvoiceGenerationStalled warning       
-CrmApiDown               critical      
-CrmRecordingRulesStale   warning       
+name                     severity
+----                     --------
+LowInvoicePaymentRate    warning
+RevenueZeroStreak        critical
+InvoiceGenerationStalled warning
+CrmApiDown               critical
+CrmRecordingRulesStale   warning
 CrmMetricsScrapeStale    critical
 ```
 

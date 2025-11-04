@@ -1,6 +1,6 @@
 # Lag & Capacity Monitoring - Complete Implementation
 
-**Date**: November 2, 2025  
+**Date**: November 2, 2025
 **Status**: ✅ **DEPLOYED**
 
 ---
@@ -263,7 +263,7 @@ Start-Process "http://localhost:9090/graph?g0.expr=kafka%3Agroup_lag_sum&g0.tab=
    ```promql
    # Producer rate (approximate from lag growth)
    rate(kafka:group_lag_sum[5m])
-   
+
    # Consumer rate
    crm_events:consumer_rate_1m
    ```
@@ -338,10 +338,10 @@ docker compose up -d --scale crm-events=3
    ```
    Required rate = current_lag / acceptable_drain_time
    Example: 10,000 msgs / 600s = 16.67 events/sec required
-   
+
    Current rate = crm_events:consumer_rate_1m
    Example: 2.7 events/sec
-   
+
    Scale factor = required_rate / current_rate
    Example: 16.67 / 2.7 ≈ 6 replicas needed
    ```
@@ -350,7 +350,7 @@ docker compose up -d --scale crm-events=3
    ```powershell
    # CPU/Memory usage
    docker stats aether-crm-events --no-stream
-   
+
    # Network throughput
    docker exec kafka rpk topic describe aetherlink.events
    ```
@@ -412,7 +412,7 @@ ceil(
 
 ### Important Notes
 
-1. **During Backlog Drain**: 
+1. **During Backlog Drain**:
    - Current rate may exceed incoming rate (consumer catching up)
    - Scale hint may suggest >1 replica temporarily
    - This is expected behavior during recovery
@@ -696,7 +696,7 @@ kafka-exporter:
 
 ---
 
-**Documented By**: GitHub Copilot  
-**Implementation Date**: November 2, 2025  
-**Version**: 1.0  
+**Documented By**: GitHub Copilot
+**Implementation Date**: November 2, 2025
+**Version**: 1.0
 **Status**: ✅ DEPLOYED & VALIDATED

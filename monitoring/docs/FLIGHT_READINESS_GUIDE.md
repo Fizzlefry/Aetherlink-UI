@@ -273,23 +273,23 @@ CLEANUP: Restart Service 🔄
 ## 🆘 Common Issues & Fixes
 
 ### Issue: "Could not resolve host"
-**Cause**: DNS entries not in hosts file  
+**Cause**: DNS entries not in hosts file
 **Fix**: Run `.\setup-hosts.ps1` as Administrator
 
 ### Issue: "401 Unauthorized" on Grafana
-**Cause**: Nginx config wrong or .htpasswd missing  
+**Cause**: Nginx config wrong or .htpasswd missing
 **Fix**: Check nginx.conf, ensure Grafana route has no auth_basic
 
 ### Issue: Slack notification not received
-**Cause**: SLACK_WEBHOOK_URL not set  
+**Cause**: SLACK_WEBHOOK_URL not set
 **Fix**: Check environment variable in docker-compose.yml
 
 ### Issue: Buttons show localhost
-**Cause**: Alertmanager external_url not set  
+**Cause**: Alertmanager external_url not set
 **Fix**: Update alertmanager.yml global.external_url and restart
 
 ### Issue: Silence form not pre-filled
-**Cause**: Slack button URL filter incorrect  
+**Cause**: Slack button URL filter incorrect
 **Fix**: Check URL encoding in alertmanager.yml actions
 
 ---

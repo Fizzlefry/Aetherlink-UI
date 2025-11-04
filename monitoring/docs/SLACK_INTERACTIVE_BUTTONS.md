@@ -46,49 +46,49 @@ receivers:
       - channel: "#crm-events-alerts"
         api_url: "${SLACK_WEBHOOK_URL}"
         send_resolved: true
-        
+
         title: |-
           {{ if eq .Status "firing" }}🚨{{ else }}✅{{ end }} {{ .CommonLabels.service | default "CRM" }} Pipeline {{ if eq .Status "firing" }}{{ if gt (len .Alerts.Firing) 1 }}Issues ({{ len .Alerts.Firing }} alerts){{ else }}Issue{{ end }}{{ else }}Resolved{{ end }}
-        
+
         text: |-
           *Service*: {{ .CommonLabels.service | default "unknown" }}
           *Team*: {{ .CommonLabels.team | default "unknown" }}
           *Status*: {{ .Status | upper }}
           {{ if gt (len .Alerts.Firing) 1 }}
-          
+
           :warning: *Multiple alerts detected - grouped for clean feed*
           {{ end }}
-          
+
           {{ range .Alerts -}}
           {{ if eq .Status "firing" }}🔥{{ else }}✅{{ end }} *{{ .Labels.severity | upper }}* — **{{ .Labels.alertname }}**
-          
+
           {{ .Annotations.summary }}
           {{ .Annotations.description }}
-          
+
           {{ if .Annotations.runbook_url }}📖 *Runbook*: {{ .Annotations.runbook_url }}{{ end }}
-          
+
           ---
           {{ end }}
-          
+
           *Firing*: {{ .Alerts.Firing | len }} | *Resolved*: {{ .Alerts.Resolved | len }}
-        
+
         color: |-
           {{ if eq .Status "firing" }}{{ if eq .CommonLabels.severity "critical" }}danger{{ else }}warning{{ end }}{{ else }}good{{ end }}
-        
+
         # ✅ Add action buttons (URLs)
         actions:
           - type: button
             text: "📊 View Dashboard"
             url: "http://localhost:3000/d/crm-events-pipeline"
-          
+
           - type: button
             text: "🔍 View in Prometheus"
             url: "http://localhost:9090/alerts?search={{ .GroupLabels.alertname }}"
-          
+
           - type: button
             text: "🔕 Silence 1h"
             url: "http://localhost:9093/#/silences/new?filter=%7Bservice%3D%22{{ .CommonLabels.service }}%22%7D"
-          
+
           - type: button
             text: "🔕 Silence 4h"
             url: "http://localhost:9093/#/silences/new?filter=%7Bservice%3D%22{{ .CommonLabels.service }}%22%2Cduration%3D4h%7D"
@@ -134,25 +134,25 @@ SLACK_WEBHOOK_URL = os.getenv('SLACK_WEBHOOK_URL')
 @app.route('/slack/interactive', methods=['POST'])
 def handle_interaction():
     """Handle Slack button clicks"""
-    
+
     # Parse Slack payload
     payload = json.loads(request.form.get('payload'))
-    
+
     action = payload['actions'][0]
     action_name = action.get('name')
     action_value = action.get('value')
     user = payload['user']['name']
-    
+
     # Parse alert details from action value
     alert_data = json.loads(action_value)
-    
+
     if action_name == 'silence_1h':
         duration = '1h'
     elif action_name == 'silence_4h':
         duration = '4h'
     else:
         return jsonify({'text': 'Unknown action'}), 400
-    
+
     # Create silence in Alertmanager
     silence_id = create_silence(
         alert_data['alertname'],
@@ -160,14 +160,14 @@ def handle_interaction():
         duration,
         user
     )
-    
+
     if silence_id:
         # Send confirmation to Slack
         message = f"✅ Alert silenced for {duration} by @{user}\n" \
                   f"Alert: {alert_data['alertname']}\n" \
                   f"Service: {alert_data['service']}\n" \
                   f"Silence ID: {silence_id[:8]}..."
-        
+
         # Update original message
         return jsonify({
             'replace_original': False,
@@ -180,12 +180,12 @@ def handle_interaction():
 
 def create_silence(alertname, service, duration, creator):
     """Create silence in Alertmanager"""
-    
+
     # Calculate end time
     hours = int(duration.rstrip('h'))
     start = datetime.utcnow()
     end = start + timedelta(hours=hours)
-    
+
     # Build silence payload
     silence = {
         'matchers': [
@@ -197,7 +197,7 @@ def create_silence(alertname, service, duration, creator):
         'createdBy': creator,
         'comment': f'Silenced from Slack for {duration}'
     }
-    
+
     try:
         response = requests.post(
             f'{ALERTMANAGER_URL}/api/v2/silences',
@@ -206,10 +206,10 @@ def create_silence(alertname, service, duration, creator):
             timeout=5
         )
         response.raise_for_status()
-        
+
         result = response.json()
         return result.get('silenceID')
-        
+
     except Exception as e:
         print(f"Error creating silence: {e}")
         return None
@@ -233,25 +233,25 @@ receivers:
       - channel: "#crm-events-alerts"
         api_url: "${SLACK_WEBHOOK_URL}"
         send_resolved: true
-        
+
         # ... title and text (same as before)
-        
+
         # ✅ Interactive action buttons
         actions:
           - type: button
             text: "🔕 Silence 1h"
             name: "silence_1h"
             value: '{"alertname":"{{ .GroupLabels.alertname }}","service":"{{ .CommonLabels.service }}"}'
-          
+
           - type: button
             text: "🔕 Silence 4h"
             name: "silence_4h"
             value: '{"alertname":"{{ .GroupLabels.alertname }}","service":"{{ .CommonLabels.service }}"}'
-          
+
           - type: button
             text: "📊 Dashboard"
             url: "http://localhost:3000/d/crm-events-pipeline"
-          
+
           - type: button
             text: "🔍 Prometheus"
             url: "http://localhost:9090/alerts"
@@ -312,37 +312,37 @@ receivers:
       - channel: "#crm-events-alerts"
         api_url: "${SLACK_WEBHOOK_URL}"
         send_resolved: true
-        
+
         title: |-
           {{ if eq .Status "firing" }}🚨{{ else }}✅{{ end }} {{ .CommonLabels.service | default "CRM" }} Pipeline {{ if eq .Status "firing" }}Issues{{ else }}Resolved{{ end }}
-        
+
         text: |-
           *Service*: {{ .CommonLabels.service | default "unknown" }}
           *Team*: {{ .CommonLabels.team | default "unknown" }}
           *Status*: {{ .Status | upper }}
-          
+
           {{ range .Alerts -}}
           {{ if eq .Status "firing" }}🔥{{ else }}✅{{ end }} **{{ .Labels.alertname }}**
           {{ .Annotations.summary }}
           ---
           {{ end }}
-          
+
           *Quick Actions*: Use buttons below ⬇️
-        
+
         color: |-
           {{ if eq .Status "firing" }}warning{{ else }}good{{ end }}
-        
+
         # Hybrid: URL buttons (no OAuth needed)
         actions:
           - type: button
             text: "📊 Dashboard"
             url: "http://localhost:3000/d/crm-events-pipeline"
             style: "primary"
-          
+
           - type: button
             text: "🔍 Prometheus"
             url: "http://localhost:9090/alerts?search={{ .GroupLabels.alertname }}"
-          
+
           - type: button
             text: "🔕 Silence"
             url: "http://localhost:9093/#/silences/new?filter=%7Bservice%3D%22{{ .CommonLabels.service }}%22%7D"

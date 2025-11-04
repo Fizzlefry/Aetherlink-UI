@@ -2,12 +2,12 @@
 Peek PII - Verify PII redaction in stored chunks
 Fetches raw chunk snippets via /admin/doc endpoint and checks for placeholders.
 """
+
+import json
 import os
 import sys
-import json
 import urllib.parse
 import urllib.request
-
 
 API_BASE = os.getenv("AETHER_API", "http://localhost:8000")
 ADMIN_KEY = os.getenv("API_ADMIN_KEY", "admin-secret-123")
@@ -24,7 +24,7 @@ def show_pii(source="pii-test", limit=5):
     """Fetch and display chunks with PII placeholder verification"""
     qs = urllib.parse.urlencode({"source": source, "limit": str(limit)})
     url = f"{API_BASE}/admin/doc?{qs}"
-    
+
     try:
         data = get_json(url)
     except urllib.error.HTTPError as e:
@@ -35,25 +35,25 @@ def show_pii(source="pii-test", limit=5):
     except Exception as e:
         print(f"❌ Error: {e}")
         return
-    
+
     print(f"\n{'='*60}")
     print(f"📄 Document Source: {source}")
     print(f"{'='*60}")
     print(f"Chunks found: {data.get('count', 0)}\n")
-    
-    if data.get('count', 0) == 0:
+
+    if data.get("count", 0) == 0:
         print("⚠️  No chunks found for this source")
         return
-    
+
     for i, item in enumerate(data.get("items", []), 1):
         snippet = item.get("snippet", "") or ""
         metadata = item.get("metadata", {})
-        
+
         print(f"{'─'*60}")
         print(f"Chunk #{i}")
         print(f"{'─'*60}")
         print(f"\n{snippet}\n")
-        
+
         # Check for PII placeholders
         flags = {
             "[EMAIL]": "[EMAIL]" in snippet,
@@ -61,14 +61,14 @@ def show_pii(source="pii-test", limit=5):
             "[SSN]": "[SSN]" in snippet,
             "[CARD]": "[CARD]" in snippet,
         }
-        
+
         found_placeholders = [k for k, v in flags.items() if v]
-        
+
         if found_placeholders:
             print("✅ PII Placeholders found:", ", ".join(found_placeholders))
         else:
             print("ℹ️  No PII placeholders detected in this chunk")
-        
+
         # Show metadata
         if metadata:
             pii_redaction = metadata.get("pii_redaction", {})
@@ -78,15 +78,20 @@ def show_pii(source="pii-test", limit=5):
                 if enabled:
                     print(f"🔒 PII Redaction: ENABLED (types: {', '.join(types)})")
         print()
-    
+
     # Summary
     print(f"{'='*60}")
     total_with_placeholders = sum(
-        1 for item in data.get("items", [])
-        if any(ph in (item.get("snippet", "") or "") 
-               for ph in ["[EMAIL]", "[PHONE]", "[SSN]", "[CARD]"])
+        1
+        for item in data.get("items", [])
+        if any(
+            ph in (item.get("snippet", "") or "")
+            for ph in ["[EMAIL]", "[PHONE]", "[SSN]", "[CARD]"]
+        )
     )
-    print(f"Summary: {total_with_placeholders}/{data.get('count', 0)} chunks contain PII placeholders")
+    print(
+        f"Summary: {total_with_placeholders}/{data.get('count', 0)} chunks contain PII placeholders"
+    )
     print(f"{'='*60}\n")
 
 

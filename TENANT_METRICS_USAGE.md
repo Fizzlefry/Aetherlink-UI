@@ -12,7 +12,7 @@
 - Optional tenant filtering
 
 ### 2. VS Code Task
-**Task Name:** "Aether: Check Tenant Metrics"  
+**Task Name:** "Aether: Check Tenant Metrics"
 **Access:** `Ctrl+Shift+P` → "Tasks: Run Task" → "Aether: Check Tenant Metrics"
 
 ## 🚀 Usage
@@ -92,7 +92,7 @@ Check that requests include an API key that resolves to a tenant_id.
    # Check environment
    $env:API_KEY_EXPERTCO
    $env:API_ADMIN_KEY
-   
+
    # Admin keys may label as tenant="default" depending on your auth logic
    ```
 
@@ -131,16 +131,16 @@ Check that requests include an API key that resolves to a tenant_id.
 ## 🎯 What to Look For
 
 ### Success Indicators:
-✅ Metrics show `tenant="<your-tenant>"` labels  
-✅ Different API keys produce different tenant labels  
-✅ Cache hits/misses tracked separately per tenant  
-✅ ANSWERS_TOTAL includes tenant dimension  
-✅ LOWCONF_TOTAL has tenant label  
+✅ Metrics show `tenant="<your-tenant>"` labels
+✅ Different API keys produce different tenant labels
+✅ Cache hits/misses tracked separately per tenant
+✅ ANSWERS_TOTAL includes tenant dimension
+✅ LOWCONF_TOTAL has tenant label
 
 ### Prometheus Query Examples:
 ```promql
 # Cache hit rate per tenant
-rate(aether_rag_cache_hits_total{tenant="acme"}[5m]) 
+rate(aether_rag_cache_hits_total{tenant="acme"}[5m])
 / rate(aether_rag_cache_misses_total{tenant="acme"}[5m])
 
 # Answer volume by tenant

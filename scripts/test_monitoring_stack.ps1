@@ -21,10 +21,10 @@ try {
     $rules = (Invoke-RestMethod "$prom/api/v1/rules").data.groups
     $crmRules = $rules | Where-Object { $_.name -match "crm" }
     $alerts = (Invoke-RestMethod "$prom/api/v1/alerts").data.alerts
-  
+
     Write-Host ("   [OK] Rule Groups: {0} total | CRM Groups: {1}" -f $rules.Count, $crmRules.Count) -ForegroundColor Green
     Write-Host ("   [OK] Active Alerts: {0}" -f $alerts.Count) -ForegroundColor Green
-  
+
     # Validate expected CRM rule groups
     $expectedGroups = @("crm_finance.rules", "crm_finance.recording")
     foreach ($group in $expectedGroups) {
@@ -37,17 +37,17 @@ try {
             $exitCode = 1
         }
     }
-  
+
     # Validate recording rules are producing data
     Write-Host ""
     Write-Host "   Testing recording rules..." -ForegroundColor Cyan
     $recordingMetrics = @(
         "crm:invoices_created_24h",
-        "crm:invoices_paid_24h", 
+        "crm:invoices_paid_24h",
         "crm:revenue_usd",
         "crm:payment_rate_30d_pct"
     )
-  
+
     foreach ($metric in $recordingMetrics) {
         $result = (Invoke-RestMethod "$prom/api/v1/query?query=$metric").data.result
         if ($result.Count -gt 0) {
@@ -57,9 +57,9 @@ try {
             Write-Host ("   [WAIT] {0}: Evaluating (no data yet)" -f $metric) -ForegroundColor Yellow
         }
     }
-  
+
 }
-catch { 
+catch {
     Write-Warning "   [FAIL] Prometheus unreachable: $_"
     $exitCode = 1
 }
@@ -71,9 +71,9 @@ Write-Host "2. Checking Grafana..." -ForegroundColor Yellow
 $graf = "http://localhost:3000/api/health"
 try {
     $g = Invoke-RestMethod $graf
-    if ($g.database -eq "ok") { 
+    if ($g.database -eq "ok") {
         Write-Host "   [OK] Grafana connected (database: ok)" -ForegroundColor Green
-    
+
         # Check datasource
         try {
             $ds = Invoke-RestMethod "http://localhost:3000/api/datasources/name/prometheus" -Headers @{"Accept" = "application/json" }
@@ -83,12 +83,12 @@ try {
             Write-Warning "   [WARN] Could not verify Prometheus datasource"
         }
     }
-    else { 
+    else {
         Write-Warning "   [FAIL] Grafana database not OK"
         $exitCode = 1
     }
 }
-catch { 
+catch {
     Write-Warning "   [FAIL] Grafana unreachable: $_"
     $exitCode = 1
 }
@@ -101,12 +101,12 @@ try {
     $am = Invoke-RestMethod "http://localhost:9093/api/v2/status"
     Write-Host "   [OK] Alertmanager responsive" -ForegroundColor Green
     Write-Host ("   [OK] Version: {0}" -f $am.versionInfo.version) -ForegroundColor Green
-  
+
     # Check config
     $config = Invoke-RestMethod "http://localhost:9093/api/v1/status"
     $receivers = $config.data.config.receivers
     Write-Host ("   [OK] Configured receivers: {0}" -f $receivers.Count) -ForegroundColor Green
-  
+
     $slackReceivers = $receivers | Where-Object { $_.slack_configs.Count -gt 0 }
     if ($slackReceivers.Count -gt 0) {
         Write-Host ("   [OK] Slack receivers configured: {0}" -f $slackReceivers.Count) -ForegroundColor Green
@@ -114,7 +114,7 @@ try {
     else {
         Write-Host "   [WAIT] No Slack receivers configured yet" -ForegroundColor Yellow
     }
-  
+
 }
 catch {
     Write-Warning "   [FAIL] Alertmanager unreachable: $_"
@@ -129,7 +129,7 @@ try {
     $crmMetrics = Invoke-RestMethod "http://localhost:8089/metrics" -ErrorAction Stop
     if ($crmMetrics -match "crm_invoices_generated_total") {
         Write-Host "   [OK] CRM metrics exposed" -ForegroundColor Green
-    
+
         # Count CRM-specific metrics
         $crmMetricCount = ($crmMetrics -split "`n" | Where-Object { $_ -match "^crm_" -and $_ -notmatch "^#" }).Count
         Write-Host ("   [OK] CRM metric series: {0}" -f $crmMetricCount) -ForegroundColor Green
@@ -138,7 +138,7 @@ try {
         Write-Warning "   [WARN] CRM metrics not found"
         $exitCode = 1
     }
-  
+
     # Check Prometheus is scraping CRM API
     $scrapeHealth = (Invoke-RestMethod "$prom/api/v1/query?query=up{job=~`"crm.*`"}").data.result
     if ($scrapeHealth.Count -gt 0) {
@@ -155,7 +155,7 @@ try {
         Write-Warning "   [WARN] No CRM scrape target found in Prometheus"
         $exitCode = 1
     }
-  
+
 }
 catch {
     Write-Warning "   [FAIL] CRM API unreachable: $_"
@@ -167,7 +167,7 @@ Write-Host ""
 # ---- 5 Synthetic Slack Alert (optional) ----
 if ($FireSlack) {
     Write-Host "5. Sending synthetic Slack alert..." -ForegroundColor Yellow
-    if (-not $env:SLACK_WEBHOOK_URL) { 
+    if (-not $env:SLACK_WEBHOOK_URL) {
         Write-Warning "   [WARN] SLACK_WEBHOOK_URL not set - skipping Slack test"
     }
     else {

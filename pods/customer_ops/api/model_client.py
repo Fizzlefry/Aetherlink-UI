@@ -1,31 +1,33 @@
 from __future__ import annotations
 
 import json
-import time
-from typing import Any, Dict, Optional, Tuple, cast, AsyncIterator
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
+from typing import Any, cast
 
 import httpx
 
 from .config import get_settings
 
+
 @dataclass
 class ToolSpec:
     name: str
     description: str
-    input_schema: Dict[str, Any]
+    input_schema: dict[str, Any]
+
 
 class BaseModelClient:
-    async def ahealth(self) -> Tuple[bool, Dict[str, Any]]:
+    async def ahealth(self) -> tuple[bool, dict[str, Any]]:
         raise NotImplementedError
 
     async def chat(
         self,
         prompt: str,
-        system: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
-        tools: Optional[list[ToolSpec]] = None
-    ) -> Dict[str, Any]:
+        system: str | None = None,
+        context: dict[str, Any] | None = None,
+        tools: list[ToolSpec] | None = None,
+    ) -> dict[str, Any]:
         """
         Returns either:
         - {"text": "response text"}
@@ -36,10 +38,10 @@ class BaseModelClient:
     async def stream(
         self,
         prompt: str,
-        system: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
-        tools: Optional[list[ToolSpec]] = None
-    ) -> AsyncIterator[Dict[str, Any]]:
+        system: str | None = None,
+        context: dict[str, Any] | None = None,
+        tools: list[ToolSpec] | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
         """
         Yield dict chunks:
         - {'type':'text','delta':'...'}
@@ -61,7 +63,7 @@ class OpenAIClient(BaseModelClient):
         self.api_key = api_key
         self.base = "https://api.openai.com/v1"
 
-    async def ahealth(self) -> Tuple[bool, Dict[str, Any]]:
+    async def ahealth(self) -> tuple[bool, dict[str, Any]]:
         # Lightweight model call
         try:
             async with httpx.AsyncClient(timeout=20) as client:
@@ -76,35 +78,42 @@ class OpenAIClient(BaseModelClient):
                     },
                 )
                 ok = r.status_code == 200
-                data = cast(Dict[str, Any], r.json()) if ok else {"status": r.status_code, "text": r.text[:500]}
+                data = (
+                    cast(dict[str, Any], r.json())
+                    if ok
+                    else {"status": r.status_code, "text": r.text[:500]}
+                )
                 reply = (data.get("choices") or [{}])[0].get("message", {}).get("content", "")
                 return ok and "pong" in reply.lower(), {"provider": "openai", "model": self.model}
         except Exception as e:
             return False, {"provider": "openai", "model": self.model, "error": str(e)}
 
-    def _to_openai_tools(self, tools: list[ToolSpec]) -> list[Dict[str, Any]]:
-        return [{
-            "type": "function",
-            "function": {
-                "name": t.name,
-                "description": t.description,
-                "parameters": t.input_schema
+    def _to_openai_tools(self, tools: list[ToolSpec]) -> list[dict[str, Any]]:
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": t.name,
+                    "description": t.description,
+                    "parameters": t.input_schema,
+                },
             }
-        } for t in tools]
+            for t in tools
+        ]
 
     async def chat(
         self,
         prompt: str,
-        system: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
-        tools: Optional[list[ToolSpec]] = None
-    ) -> Dict[str, Any]:
+        system: str | None = None,
+        context: dict[str, Any] | None = None,
+        tools: list[ToolSpec] | None = None,
+    ) -> dict[str, Any]:
         msgs = []
         if system:
             msgs.append({"role": "system", "content": system})
         msgs.append({"role": "user", "content": prompt})
-        
-        json_payload: Dict[str, Any] = {
+
+        json_payload: dict[str, Any] = {
             "model": self.model,
             "messages": msgs,
             "temperature": 0.2,
@@ -112,7 +121,7 @@ class OpenAIClient(BaseModelClient):
         if tools:
             json_payload["tools"] = self._to_openai_tools(tools)
             json_payload["tool_choice"] = "auto"
-        
+
         async with httpx.AsyncClient(timeout=60) as client:
             r = await client.post(
                 f"{self.base}/chat/completions",
@@ -120,10 +129,10 @@ class OpenAIClient(BaseModelClient):
                 json=json_payload,
             )
             r.raise_for_status()
-            data = cast(Dict[str, Any], r.json())
+            data = cast(dict[str, Any], r.json())
             choice = (data.get("choices") or [{}])[0]
             message = choice.get("message", {})
-            
+
             # Tool call?
             tool_calls = message.get("tool_calls")
             if tool_calls and len(tool_calls) > 0:
@@ -135,7 +144,7 @@ class OpenAIClient(BaseModelClient):
                 except json.JSONDecodeError:
                     args_dict = {}
                 return {"tool_call": {"name": func.get("name", ""), "arguments": args_dict}}
-            
+
             # Text response
             return {"text": message.get("content", "")}
 
@@ -146,7 +155,7 @@ class GeminiClient(BaseModelClient):
         self.api_key = api_key
         self.base = "https://generativelanguage.googleapis.com/v1beta"
 
-    async def ahealth(self) -> Tuple[bool, Dict[str, Any]]:
+    async def ahealth(self) -> tuple[bool, dict[str, Any]]:
         try:
             async with httpx.AsyncClient(timeout=20) as client:
                 r = await client.post(
@@ -154,25 +163,32 @@ class GeminiClient(BaseModelClient):
                     json={"contents": [{"parts": [{"text": "Reply with 'pong'"}]}]},
                 )
                 ok = r.status_code == 200
-                data = cast(Dict[str, Any], r.json()) if ok else {"status": r.status_code, "text": r.text[:500]}
+                data = (
+                    cast(dict[str, Any], r.json())
+                    if ok
+                    else {"status": r.status_code, "text": r.text[:500]}
+                )
                 text = ""
                 if ok:
                     cands = data.get("candidates") or []
                     if cands and "content" in cands[0]:
-                        parts = (cands[0]["content"].get("parts") or [])
+                        parts = cands[0]["content"].get("parts") or []
                         if parts:
                             text = parts[0].get("text", "")
-                return ok and "pong" in (text or "").lower(), {"provider": "gemini", "model": self.model}
+                return ok and "pong" in (text or "").lower(), {
+                    "provider": "gemini",
+                    "model": self.model,
+                }
         except Exception as e:
             return False, {"provider": "gemini", "model": self.model, "error": str(e)}
 
     async def chat(
         self,
         prompt: str,
-        system: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
-        tools: Optional[list[ToolSpec]] = None
-    ) -> Dict[str, Any]:
+        system: str | None = None,
+        context: dict[str, Any] | None = None,
+        tools: list[ToolSpec] | None = None,
+    ) -> dict[str, Any]:
         # Gemini: tool/function calling not yet implemented, return text only
         text = f"{system}\n\n{prompt}" if system else prompt
         async with httpx.AsyncClient(timeout=60) as client:
@@ -181,10 +197,10 @@ class GeminiClient(BaseModelClient):
                 json={"contents": [{"parts": [{"text": text}]}]},
             )
             r.raise_for_status()
-            data = cast(Dict[str, Any], r.json())
+            data = cast(dict[str, Any], r.json())
             cands = data.get("candidates") or []
             if cands and "content" in cands[0]:
-                parts = (cands[0]["content"].get("parts") or [])
+                parts = cands[0]["content"].get("parts") or []
                 if parts:
                     return {"text": parts[0].get("text", "")}
             return {"text": ""}
@@ -195,7 +211,7 @@ class OllamaClient(BaseModelClient):
         self.model = model
         self.base = base_url.rstrip("/")
 
-    async def ahealth(self) -> Tuple[bool, Dict[str, Any]]:
+    async def ahealth(self) -> tuple[bool, dict[str, Any]]:
         try:
             async with httpx.AsyncClient(timeout=20) as client:
                 r = await client.post(
@@ -207,23 +223,30 @@ class OllamaClient(BaseModelClient):
                     },
                 )
                 ok = r.status_code == 200
-                data = cast(Dict[str, Any], r.json()) if ok else {"status": r.status_code, "text": r.text[:500]}
+                data = (
+                    cast(dict[str, Any], r.json())
+                    if ok
+                    else {"status": r.status_code, "text": r.text[:500]}
+                )
                 text = ""
                 if ok:
                     # Ollama chat returns {"message":{"content": "..."}}
                     msg = data.get("message") or {}
                     text = msg.get("content", "")
-                return ok and "pong" in (text or "").lower(), {"provider": "ollama", "model": self.model}
+                return ok and "pong" in (text or "").lower(), {
+                    "provider": "ollama",
+                    "model": self.model,
+                }
         except Exception as e:
             return False, {"provider": "ollama", "model": self.model, "error": str(e)}
 
     async def chat(
         self,
         prompt: str,
-        system: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
-        tools: Optional[list[ToolSpec]] = None
-    ) -> Dict[str, Any]:
+        system: str | None = None,
+        context: dict[str, Any] | None = None,
+        tools: list[ToolSpec] | None = None,
+    ) -> dict[str, Any]:
         # Ollama: no native tool calling, graceful fallback to text
         messages = []
         if system:
@@ -235,7 +258,7 @@ class OllamaClient(BaseModelClient):
                 json={"model": self.model, "messages": messages, "stream": False},
             )
             r.raise_for_status()
-            data = cast(Dict[str, Any], r.json())
+            data = cast(dict[str, Any], r.json())
             content = (data.get("message") or {}).get("content", "")
             return {"text": content}
 

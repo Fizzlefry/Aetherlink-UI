@@ -1,7 +1,7 @@
 # 🔄 Background Ingestion (Async Job Queue)
 
-**Status**: ✅ Operational  
-**Queue**: Redis-backed RQ (Redis Queue)  
+**Status**: ✅ Operational
+**Queue**: Redis-backed RQ (Redis Queue)
 **Worker**: Separate container processing jobs
 
 ---

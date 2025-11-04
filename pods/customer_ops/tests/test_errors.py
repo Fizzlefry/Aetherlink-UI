@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
+
 from ..api.main import app
+
 
 def test_missing_api_key_returns_json_error():
     c = TestClient(app)
@@ -7,6 +9,7 @@ def test_missing_api_key_returns_json_error():
     assert r.status_code in (401, 403)
     body = r.json()
     assert "error" in body and "type" in body["error"] and "message" in body["error"]
+
 
 def test_validation_error_shape():
     c = TestClient(app)

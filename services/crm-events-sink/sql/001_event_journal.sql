@@ -10,21 +10,21 @@ CREATE TABLE IF NOT EXISTS event_journal (
 );
 
 -- Indexes for common query patterns
-CREATE INDEX IF NOT EXISTS idx_event_journal_topic 
+CREATE INDEX IF NOT EXISTS idx_event_journal_topic
     ON event_journal(topic);
 
-CREATE INDEX IF NOT EXISTS idx_event_journal_tenant 
+CREATE INDEX IF NOT EXISTS idx_event_journal_tenant
     ON event_journal(tenant_id);
 
-CREATE INDEX IF NOT EXISTS idx_event_journal_received_at 
+CREATE INDEX IF NOT EXISTS idx_event_journal_received_at
     ON event_journal(received_at DESC);
 
 -- Composite index for tenant + topic queries
-CREATE INDEX IF NOT EXISTS idx_event_journal_tenant_topic 
+CREATE INDEX IF NOT EXISTS idx_event_journal_tenant_topic
     ON event_journal(tenant_id, topic);
 
 -- GIN index for JSONB payload searches
-CREATE INDEX IF NOT EXISTS idx_event_journal_payload 
+CREATE INDEX IF NOT EXISTS idx_event_journal_payload
     ON event_journal USING GIN (payload);
 
 COMMENT ON TABLE event_journal IS 'Stores all CRM domain events from Kafka for historical analysis and replay';

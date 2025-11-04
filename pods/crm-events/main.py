@@ -2,16 +2,17 @@
 CRM Events → SSE Microservice
 Consumes Kafka topic aetherlink.events and exposes SSE endpoint for Command Center
 """
+
 import asyncio
 import json
 import os
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
-from fastapi import FastAPI
-from fastapi.responses import StreamingResponse, Response
-from fastapi.middleware.cors import CORSMiddleware
 from aiokafka import AIOKafkaConsumer
-from prometheus_client import Counter, Gauge, generate_latest, CONTENT_TYPE_LATEST
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response, StreamingResponse
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, generate_latest
 
 KAFKA_BROKERS = os.getenv("KAFKA_BROKERS", "kafka:9092")
 TOPIC = os.getenv("KAFKA_TOPIC", "aetherlink.events")
@@ -24,18 +25,21 @@ SSE_CLIENTS = Gauge("crm_events_sse_clients", "Current SSE clients connected")
 SSE_MESSAGES = Counter("crm_events_messages_total", "SSE messages relayed")
 REQUESTS = Counter("crm_events_http_requests_total", "HTTP requests", ["path", "method"])
 
+
 @app.middleware("http")
 async def metrics_middleware(request, call_next):
     REQUESTS.labels(path=request.url.path, method=request.method).inc()
     return await call_next(request)
 
+
 # Startup logging for debugging
 @app.on_event("startup")
 async def startup_event():
-    print(f"🚀 CRM Events SSE Service starting...")
+    print("🚀 CRM Events SSE Service starting...")
     print(f"   Kafka Brokers: {KAFKA_BROKERS}")
     print(f"   Kafka Topic: {TOPIC}")
     print(f"   Consumer Group: {KAFKA_GROUP}")
+
 
 # Enable CORS for Command Center
 app.add_middleware(
@@ -53,7 +57,7 @@ async def event_stream() -> AsyncGenerator[bytes, None]:
     """
     # Use 'earliest' in dev to see historical events, 'latest' in prod
     offset_reset = os.getenv("KAFKA_OFFSET_RESET", "earliest")
-    
+
     consumer = AIOKafkaConsumer(
         TOPIC,
         bootstrap_servers=KAFKA_BROKERS,
@@ -62,14 +66,14 @@ async def event_stream() -> AsyncGenerator[bytes, None]:
         auto_offset_reset=offset_reset,
         group_id=KAFKA_GROUP,
     )
-    
+
     await consumer.start()
-    
+
     try:
         # Send initial connection event
         yield f"data: {json.dumps({'kind': 'connected', 'topic': TOPIC, 'group': KAFKA_GROUP})}\n\n".encode()
         SSE_MESSAGES.inc()
-        
+
         async for msg in consumer:
             # Forward Kafka message as SSE event
             event_data = {
@@ -84,7 +88,7 @@ async def event_stream() -> AsyncGenerator[bytes, None]:
             data = json.dumps(event_data)
             yield f"data: {data}\n\n".encode()
             SSE_MESSAGES.inc()
-            
+
     except asyncio.CancelledError:
         # Client disconnected
         pass
@@ -121,7 +125,7 @@ async def metrics():
 async def crm_events_sse():
     """
     Server-Sent Events endpoint for CRM domain events
-    
+
     Usage from Command Center:
     ```javascript
     const es = new EventSource('/api/ops/crm-events');
@@ -148,4 +152,5 @@ async def crm_events_sse():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=9010)

@@ -2,22 +2,23 @@
 CRM Events Sink - Consumes and materializes ApexFlow domain events.
 Subscribes to Kafka topics, exposes metrics, and persists events to PostgreSQL.
 """
-import json
-import os
-import time
-import logging
-import threading
-from datetime import datetime
-from typing import Any, Dict, Optional
 
+import json
+import logging
+import os
+import threading
+import time
+from typing import Any
+
+import psycopg2
+import uvicorn
+from fastapi import FastAPI, HTTPException
 from kafka import KafkaConsumer, KafkaProducer
 from prometheus_client import Counter, start_http_server
-from fastapi import FastAPI, HTTPException
-import uvicorn
-import psycopg2
-from psycopg2.extras import RealDictCursor
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger("crm-events-sink")
 
 KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP", "kafka:9092")
@@ -53,7 +54,8 @@ events_persisted = Counter(
     ["topic", "tenant_id"],
 )
 
-def get_pg_conn() -> Optional[psycopg2.extensions.connection]:
+
+def get_pg_conn() -> psycopg2.extensions.connection | None:
     """Create PostgreSQL connection."""
     if not POSTGRES_DSN:
         return None
@@ -68,11 +70,18 @@ def get_kafka_producer() -> KafkaProducer:
     )
 
 
-def persist_event(conn: Optional[psycopg2.extensions.connection], tenant_id: str, topic: str, payload: Dict[str, Any], replay_count: int = 0, replay_source: Optional[str] = None) -> bool:
+def persist_event(
+    conn: psycopg2.extensions.connection | None,
+    tenant_id: str,
+    topic: str,
+    payload: dict[str, Any],
+    replay_count: int = 0,
+    replay_source: str | None = None,
+) -> bool:
     """Persist event to PostgreSQL event_journal table."""
     if conn is None:
         return False
-    
+
     try:
         with conn.cursor() as cur:
             cur.execute(
@@ -90,25 +99,27 @@ def persist_event(conn: Optional[psycopg2.extensions.connection], tenant_id: str
         return False
 
 
-def handle_event(conn: Optional[psycopg2.extensions.connection], topic: str, payload: Dict[str, Any]):
+def handle_event(conn: psycopg2.extensions.connection | None, topic: str, payload: dict[str, Any]):
     """Handle incoming event - increment metrics, log, and persist."""
     tenant_id = payload.get("tenant_id", "unknown")
     event_type = payload.get("event_type", "unknown")
-    
+
     # Check if this is a replayed event
     is_replay = "_replayed_from_event_id" in payload
     replay_count = 1 if is_replay else 0
     replay_source = payload.get("_replay_source") if is_replay else None
-    
+
     # 1. Increment ingestion metric
     events_ingested.labels(topic=topic, tenant_id=tenant_id).inc()
-    
+
     # 2. Persist to database
     try:
         if persist_event(conn, tenant_id, topic, payload, replay_count, replay_source):
             events_persisted.labels(topic=topic, tenant_id=tenant_id).inc()
             if is_replay:
-                logger.info(f"Persisted REPLAYED {event_type} for tenant {tenant_id} (from event {payload['_replayed_from_event_id']})")
+                logger.info(
+                    f"Persisted REPLAYED {event_type} for tenant {tenant_id} (from event {payload['_replayed_from_event_id']})"
+                )
             else:
                 logger.info(f"Persisted {event_type} for tenant {tenant_id}")
         else:
@@ -135,6 +146,7 @@ def handle_event(conn: Optional[psycopg2.extensions.connection], topic: str, pay
 # ============================================================================
 # HTTP API Endpoints (for operators)
 # ============================================================================
+
 
 @app.get("/health")
 def health():
@@ -199,15 +211,15 @@ def replay_event(event_id: int):
             payload = json.loads(payload_json)
         else:
             payload = payload_json
-        
+
         # Mark as replayed for tracking
         payload["_replayed_from_event_id"] = event_id
         payload["_replay_source"] = "operator_api"
-        
+
         # Re-publish to Kafka
         GLOBAL_KAFKA_PRODUCER.send(topic, payload)
         GLOBAL_KAFKA_PRODUCER.flush(timeout=3)
-        
+
         logger.info(f"Replayed event {event_id} to topic {topic}")
         return {
             "status": "replayed",
@@ -256,7 +268,7 @@ def get_dlq(limit: int = 20):
 def main():
     """Main consumer loop."""
     global GLOBAL_PG_CONN, GLOBAL_KAFKA_PRODUCER
-    
+
     # Start Prometheus metrics server
     start_http_server(PROM_PORT)
     logger.info(f"Prometheus metrics server started on :{PROM_PORT}")
@@ -272,7 +284,7 @@ def main():
             except Exception as e:
                 logger.warning(f"PostgreSQL not ready yet (attempt {attempt + 1}/5): {e}")
                 time.sleep(3)
-        
+
         if pg_conn is None:
             logger.error("Failed to connect to PostgreSQL after 5 attempts")
     else:
@@ -309,7 +321,7 @@ def main():
     )
 
     logger.info(f"CRM Events Sink started. Listening to topics: {TOPICS}")
-    
+
     for msg in consumer:
         try:
             handle_event(pg_conn, msg.topic, msg.value)
@@ -322,6 +334,7 @@ def main():
                     logger.info("Reconnected to PostgreSQL")
                 except Exception as reconnect_error:
                     logger.error(f"Failed to reconnect to PostgreSQL: {reconnect_error}")
+
 
 if __name__ == "__main__":
     main()

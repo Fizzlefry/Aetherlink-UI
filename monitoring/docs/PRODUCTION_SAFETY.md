@@ -128,7 +128,7 @@ Check autoheal safety status:
 # Windows
 Invoke-RestMethod 'http://localhost:9009/'
 
-# Linux/macOS  
+# Linux/macOS
 curl http://localhost:9009/
 ```
 
@@ -140,7 +140,7 @@ curl http://localhost:9009/
   "enabled": false,
   "actions": [
     "CrmMetricsScrapeStale",
-    "TcpEndpointDownFast", 
+    "TcpEndpointDownFast",
     "UptimeProbeFailing"
   ],
   "cooldown_sec": 120,
@@ -316,6 +316,6 @@ environment:
 
 ---
 
-**Last Updated**: 2025-11-03  
-**Maintained By**: DevOps Team  
+**Last Updated**: 2025-11-03
+**Maintained By**: DevOps Team
 **Review Cadence**: Quarterly

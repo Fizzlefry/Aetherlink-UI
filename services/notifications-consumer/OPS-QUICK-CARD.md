@@ -1,8 +1,8 @@
 # 🛠 AetherLink Notifications – Ops Quick Card
 
-**Service:** `aether-notifications-consumer`  
-**Port:** `9107`  
-**Config file:** `/app/rules.yaml` (volume-mounted)  
+**Service:** `aether-notifications-consumer`
+**Port:** `9107`
+**Config file:** `/app/rules.yaml` (volume-mounted)
 **Purpose:** Turn CRM events → human notifications via declarative rules
 
 ---
@@ -85,7 +85,7 @@ curl -X POST http://localhost:9107/test-notification \
   }'
 ```
 
-**Expected:** `{"message":"Notification suppressed by rules"}`  
+**Expected:** `{"message":"Notification suppressed by rules"}`
 **Log:** `Notification suppressed by rule=suppress-notes`
 
 ### 4. Assignment

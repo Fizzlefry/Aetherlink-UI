@@ -4,16 +4,17 @@ import json
 
 from .config import get_settings
 
-
 # Try real redis first; fall back to fakeredis (tests), then to an in-memory shim.
 try:
     import redis  # type: ignore
+
     HAVE_REDIS = True
 except Exception:
     HAVE_REDIS = False
 
 try:
     import fakeredis  # type: ignore
+
     HAVE_FAKEREDIS = True
 except Exception:
     HAVE_FAKEREDIS = False
@@ -72,7 +73,9 @@ def get_semcache(a: str, b: str | None = None) -> dict | None:
         return None
 
 
-def set_semcache(a: str, b: str | None = None, value: dict | None = None, ttl_seconds: int = 3600) -> None:
+def set_semcache(
+    a: str, b: str | None = None, value: dict | None = None, ttl_seconds: int = 3600
+) -> None:
     """Compatibility wrapper:
     - set_semcache(query, payload)
     - set_semcache(tenant, query, payload)

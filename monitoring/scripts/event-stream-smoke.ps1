@@ -35,7 +35,7 @@ try {
     $has_event = $metrics -match 'autoheal_event_total'
     $has_failures = $metrics -match 'autoheal_action_failures_total'
     $has_last_event = $metrics -match 'autoheal_last_event_timestamp'
-    
+
     Write-Host "  autoheal_event_total: $(if ($has_event) {'OK'} else {'MISSING'})" -ForegroundColor $(if ($has_event) { "Green" } else { "Red" })
     Write-Host "  autoheal_action_failures_total: $(if ($has_failures) {'OK'} else {'MISSING'})" -ForegroundColor $(if ($has_failures) { "Green" } else { "Red" })
     Write-Host "  autoheal_last_event_timestamp: $(if ($has_last_event) {'OK'} else {'MISSING'})" -ForegroundColor $(if ($has_last_event) { "Green" } else { "Red" })
@@ -49,7 +49,7 @@ Write-Host "`n[Test 4: Prometheus Recording Rules]" -ForegroundColor Yellow
 try {
     $heartbeat = Invoke-RestMethod 'http://localhost:9090/api/v1/query?query=autoheal:heartbeat:age_seconds'
     $fail_rate = Invoke-RestMethod 'http://localhost:9090/api/v1/query?query=autoheal:action_fail_rate_15m'
-    
+
     Write-Host "  autoheal:heartbeat:age_seconds: OK" -ForegroundColor Green
     Write-Host "  autoheal:action_fail_rate_15m: OK" -ForegroundColor Green
 }
@@ -63,7 +63,7 @@ try {
     $alerts = Invoke-RestMethod 'http://localhost:9090/api/v1/rules'
     $groups = $alerts.data.groups | Where-Object { $_.name -like '*autoheal*' }
     $alert_count = ($groups.rules | Where-Object { $_.type -eq 'alerting' }).Count
-    
+
     Write-Host "  Autoheal alert rules: $alert_count" -ForegroundColor Cyan
     if ($alert_count -ge 2) {
         Write-Host "  AutohealNoEvents15m: OK" -ForegroundColor Green

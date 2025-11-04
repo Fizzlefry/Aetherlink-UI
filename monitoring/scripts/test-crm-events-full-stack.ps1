@@ -56,12 +56,12 @@ try {
     $metrics = curl.exe -s http://localhost:9010/metrics
     if ($metrics -match "crm_events_sse_clients") {
         Write-Host "   ✅ Metrics endpoint working" -ForegroundColor Green
-        
+
         # Extract key metrics
         $sseClients = ($metrics | Select-String "crm_events_sse_clients (\d+\.?\d*)").Matches.Groups[1].Value
         $httpRequests = ($metrics | Select-String 'crm_events_http_requests_total.*?(\d+\.?\d*)"' -AllMatches).Matches.Count
         $messages = ($metrics | Select-String "crm_events_messages_total (\d+\.?\d*)").Matches.Groups[1].Value
-        
+
         Write-Host "   SSE Clients Connected: $sseClients" -ForegroundColor Gray
         Write-Host "   HTTP Requests: $httpRequests" -ForegroundColor Gray
         Write-Host "   Messages Relayed: $messages`n" -ForegroundColor Gray
@@ -96,7 +96,7 @@ try {
     Wait-Job $job -Timeout 6 | Out-Null
     $output = Receive-Job $job
     Remove-Job $job -Force
-    
+
     if ($output -match "data:") {
         Write-Host "   ✅ SSE endpoint responding" -ForegroundColor Green
         if ($output -match "connected") {

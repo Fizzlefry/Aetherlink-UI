@@ -139,8 +139,8 @@ expr: (alert_condition) and sum(rate(traffic_metric[window])) > 0
 
 # Example:
 expr: |
-  (aether:cache_hit_ratio:5m < 30) 
-  and 
+  (aether:cache_hit_ratio:5m < 30)
+  and
   sum(rate(aether_cache_requests_total[5m])) > 0
 ```
 
@@ -218,6 +218,6 @@ Green: <$50, Yellow: $50-$200, Red: >$200
 
 ---
 
-**Print this card and keep it handy!**  
-**Status**: 🟢 PRODUCTION READY  
+**Print this card and keep it handy!**
+**Status**: 🟢 PRODUCTION READY
 **Version**: 1.0 (2024-11-02)

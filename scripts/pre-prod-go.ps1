@@ -1,7 +1,7 @@
 # ============================================================================
 # PRE-PROD GO CHECKLIST - Final Validation Before Production
 # ============================================================================
-# Runs comprehensive checks: lint, reload, verify auto-provisioning, 
+# Runs comprehensive checks: lint, reload, verify auto-provisioning,
 # functional smoke test with traffic guards, and rollback readiness
 # ============================================================================
 
@@ -174,10 +174,10 @@ Write-Step "[3/7] VERIFY RECORDING RULES" "Checking that all 6 recording rules a
 try {
     $rules = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/rules" -UseBasicParsing
     $recordingRules = $rules.data.groups | Where-Object { $_.name -eq "aetherlink.recording" } | Select-Object -First 1
-    
+
     if ($recordingRules -and $recordingRules.rules.Count -ge 6) {
         Write-Success "All 6 recording rules loaded"
-        
+
         $expectedRules = @(
             "aether:cache_hit_ratio:5m",
             "aether:rerank_utilization_pct:15m",
@@ -186,7 +186,7 @@ try {
             "aether:rerank_utilization_pct:15m:all",
             "aether:lowconfidence_pct:15m:all"
         )
-        
+
         foreach ($expected in $expectedRules) {
             $found = $recordingRules.rules | Where-Object { $_.name -eq $expected }
             if ($found) {
@@ -213,7 +213,7 @@ Write-Step "[4/7] VERIFY ALERTS (WITH TRAFFIC GUARDS)" "Checking that all 4 prod
 try {
     $rules = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/rules" -UseBasicParsing
     $alertRules = $rules.data.groups | Where-Object { $_.name -eq "aetherlink_rag.rules" } | Select-Object -First 1
-    
+
     if ($alertRules) {
         $expectedAlerts = @(
             "CacheEffectivenessDrop",
@@ -221,7 +221,7 @@ try {
             "LowConfidenceSpikeVIP",
             "CacheEffectivenessDropVIP"
         )
-        
+
         $foundCount = 0
         foreach ($expected in $expectedAlerts) {
             $alert = $alertRules.rules | Where-Object { $_.name -eq $expected -and $_.type -eq "alerting" }
@@ -239,7 +239,7 @@ try {
                 Write-Warning "Missing alert: $expected"
             }
         }
-        
+
         if ($foundCount -eq 4) {
             Write-Success "All 4 production alerts loaded with traffic guards"
         }
@@ -266,7 +266,7 @@ try {
     if ($response.StatusCode -eq 200) {
         Write-Success "Grafana is accessible"
     }
-    
+
     # Check datasources
     Write-Host "  🔍 Checking Prometheus datasource..." -ForegroundColor Gray
     try {
@@ -282,7 +282,7 @@ try {
     catch {
         Write-Warning "Could not verify datasources: $($_.Exception.Message)"
     }
-    
+
     # Check dashboards
     Write-Host "  🔍 Checking for enhanced dashboard..." -ForegroundColor Gray
     try {
@@ -313,7 +313,7 @@ Write-Step "[6/7] SLACK WIRING SANITY" "Checking Alertmanager Slack configuratio
 if ($env:SLACK_WEBHOOK_URL) {
     if ($env:SLACK_WEBHOOK_URL -match "^https://hooks\.slack\.com/services/") {
         Write-Success "SLACK_WEBHOOK_URL environment variable set correctly"
-        
+
         if (-not $SkipSlackTest) {
             Write-Host "  💬 Testing Alertmanager status..." -ForegroundColor Gray
             try {
@@ -344,20 +344,20 @@ Write-Step "[7/7] FUNCTIONAL SMOKE TEST" "Generating traffic to verify metrics a
 if (-not $SkipTraffic) {
     if (Test-Path "scripts\tenant-smoke-test.ps1") {
         Write-Host "  🚀 Running tenant smoke test..." -ForegroundColor Gray
-        
+
         if (-not $env:API_ADMIN_KEY) {
             Write-Warning "API_ADMIN_KEY not set - setting default for smoke test"
             $env:API_ADMIN_KEY = "admin-secret-123"
         }
-        
+
         try {
             & ".\scripts\tenant-smoke-test.ps1" 2>&1 | Out-Null
             Start-Sleep -Seconds 5
-            
+
             # Verify metrics are being scraped
             $query = "aether:cache_hit_ratio:5m"
             $result = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/query?query=$query" -UseBasicParsing
-            
+
             if ($result.data.result.Count -gt 0) {
                 $hasData = $false
                 foreach ($series in $result.data.result) {
@@ -366,7 +366,7 @@ if (-not $SkipTraffic) {
                         break
                     }
                 }
-                
+
                 if ($hasData) {
                     Write-Success "Recording rules returning valid data (non-NaN)"
                 }
@@ -414,7 +414,7 @@ if ($errors.Count -gt 0) {
 }
 else {
     Write-Host "`n🎉 ALL CRITICAL CHECKS PASSED!" -ForegroundColor Green
-    
+
     if ($warnings.Count -eq 0) {
         Write-Host "✨ PRODUCTION-READY - No issues found!" -ForegroundColor Green
     }

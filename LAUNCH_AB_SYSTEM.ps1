@@ -60,7 +60,7 @@ if (!(Test-Path "pods\customer_ops\api\model.json")) {
     Write-Host "`n[1] Training initial model..." -ForegroundColor Yellow
     $env:PYTHONPATH = $ROOT
     .\.venv\Scripts\python.exe pods\customer_ops\scripts\train_model.py 2>&1 | Out-Null
-    
+
     if (Test-Path "pods\customer_ops\api\model.json") {
         Write-Host "✅ Model trained" -ForegroundColor Green
     } else {
@@ -176,7 +176,7 @@ if ($apiReady) {
     Write-Host "`n🎯 Ready to run validation!" -ForegroundColor Green
     Write-Host "`nPress ENTER to run validation now, or CTRL+C to run commands manually..." -ForegroundColor Yellow
     Read-Host
-    
+
     Write-Host "`nLaunching validation..." -ForegroundColor Cyan
     .\step4_7_validation.ps1
 } else {

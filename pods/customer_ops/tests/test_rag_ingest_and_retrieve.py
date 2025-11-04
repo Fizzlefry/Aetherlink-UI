@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
+
 from ..api.main import app
+
 
 def test_ingest_and_retrieve():
     c = TestClient(app)

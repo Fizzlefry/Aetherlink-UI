@@ -65,7 +65,7 @@ route:
       group_interval: 5m                 # Send updates every 5m if needed
       repeat_interval: 4h                # Repeat full group every 4h
       continue: true
-    
+
     # Option 2: Group by alert name (Current - more granular)
     - matchers:
         - team="crm"
@@ -76,7 +76,7 @@ route:
       group_interval: 3m
       repeat_interval: 2h
       continue: true
-    
+
     # Option 3: Group by consumer group (For multi-group setups)
     - matchers:
         - team="crm"
@@ -135,7 +135,7 @@ route:
   group_wait: 30s
   group_interval: 5m
   repeat_interval: 4h
-  
+
   routes:
     # CRM Events: Group all alerts by service (cleanest feed)
     - matchers:
@@ -154,32 +154,32 @@ receivers:
       - channel: "#crm-events-alerts"
         api_url: "${SLACK_WEBHOOK_URL}"
         send_resolved: true
-        
+
         # Enhanced title for grouped alerts
         title: |-
           {{ if eq .Status "firing" }}🚨{{ else }}✅{{ end }} {{ .CommonLabels.service | default "CRM" }} Pipeline {{ if eq .Status "firing" }}Issues{{ else }}Resolved{{ end }}
-        
+
         # Enhanced text for multiple alerts
         text: |-
           *Service*: {{ .CommonLabels.service | default "unknown" }}
           *Team*: {{ .CommonLabels.team | default "unknown" }}
           *Product*: {{ .CommonLabels.product | default "aetherlink" }}
           *Status*: {{ .Status | upper }}
-          
+
           {{ if gt (len .Alerts.Firing) 1 }}*Multiple alerts detected*{{ end }}
-          
+
           {{ range .Alerts -}}
           {{ if eq .Status "firing" }}🔥{{ else }}✅{{ end }} *{{ .Labels.severity | upper }}* — **{{ .Labels.alertname }}**
-          
+
           {{ .Annotations.summary }}
           {{ .Annotations.description }}
-          
+
           {{ if .Annotations.runbook_url }}📖 *Runbook*: {{ .Annotations.runbook_url }}{{ end }}
           {{ if .Annotations.dashboard_url }}📊 *Dashboard*: {{ .Annotations.dashboard_url }}{{ end }}
-          
+
           ---
           {{ end }}
-          
+
           *Firing*: {{ .Alerts.Firing | len }} | *Resolved*: {{ .Alerts.Resolved | len }}
 ```
 
@@ -249,20 +249,20 @@ thread_cache = {}
 @app.route('/webhook', methods=['POST'])
 def alertmanager_webhook():
     payload = request.json
-    
+
     for alert in payload.get('alerts', []):
         alert_name = alert['labels'].get('alertname', 'Unknown')
         status = alert['status']
-        
+
         # Generate thread key (alerts with same name go to same thread)
         thread_key = f"{alert_name}"
-        
+
         # Format message
         text = format_alert_message(alert)
-        
+
         # Check if we have an existing thread for this alert
         thread_ts = thread_cache.get(thread_key)
-        
+
         if thread_ts:
             # Reply to existing thread
             slack_client.chat_postMessage(
@@ -278,20 +278,20 @@ def alertmanager_webhook():
             )
             # Cache the thread timestamp
             thread_cache[thread_key] = response['ts']
-        
+
         # Clear cache if alert resolved
         if status == 'resolved' and thread_key in thread_cache:
             del thread_cache[thread_key]
-    
+
     return jsonify({'status': 'ok'})
 
 def format_alert_message(alert):
     labels = alert.get('labels', {})
     annotations = alert.get('annotations', {})
     status = alert.get('status', 'unknown')
-    
+
     emoji = '🚨' if status == 'firing' else '✅'
-    
+
     return f"""
 {emoji} **{labels.get('alertname', 'Unknown')}**
 *Status*: {status.upper()}

@@ -14,7 +14,7 @@ if (Test-Path "pods\customer_ops\api\model.json") {
 } else {
     Write-Host "Training model with synthetic data..." -ForegroundColor Yellow
     .\.venv\Scripts\python.exe pods\customer_ops\scripts\train_model.py
-    
+
     if (Test-Path "pods\customer_ops\api\model.json") {
         Write-Host "✅ Model trained successfully!" -ForegroundColor Green
     } else {

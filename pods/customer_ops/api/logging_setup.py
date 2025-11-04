@@ -1,4 +1,5 @@
 """JSON logging setup for production-grade logs."""
+
 import json
 import logging
 import sys
@@ -6,7 +7,7 @@ import sys
 
 class JsonFormatter(logging.Formatter):
     """Format log records as JSON for easy parsing and grep."""
-    
+
     def format(self, record: logging.LogRecord) -> str:
         payload = {
             "lvl": record.levelname,

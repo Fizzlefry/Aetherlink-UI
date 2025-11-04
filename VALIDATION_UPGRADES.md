@@ -41,7 +41,7 @@ $ready = $false
 while ((Get-Date) -lt $deadline -and -not $ready) {
     Start-Sleep -Milliseconds 800
     $metrics = Invoke-WebRequest "$BaseUrl/metrics"
-    
+
     if ($metrics -match 'http_requests_total.*endpoint="\/knowledge\/ingest"') {
         $ready = $true  # Worker has processed!
     }
@@ -154,7 +154,7 @@ $env:API_KEY_EXPERTCO = "your-editor-key"
     $env:API_KEY_EXPERTCO = "${{ secrets.API_KEY }}"
     .\scripts\setup-and-validate.ps1
   shell: pwsh
-  
+
 # Exit code 0 = success, 1 = failure
 ```
 
@@ -255,7 +255,7 @@ After successful run:
 ⚠ Worker may still be processing; proceeding anyway.
 ```
 
-**Cause:** Embeddings took >30s (normal for slow machines)  
+**Cause:** Embeddings took >30s (normal for slow machines)
 **Fix:** Wait a few seconds and re-run validation only:
 ```powershell
 .\scripts\validate-quick-wins.ps1
@@ -266,7 +266,7 @@ After successful run:
 ℹ No relevant metrics found yet (normal on fresh start)
 ```
 
-**Cause:** No requests made yet  
+**Cause:** No requests made yet
 **Fix:** Make a test query first:
 ```powershell
 curl.exe "http://localhost:8000/answer?q=test" -H "x-api-key: $env:API_KEY_EXPERTCO"
@@ -277,7 +277,7 @@ curl.exe "http://localhost:8000/answer?q=test" -H "x-api-key: $env:API_KEY_EXPER
 ⚠ Hot request not faster (cache might be disabled)
 ```
 
-**Cause:** Query changed between cold/hot or cache TTL too short  
+**Cause:** Query changed between cold/hot or cache TTL too short
 **Fix:** Check cache TTL:
 ```powershell
 echo $env:ANSWER_CACHE_TTL  # Should be ≥30
@@ -323,7 +323,7 @@ $m | Select-String "aether_rag_" | Select-Object -First 20
 
 ## 🎉 Summary
 
-**Before:** Flaky tests, no preflight checks, unclear failures  
+**Before:** Flaky tests, no preflight checks, unclear failures
 **After:** Rock-solid, CI-ready, instant feedback, rich diagnostics
 
 All your validation is now:

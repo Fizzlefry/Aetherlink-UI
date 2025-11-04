@@ -27,7 +27,7 @@ All 4 production alerts now include traffic guards to prevent alerts when there'
 expr: aether:cache_hit_ratio:5m < 30
 
 # After (quiet when no traffic)
-expr: (aether:cache_hit_ratio:5m < 30) 
+expr: (aether:cache_hit_ratio:5m < 30)
       and sum(rate(aether_cache_requests_total[5m])) > 0
 ```
 
@@ -155,7 +155,7 @@ curl.exe -X POST http://localhost:9093/api/v1/alerts -H "Content-Type: applicati
 
 **VIP cache effectiveness:**
 ```promql
-(aether:cache_hit_ratio:5m{tenant=~"vip-.*|premium-.*"} < 20) 
+(aether:cache_hit_ratio:5m{tenant=~"vip-.*|premium-.*"} < 20)
 and sum(rate(aether_cache_requests_total{tenant=~"vip-.*|premium-.*"}[5m])) > 0
 ```
 
@@ -194,8 +194,8 @@ Start-Process "http://localhost:9090/alerts"
 ### Check Alert Expressions
 ```powershell
 # View alert rules with traffic guards
-Invoke-RestMethod "http://localhost:9090/api/v1/rules" | 
-  ConvertTo-Json -Depth 10 | 
+Invoke-RestMethod "http://localhost:9090/api/v1/rules" |
+  ConvertTo-Json -Depth 10 |
   Select-String -Pattern "and sum\(rate"
 # Should show traffic guards in all 4 production alerts
 ```

@@ -15,25 +15,25 @@ services:
       # Prometheus connection
       - PROMETHEUS_URL=http://prometheus:9090
       - KAFKA_GROUP=crm-events-sse
-      
+
       # Health thresholds
       - SKEW_THRESHOLD=4.0
       - MIN_CONSUMERS=2
-      
+
       # Safety knobs (bullet-proof configuration)
       - PROM_TIMEOUT_MS=1500      # Request timeout
       - PROM_RETRIES=2             # Retry count before failing
       - WINDOW_MINUTES=5           # Windowed queries to prevent flapping
       - BIND_HOST=0.0.0.0          # Bind to all interfaces (use 127.0.0.1 for localhost-only)
-    
+
     restart: unless-stopped
     networks:
       - aether-monitoring
-    
+
     depends_on:
       prometheus:
         condition: service_healthy
-    
+
     # Health probe's own health check (liveness)
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:9011/health"]
@@ -41,7 +41,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 5s
-  
+
   # CRM Events consumer (uses health probe for readiness)
   crm-events:
     build: ../pods/customer-ops
@@ -61,7 +61,7 @@ services:
         condition: service_started
       crm-events-health:
         condition: service_healthy  # Wait for health probe to be ready
-    
+
     # Consumer's health check (queries sidecar /ready endpoint)
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://crm-events-health:9011/ready"]
@@ -91,11 +91,11 @@ services:
   crm-events-health:
     # ... (same as above, but remove container_name)
     # container_name: aether-crm-events-health  # <-- REMOVE THIS LINE
-  
+
   crm-events:
     # ... (same as above, but remove container_name)
     # container_name: aether-crm-events  # <-- REMOVE THIS LINE
-    
+
     # Then you can scale:
     # docker compose up -d --scale crm-events=2 --scale crm-events-health=1
 
@@ -131,7 +131,7 @@ spec:
           value: "aetherlink.events"
         - name: KAFKA_GROUP
           value: "crm-events-sse"
-        
+
         # Liveness: Restart if consumer process is dead
         livenessProbe:
           httpGet:
@@ -141,7 +141,7 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
-        
+
         # Readiness: Use health probe sidecar (checks skew + consumers)
         readinessProbe:
           httpGet:
@@ -151,7 +151,7 @@ spec:
           periodSeconds: 30
           timeoutSeconds: 5
           failureThreshold: 2
-        
+
         resources:
           requests:
             memory: "256Mi"
@@ -159,7 +159,7 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "500m"
-      
+
       # Health probe sidecar container
       - name: health-probe
         image: aetherlink/crm-events-health:latest
@@ -185,7 +185,7 @@ spec:
           value: "5"
         - name: BIND_HOST
           value: "0.0.0.0"
-        
+
         # Liveness: Restart if health probe process is dead
         livenessProbe:
           httpGet:
@@ -195,7 +195,7 @@ spec:
           periodSeconds: 30
           timeoutSeconds: 5
           failureThreshold: 3
-        
+
         resources:
           requests:
             memory: "64Mi"

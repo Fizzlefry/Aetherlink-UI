@@ -6,7 +6,6 @@ from sqlalchemy.pool import StaticPool
 
 from .config import get_settings
 
-
 _settings = get_settings()
 DB_URL = _settings.DATABASE_URL or "sqlite:///./local.db"
 

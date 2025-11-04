@@ -219,8 +219,8 @@ Description: Cache hit ratio is 25.3% over the last 15m.
 ```yaml
 expr: |
   (
-    sum(rate(aether_cache_hits_total{tenant!=""}[15m])) 
-    / 
+    sum(rate(aether_cache_hits_total{tenant!=""}[15m]))
+    /
     sum(rate(aether_cache_requests_total{tenant!=""}[15m]))
   )*100 < 30
 ```

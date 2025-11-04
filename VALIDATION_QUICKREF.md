@@ -220,5 +220,5 @@ docker compose restart api
 
 ---
 
-**Last Updated:** November 2025  
+**Last Updated:** November 2025
 **Version:** 1.0 (Initial quick wins deployment)

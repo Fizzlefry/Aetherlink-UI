@@ -11,7 +11,7 @@ $env:API_ADMIN_KEY = "admin-secret-123"  # adjust to your actual admin key
 .\scripts\tenant-smoke-test.ps1
 ```
 
-**Or use VS Code Task:**  
+**Or use VS Code Task:**
 `Ctrl+Shift+P` → Tasks: Run Task → **"Aether: Tenant Metrics Smoke Test"**
 
 ---
@@ -109,7 +109,7 @@ sum(rate(aether_rag_answers_total[5m])) by (tenant)
 ### Per-Tenant Cache Hit Ratio (Answer Endpoint)
 ```promql
 sum(rate(aether_rag_cache_hits_total{endpoint="answer"}[5m])) by (tenant)
-/ ignoring(endpoint) 
+/ ignoring(endpoint)
 (sum(rate(aether_rag_cache_hits_total{endpoint="answer"}[5m])) by (tenant)
  + sum(rate(aether_rag_cache_misses_total{endpoint="answer"}[5m])) by (tenant))
 ```
@@ -118,7 +118,7 @@ sum(rate(aether_rag_cache_hits_total{endpoint="answer"}[5m])) by (tenant)
 ```promql
 sum(rate(aether_rag_cache_hits_total[5m])) by (tenant)
 /
-(sum(rate(aether_rag_cache_hits_total[5m])) by (tenant) 
+(sum(rate(aether_rag_cache_hits_total[5m])) by (tenant)
  + sum(rate(aether_rag_cache_misses_total[5m])) by (tenant))
 ```
 
@@ -166,8 +166,8 @@ Then use in panels:
 rate(aether_rag_answers_total{tenant="$tenant"}[5m])
 
 # Cache efficiency for selected tenant
-sum(rate(aether_rag_cache_hits_total{tenant="$tenant"}[5m])) 
-/ (sum(rate(aether_rag_cache_hits_total{tenant="$tenant"}[5m])) 
+sum(rate(aether_rag_cache_hits_total{tenant="$tenant"}[5m]))
+/ (sum(rate(aether_rag_cache_hits_total{tenant="$tenant"}[5m]))
    + sum(rate(aether_rag_cache_misses_total{tenant="$tenant"}[5m])))
 ```
 

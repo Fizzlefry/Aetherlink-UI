@@ -1,6 +1,6 @@
 # AetherLink CRM: Complete Architecture (Sprints 0-4)
 
-**Date**: 2025-11-02  
+**Date**: 2025-11-02
 **Status**: Production-Ready Multi-Tenant CRM with Payments & Accounting Integration
 
 ---
@@ -324,7 +324,7 @@ CREATE TABLE portal_activity_log (
   customer_id INTEGER DEFAULT 0,
   proposal_id INTEGER,
   event VARCHAR(50) NOT NULL,
-  -- Events: 'view', 'approve', 'download', 'email_sent', 
+  -- Events: 'view', 'approve', 'download', 'email_sent',
   --         'checkout_created', 'payment_success', 'invoice_created'
   meta JSONB,  -- Flexible metadata storage
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -452,7 +452,7 @@ QBO_ITEM_NAME_DEPOSIT=Roof Deposit
 ## 🔮 Recommended Next Steps
 
 ### Option 1: Grafana Dashboard Enhancements
-**Effort**: 2-3 hours  
+**Effort**: 2-3 hours
 **Impact**: High visibility into business metrics
 
 - Add invoice panels (24h, 30d)
@@ -461,7 +461,7 @@ QBO_ITEM_NAME_DEPOSIT=Roof Deposit
 - Lead→Payment conversion funnel
 
 ### Option 2: Portal SPA (React + Vite)
-**Effort**: 4-6 hours  
+**Effort**: 4-6 hours
 **Impact**: Professional customer-facing UI
 
 - View proposal PDFs
@@ -470,7 +470,7 @@ QBO_ITEM_NAME_DEPOSIT=Roof Deposit
 - Payment success confirmation
 
 ### Option 3: Customer Sync (CRM ↔ QBO)
-**Effort**: 3-4 hours  
+**Effort**: 3-4 hours
 **Impact**: Better accounting accuracy
 
 - Match CRM customers to QBO by email
@@ -478,7 +478,7 @@ QBO_ITEM_NAME_DEPOSIT=Roof Deposit
 - Link invoices to correct customer records
 
 ### Option 4: Invoice Status Poller
-**Effort**: 2-3 hours  
+**Effort**: 2-3 hours
 **Impact**: Automated proposal closure
 
 - Nightly cron job
@@ -487,7 +487,7 @@ QBO_ITEM_NAME_DEPOSIT=Roof Deposit
 - Activity: "invoice_paid" logged
 
 ### Option 5: Production Hardening
-**Effort**: 2-3 hours  
+**Effort**: 2-3 hours
 **Impact**: Security & reliability
 
 - Add request rate limiting
@@ -509,7 +509,7 @@ QBO_ITEM_NAME_DEPOSIT=Roof Deposit
 
 ---
 
-**Last Updated**: 2025-11-02  
-**Version**: 4.0  
-**Status**: Production-Ready  
+**Last Updated**: 2025-11-02
+**Version**: 4.0
+**Status**: Production-Ready
 **Next Review**: Sprint 5 Planning

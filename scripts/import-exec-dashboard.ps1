@@ -61,40 +61,40 @@ try {
         -Headers $headers `
         -Body $importPayload `
         -ErrorAction Stop
-    
+
     Write-Host "✅ Dashboard imported successfully!" -ForegroundColor Green
     Write-Host ""
     Write-Host "   Title: $($response.title)" -ForegroundColor Gray
     Write-Host "   UID: $($response.uid)" -ForegroundColor Gray
     Write-Host "   URL: $GrafanaUrl/d/$($response.uid)" -ForegroundColor Cyan
     Write-Host ""
-    
+
     # Open in browser
     Write-Host "🌐 Opening dashboard in browser..." -ForegroundColor Cyan
     Start-Process "$GrafanaUrl/d/$($response.uid)"
-    
+
     Write-Host ""
     Write-Host "🎉 Executive dashboard is now live!" -ForegroundColor Green
     Write-Host ""
-    
+
 }
 catch {
     $errorDetails = $_.ErrorDetails.Message | ConvertFrom-Json -ErrorAction SilentlyContinue
-    
+
     if ($errorDetails) {
         Write-Host "❌ Import failed: $($errorDetails.message)" -ForegroundColor Red
     }
     else {
         Write-Host "❌ Import failed: $($_.Exception.Message)" -ForegroundColor Red
     }
-    
+
     Write-Host ""
     Write-Host "💡 Troubleshooting:" -ForegroundColor Yellow
     Write-Host "   1. Check Grafana is running: $GrafanaUrl" -ForegroundColor Gray
     Write-Host "   2. Verify credentials (default: admin/admin)" -ForegroundColor Gray
     Write-Host "   3. Try manual import: Grafana → Dashboards → Import → Upload JSON" -ForegroundColor Gray
     Write-Host ""
-    
+
     exit 1
 }
 

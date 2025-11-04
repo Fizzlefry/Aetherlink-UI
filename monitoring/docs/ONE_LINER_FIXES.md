@@ -8,7 +8,7 @@
 docker compose up -d --scale crm-events=2
 ```
 
-**When to use**: 
+**When to use**:
 - Panel 18 shows 1 (yellow) or 0 (red)
 - Alert `CrmEventsUnderReplicatedConsumers` is firing
 - Need immediate failover capacity
@@ -86,8 +86,8 @@ while ($true) {
 # Loop to show lag by partition
 while ($true) {
     Write-Host "`n$(Get-Date -Format 'HH:mm:ss') - Partition Lag:" -ForegroundColor Cyan
-    curl.exe -s http://localhost:9308/metrics |  
-        Select-String 'kafka_consumergroup_lag\{consumergroup="crm-events-sse"' | 
+    curl.exe -s http://localhost:9308/metrics |
+        Select-String 'kafka_consumergroup_lag\{consumergroup="crm-events-sse"' |
         ForEach-Object {
             if ($_ -match 'partition="(\d+)".*\}\s+(\d+)') {
                 $p = $matches[1]; $lag = $matches[2]
@@ -135,11 +135,11 @@ docker exec kafka rpk topic consume aetherlink.events --partition 2 --num 10
 ### Verify Recording Rules Loaded
 ```powershell
 # Check if new recording rules are evaluating
-curl.exe "http://localhost:9090/api/v1/rules" | ConvertFrom-Json | 
-    Select-Object -ExpandProperty data | 
-    Select-Object -ExpandProperty groups | 
-    Where-Object { $_.name -eq 'crm_events_lag_capacity' } | 
-    Select-Object -ExpandProperty rules | 
+curl.exe "http://localhost:9090/api/v1/rules" | ConvertFrom-Json |
+    Select-Object -ExpandProperty data |
+    Select-Object -ExpandProperty groups |
+    Where-Object { $_.name -eq 'crm_events_lag_capacity' } |
+    Select-Object -ExpandProperty rules |
     Select-Object record
 ```
 
@@ -176,10 +176,10 @@ if ($json.data.result) {
 ### Check Alert Status
 ```powershell
 # Show active/pending alerts
-curl.exe "http://localhost:9090/api/v1/alerts" | ConvertFrom-Json | 
-    Select-Object -ExpandProperty data | 
-    Select-Object -ExpandProperty alerts | 
-    Where-Object { $_.labels.alertname -match 'HotKey|UnderReplicated|PartitionStuck' } | 
+curl.exe "http://localhost:9090/api/v1/alerts" | ConvertFrom-Json |
+    Select-Object -ExpandProperty data |
+    Select-Object -ExpandProperty alerts |
+    Where-Object { $_.labels.alertname -match 'HotKey|UnderReplicated|PartitionStuck' } |
     Select-Object @{N='Alert';E={$_.labels.alertname}}, state, activeAt
 ```
 
@@ -191,7 +191,7 @@ curl.exe "http://localhost:9090/api/v1/alerts" | ConvertFrom-Json |
 $members = curl.exe -s 'http://localhost:9090/api/v1/query?query=count(count%20by%20(memberid)%20(kafka_consumergroup_current_offset{consumergroup=%22crm-events-sse%22}))'
 Write-Host "Consumer Group Size: Check above output"
 
-# Panel 19: Hot-Key Skew Ratio  
+# Panel 19: Hot-Key Skew Ratio
 $skew = curl.exe -s 'http://localhost:9090/api/v1/query?query=kafka:group_skew_ratio{consumergroup=%22crm-events-sse%22}'
 Write-Host "Skew Ratio: Check above output"
 ```
@@ -242,10 +242,10 @@ docker logs aether-crm-events --tail 50 --follow
 ### Check Prometheus Target Health
 ```powershell
 # Verify all scrape targets are UP
-curl.exe "http://localhost:9090/api/v1/targets" | ConvertFrom-Json | 
-    Select-Object -ExpandProperty data | 
-    Select-Object -ExpandProperty activeTargets | 
-    Select-Object @{N='Job';E={$_.labels.job}}, health, lastError | 
+curl.exe "http://localhost:9090/api/v1/targets" | ConvertFrom-Json |
+    Select-Object -ExpandProperty data |
+    Select-Object -ExpandProperty activeTargets |
+    Select-Object @{N='Job';E={$_.labels.job}}, health, lastError |
     Format-Table -AutoSize
 ```
 
@@ -300,8 +300,8 @@ docker exec kafka rpk topic describe aetherlink.events
 ### Check Message Sizes
 ```powershell
 # Identify large messages that may slow consumption
-docker exec kafka rpk topic consume aetherlink.events --num 20 --format '%k: %v\n' | 
-    ForEach-Object { 
+docker exec kafka rpk topic consume aetherlink.events --num 20 --format '%k: %v\n' |
+    ForEach-Object {
         $len = $_.Length
         if ($len -gt 1000) {
             Write-Host "Large message: $len bytes" -ForegroundColor Yellow
@@ -327,9 +327,9 @@ docker exec kafka rpk topic consume aetherlink.events --num 20 --format '%k: %v\
 
 ---
 
-**Last Updated**: 2025-11-02  
-**Maintainer**: DevOps Team  
-**Related Docs**: 
+**Last Updated**: 2025-11-02
+**Maintainer**: DevOps Team
+**Related Docs**:
 - `RUNBOOK_HOTKEY_SKEW.md` - Detailed hot-key remediation
 - `LAG_CAPACITY_MONITORING.md` - Architecture & capacity planning
 - `QUICK_VALIDATION.md` - Validation checklist

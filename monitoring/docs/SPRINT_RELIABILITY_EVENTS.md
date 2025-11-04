@@ -23,7 +23,7 @@ expr: |
   (sum(rate(autoheal:heartbeat:age_seconds[5m])) / (300 * 0.999)) > 14.4
 for: 5m
 
-# Slow burn (10% in 6h)  
+# Slow burn (10% in 6h)
 expr: |
   (sum(rate(autoheal:heartbeat:age_seconds[1h])) / (300 * 0.999)) > 2.4
 for: 30m
@@ -67,13 +67,13 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://otelcol:4318/v1/traces
 
 **Domain Events:**
 ```csharp
-public record ContactCreated(Guid EventId, Guid TenantId, DateTimeOffset OccurredAt, 
+public record ContactCreated(Guid EventId, Guid TenantId, DateTimeOffset OccurredAt,
     Guid ContactId, string Name, string Email) : DomainEvent(...);
 
-public record JobCreated(Guid EventId, Guid TenantId, DateTimeOffset OccurredAt, 
+public record JobCreated(Guid EventId, Guid TenantId, DateTimeOffset OccurredAt,
     Guid JobId, Guid AccountId, string Title, string Status) : DomainEvent(...);
 
-public record JobStatusChanged(Guid EventId, Guid TenantId, DateTimeOffset OccurredAt, 
+public record JobStatusChanged(Guid EventId, Guid TenantId, DateTimeOffset OccurredAt,
     Guid JobId, string OldStatus, string NewStatus, string? ChangedBy) : DomainEvent(...);
 ```
 
@@ -200,10 +200,10 @@ docker compose up -d autoheal
 Invoke-RestMethod -Method POST 'http://localhost:9090/-/reload'
 
 # 3. Verify new alerts loaded
-Invoke-RestMethod 'http://localhost:9090/api/v1/rules' | ConvertFrom-Json | 
-    Select-Object -ExpandProperty data | 
-    Select-Object -ExpandProperty groups | 
-    Select-Object -ExpandProperty rules | 
+Invoke-RestMethod 'http://localhost:9090/api/v1/rules' | ConvertFrom-Json |
+    Select-Object -ExpandProperty data |
+    Select-Object -ExpandProperty groups |
+    Select-Object -ExpandProperty rules |
     Where-Object { $_.alert -like "*Burn*" } |
     Select-Object alert, expr
 

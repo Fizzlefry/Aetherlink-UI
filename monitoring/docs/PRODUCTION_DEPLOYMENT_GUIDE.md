@@ -1,7 +1,7 @@
 # Autoheal Production Deployment Guide
 
-**Status**: Ready for Canary Deployment  
-**Version**: 1.0.0  
+**Status**: Ready for Canary Deployment
+**Version**: 1.0.0
 **Date**: 2025-11-02
 
 ---
@@ -145,30 +145,30 @@ watch -n 30 'curl -s "http://localhost:9009/audit?n=10" | jq ".events[] | {ts, k
 ```bash
 curl 'http://localhost:9090/api/v1/query?query=autoheal:heartbeat:age_seconds'
 ```
-**Acceptable**: <300s  
-**Warning**: >300s for >10m  
+**Acceptable**: <300s
+**Warning**: >300s for >10m
 **Critical**: >900s for >10m
 
 #### SLO-2: Action Failure Rate (Target: <0.05/s)
 ```bash
 curl 'http://localhost:9090/api/v1/query?query=autoheal:action_fail_rate_15m'
 ```
-**Acceptable**: <0.05/s  
-**Warning**: >0.05/s for >15m  
+**Acceptable**: <0.05/s
+**Warning**: >0.05/s for >15m
 **Critical**: >0.2/s for >10m
 
 #### SLO-3: Service Availability (Target: >99.9%)
 ```bash
 curl 'http://localhost:9090/api/v1/query?query=up{job="autoheal"}'
 ```
-**Acceptable**: 1 (up)  
+**Acceptable**: 1 (up)
 **Critical**: 0 (down) for >2m
 
 #### SLO-4: Audit Write Latency (Target: p95 <200ms)
 ```bash
 curl 'http://localhost:9090/api/v1/query?query=histogram_quantile(0.95,rate(autoheal_audit_write_seconds_bucket[10m]))'
 ```
-**Acceptable**: <0.2s  
+**Acceptable**: <0.2s
 **Warning**: >0.2s for >10m
 
 ### Prometheus Alerts to Monitor
@@ -178,7 +178,7 @@ curl 'http://localhost:9090/api/v1/query?query=histogram_quantile(0.95,rate(auto
 curl 'http://localhost:9090/api/v1/rules' | jq '.data.groups[] | select(.name | contains("autoheal")) | .rules[] | select(.state=="firing")'
 ```
 
-Expected alerts during canary: **None**  
+Expected alerts during canary: **None**
 Expected alerts during production: **None** (unless actual issues occur)
 
 ### Audit Trail Validation
@@ -215,26 +215,26 @@ environment:
   AUTOHEAL_ENABLED: "true"                      # Enable auto-remediation
   AUTOHEAL_DRY_RUN: "false"                     # PRODUCTION: Set to false after canary
   AUTOHEAL_AUDIT_PATH: "/data/audit.jsonl"      # Persistent audit trail
-  
+
   # Timeouts & cooldowns
   AUTOHEAL_DEFAULT_COOLDOWN_SEC: "600"          # 10 minutes default
   COOLDOWN_TCP_DOWN_SEC: "300"                  # 5 minutes for TCP issues
   COOLDOWN_UPTIME_FAIL_SEC: "600"               # 10 minutes for uptime probes
   COOLDOWN_SCRAPE_STALE_SEC: "900"              # 15 minutes for scrape issues
-  
+
   # URLs
   ALERTMANAGER_URL: "http://alertmanager:9093"
   AUTOHEAL_PUBLIC_URL: "https://autoheal.aetherlink.io"
-  
+
   # Security (optional, enable for production)
   AUTOHEAL_OIDC_ENABLED: "true"
   OIDC_ISSUER: "https://auth.aetherlink.io"
   OIDC_AUDIENCE: "autoheal-api"
-  
+
   # CORS
   AUTOHEAL_CORS_ENABLED: "true"
   AUTOHEAL_CORS_ORIGINS: "https://command.aetherlink.io"
-  
+
   # Rate limiting
   AUTOHEAL_RATE_LIMIT_ENABLED: "true"
   AUTOHEAL_RATE_LIMIT_REQUESTS: "100"           # 100 requests per window
@@ -426,6 +426,6 @@ docker logs aether-prometheus --tail 50
 
 ---
 
-**Deployment Owner**: Aetherlink Platform Team  
-**Approval Required**: Ops Lead + Engineering Manager  
+**Deployment Owner**: Aetherlink Platform Team
+**Approval Required**: Ops Lead + Engineering Manager
 **Rollback Authority**: Ops Lead (immediate), On-call Engineer (emergency)

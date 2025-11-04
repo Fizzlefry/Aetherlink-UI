@@ -1,7 +1,7 @@
 # 🚀 SHIPPED: Production-Ready Autoheal with OIDC Authentication
 
-**Deployment Date:** November 2, 2025  
-**Status:** ✅ READY TO SHIP  
+**Deployment Date:** November 2, 2025
+**Status:** ✅ READY TO SHIP
 **Risk Level:** 🟢 LOW (Canary deployment available)
 
 ---
@@ -395,9 +395,9 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d autoheal
 
 ---
 
-**SHIPPED BY:** GitHub Copilot  
-**REVIEWED BY:** ________________  
-**APPROVED BY:** ________________  
+**SHIPPED BY:** GitHub Copilot
+**REVIEWED BY:** ________________
+**APPROVED BY:** ________________
 **DEPLOYMENT DATE:** ________________
 
 ---

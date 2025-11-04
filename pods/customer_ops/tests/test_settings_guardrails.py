@@ -32,10 +32,13 @@ def test_cors_csv_parsing_dev():
         assert parsed is not None and isinstance(parsed, list)
         assert "http://localhost:3000" in parsed
 
-    with_env({
-        "ENV": "dev",
-        "CORS_ORIGINS": "http://localhost:3000, https://example.com ,  https://foo.bar",
-    }, run)
+    with_env(
+        {
+            "ENV": "dev",
+            "CORS_ORIGINS": "http://localhost:3000, https://example.com ,  https://foo.bar",
+        },
+        run,
+    )
 
 
 def test_prod_rejects_wildcard_cors():

@@ -1,10 +1,10 @@
 # Runbook: Hot-Key Skew Detection & Remediation
 
 ## Alert Trigger
-**Alert Name**: `CrmEventsHotKeySkewHigh`  
-**Condition**: Skew ratio (max partition lag / avg partition lag) > 4x for 12 minutes  
-**Severity**: Warning  
-**Team**: CRM  
+**Alert Name**: `CrmEventsHotKeySkewHigh`
+**Condition**: Skew ratio (max partition lag / avg partition lag) > 4x for 12 minutes
+**Severity**: Warning
+**Team**: CRM
 
 ## What This Means
 One partition is accumulating significantly more lag than others, indicating:
@@ -121,11 +121,11 @@ docker exec kafka rpk topic add-partitions aetherlink.events --num 6
 ## Verification (3-5 minutes)
 
 ### Success Criteria
-✅ **Panel 19**: Skew ratio drops below 2x (green)  
-✅ **Panel 17**: Lag distributed evenly across partitions  
-✅ **Panel 18**: 2+ consumers active (green)  
-✅ **Panel 13**: Total lag decreasing steadily  
-✅ **Alert**: `CrmEventsHotKeySkewHigh` auto-resolves after 12m below threshold  
+✅ **Panel 19**: Skew ratio drops below 2x (green)
+✅ **Panel 17**: Lag distributed evenly across partitions
+✅ **Panel 18**: 2+ consumers active (green)
+✅ **Panel 13**: Total lag decreasing steadily
+✅ **Alert**: `CrmEventsHotKeySkewHigh` auto-resolves after 12m below threshold
 
 ### Monitoring Commands
 ```powershell
@@ -310,8 +310,8 @@ curl -i http://localhost:9011/ready
 ```powershell
 # 1) Accumulate hot-key skew (300 messages to single partition)
 $evt = '{"Type":"JobCreated","TenantId":"00000000-0000-0000-0000-000000000001","HotKey":"TESTKEY","Ts":"' + (Get-Date -Format o) + '"}'
-1..300 | ForEach-Object { 
-    $evt | docker exec -i kafka rpk topic produce --key TESTKEY aetherlink.events | Out-Null 
+1..300 | ForEach-Object {
+    $evt | docker exec -i kafka rpk topic produce --key TESTKEY aetherlink.events | Out-Null
 }
 
 # 2) Immediately check health probe (may still be 200 until 5m window sustains >4x)
@@ -390,7 +390,7 @@ services:
   crm-events-health:
     # REMOVE container_name for auto-scaling
     # container_name: aether-crm-events-health  # <-- DELETE THIS
-    
+
   crm-events:
     # REMOVE container_name for auto-scaling
     # container_name: aether-crm-events  # <-- DELETE THIS
@@ -462,6 +462,6 @@ docker logs aether-crm-events --tail 20
 
 ---
 
-**Last Updated**: 2025-11-03  
-**Maintainer**: DevOps Team  
+**Last Updated**: 2025-11-03
+**Maintainer**: DevOps Team
 **Incident Playbook**: Follow this runbook for all `CrmEventsHotKeySkewHigh` alerts

@@ -21,11 +21,12 @@ def rag():
 def test_faq_retrieval(rag):
     """Test that seeded FAQ data returns relevant results"""
     # First seed some test data
-    data_dir = Path(__file__).parent.parent / 'data'
-    faq_path = data_dir / 'sample_faq.txt'
+    data_dir = Path(__file__).parent.parent / "data"
+    faq_path = data_dir / "sample_faq.txt"
 
-    with open(faq_path, encoding='utf-8') as f:
+    with open(faq_path, encoding="utf-8") as f:
         from pods.customer_ops.knowledge.seed_faq import parse_qa_pairs
+
         qa_pairs = parse_qa_pairs(f.read())
 
     # Store test documents

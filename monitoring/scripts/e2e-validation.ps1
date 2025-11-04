@@ -22,7 +22,7 @@ Write-Host "  $result" -ForegroundColor Green
 
 Write-Host "`n[5/5] Verify SSE Stream (5 sec)..." -ForegroundColor Yellow
 Write-Host "  Connecting to http://localhost:9010/crm-events..." -ForegroundColor Gray
-$sseJob = Start-Job -ScriptBlock { 
+$sseJob = Start-Job -ScriptBlock {
     & curl.exe --http1.1 --no-buffer --max-time 5 http://localhost:9010/crm-events 2>$null
 }
 Start-Sleep -Seconds 4

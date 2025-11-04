@@ -220,12 +220,12 @@ Write-Host "Checking Prometheus alert rules..." -ForegroundColor Cyan
 try {
     $prometheusUrl = "http://localhost:9090"
     $rulesResponse = Invoke-RestMethod -Uri "$prometheusUrl/api/v1/rules" -TimeoutSec 10
-    
+
     $alertRules = $rulesResponse.data.groups | ForEach-Object { $_.rules } | Where-Object { $_.type -eq "alerting" }
     $alertCount = ($alertRules | Measure-Object).Count
-    
+
     Show-Success "Found $alertCount alert rules configured"
-    
+
     # Check for CRM Events alerts
     $crmAlerts = $alertRules | Where-Object { $_.labels.team -eq "crm" }
     if ($crmAlerts) {
@@ -291,11 +291,11 @@ Show-Success "Wait complete - checking if alert fired..."
 try {
     $alertsUrl = "http://localhost:9090/api/v1/alerts"
     $alertsResponse = Invoke-RestMethod -Uri $alertsUrl -TimeoutSec 10
-    
+
     $firingAlerts = $alertsResponse.data.alerts | Where-Object { $_.state -eq "firing" }
     if ($firingAlerts) {
         Show-Success "Found $($firingAlerts.Count) firing alerts"
-        
+
         # Show details
         foreach ($alert in $firingAlerts) {
             $alertName = $alert.labels.alertname
@@ -334,7 +334,7 @@ if ($slackReceived -ne "y") {
     Show-Error "Slack notification not received"
     Show-Info "Check SLACK_WEBHOOK_URL environment variable"
     Show-Info "Check Alertmanager logs: docker logs aether-alertmanager"
-    
+
     $continueTest = Read-Host "Continue with remaining tests? (y/n)"
     if ($continueTest -ne "y") {
         Write-Host ""
@@ -419,27 +419,27 @@ $silenceCreated = Read-Host "Did you create the silence? (y/n)"
 
 if ($silenceCreated -eq "y") {
     Show-Success "Silence created"
-    
+
     Write-Host ""
     Write-Host "Checking if silence is active..." -ForegroundColor Cyan
     Start-Sleep -Seconds 3
-    
+
     try {
         $base64Auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${User}:${Password}"))
         $headers = @{
             Authorization = "Basic $base64Auth"
         }
         $silences = Invoke-RestMethod -Uri "http://alertmanager.aetherlink.local/api/v2/silences" -Method Get -Headers $headers -TimeoutSec 10
-        
+
         $activeSilences = $silences | Where-Object { $_.status.state -eq "active" }
         if ($activeSilences) {
             Show-Success "Found $($activeSilences.Count) active silences"
-            
+
             # Check for CRM silence
-            $crmSilence = $activeSilences | Where-Object { 
+            $crmSilence = $activeSilences | Where-Object {
                 $_.matchers | Where-Object { $_.name -eq "service" -and $_.value -eq "crm-events-sse" }
             }
-            
+
             if ($crmSilence) {
                 Show-Success "CRM Events silence is active!"
                 $endsAt = [DateTime]::Parse($crmSilence[0].endsAt).ToLocalTime()
@@ -472,7 +472,7 @@ if ($restart -eq "y") {
     Write-Host "Restarting aether-crm-events..." -ForegroundColor Cyan
     docker start aether-crm-events | Out-Null
     Show-Success "Service restarted"
-    
+
     Write-Host ""
     Show-Info "Alert should resolve in ~5 minutes"
     Show-Info "Slack will show [RESOLVED] message"

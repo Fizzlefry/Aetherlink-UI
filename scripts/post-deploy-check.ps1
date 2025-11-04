@@ -28,9 +28,9 @@ $checks = @{
 
 function Test-Check {
     param($Name, $Test, [switch]$Critical)
-    
+
     Write-Host "  🔍 $Name..." -NoNewline
-    
+
     if ($Test) {
         Write-Host " ✅" -ForegroundColor Green
         $script:checks.passed += $Name
@@ -69,19 +69,19 @@ Write-Host ("=" * 80) -ForegroundColor DarkGray
 try {
     $rules = Invoke-RestMethod "http://localhost:9090/api/v1/rules" -UseBasicParsing
     $recordingGroup = $rules.data.groups | Where-Object { $_.name -eq "aetherlink.recording" } | Select-Object -First 1
-    
+
     if ($recordingGroup -and $recordingGroup.rules.Count -eq 6) {
         Test-Check "All 6 recording rules loaded" $true
-        
+
         $expectedRules = @(
             "aether:cache_hit_ratio:5m",
-            "aether:rerank_utilization_pct:15m", 
+            "aether:rerank_utilization_pct:15m",
             "aether:lowconfidence_pct:15m",
             "aether:cache_hit_ratio:5m:all",
             "aether:rerank_utilization_pct:15m:all",
             "aether:lowconfidence_pct:15m:all"
         )
-        
+
         foreach ($expected in $expectedRules) {
             $found = $recordingGroup.rules | Where-Object { $_.name -eq $expected }
             if ($found) {
@@ -110,7 +110,7 @@ try {
     $alertGroup = $rules.data.groups | Where-Object { $_.name -eq "aetherlink_rag.rules" } | Select-Object -First 1
     $prodAlerts = @("CacheEffectivenessDrop", "LowConfidenceSpike", "LowConfidenceSpikeVIP", "CacheEffectivenessDropVIP")
     $guardedCount = 0
-    
+
     foreach ($name in $prodAlerts) {
         $alert = $alertGroup.rules | Where-Object { $_.name -eq $name -and $_.type -eq "alerting" }
         if ($alert -and $alert.query -match "and sum\(rate") {
@@ -121,7 +121,7 @@ try {
             Write-Host "    ✗ $name (missing or no guard)" -ForegroundColor Red
         }
     }
-    
+
     Test-Check "All 4 alerts have traffic guards" ($guardedCount -eq 4)
 }
 catch {
@@ -137,13 +137,13 @@ Write-Host ("=" * 80) -ForegroundColor DarkGray
 try {
     $grafanaHealth = Invoke-RestMethod "http://localhost:3000/api/health" -UseBasicParsing
     Test-Check "Grafana accessible" ($grafanaHealth.database -eq "ok")
-    
+
     Start-Sleep -Seconds 2
-    
+
     try {
         $dashboards = Invoke-RestMethod "http://admin:admin@localhost:3000/api/search?type=dash-db" -UseBasicParsing
         $enhancedDb = $dashboards | Where-Object { $_.title -match "Enhanced" }
-        
+
         if ($enhancedDb) {
             Test-Check "Enhanced dashboard auto-provisioned" $true
             Write-Host "    📊 Dashboard: $($enhancedDb.title)" -ForegroundColor Gray
@@ -171,20 +171,20 @@ Write-Host ("=" * 80) -ForegroundColor DarkGray
 if (-not $SkipAPICheck) {
     try {
         $apiMetrics = Invoke-WebRequest "http://localhost:8000/metrics" -UseBasicParsing -TimeoutSec 3
-        
+
         if ($apiMetrics.StatusCode -eq 200) {
             Test-Check "API /metrics reachable" $true
-            
+
             # Check for key metrics
             $content = $apiMetrics.Content
             $hasAnswers = $content -match "aether_rag_answers_total"
             $hasCache = $content -match "aether_cache_requests_total"
             $hasRerank = $content -match "aether_rerank_requests_total"
-            
+
             Test-Check "aether_rag_answers_total present" $hasAnswers
             Test-Check "aether_cache_requests_total present" $hasCache
             Test-Check "aether_rerank_requests_total present" $hasRerank
-            
+
             if ($hasAnswers -and $hasCache -and $hasRerank) {
                 Write-Host "    ✓ All key metrics present!" -ForegroundColor DarkGreen
             }
@@ -211,7 +211,7 @@ Write-Host ("=" * 80) -ForegroundColor DarkGray
 try {
     $query = "aether:cache_hit_ratio:5m"
     $result = Invoke-RestMethod "http://localhost:9090/api/v1/query?query=$query" -UseBasicParsing
-    
+
     if ($result.data.result.Count -gt 0) {
         $hasData = $false
         foreach ($series in $result.data.result) {
@@ -222,9 +222,9 @@ try {
                 Write-Host "    ✓ Tenant '$tenant': $([math]::Round([double]$value, 1))%" -ForegroundColor DarkGreen
             }
         }
-        
+
         Test-Check "Recording rules returning data" $hasData
-        
+
         if (-not $hasData) {
             Write-Host "    ℹ️  Rules exist but returning NaN (no traffic yet)" -ForegroundColor Yellow
             Write-Host "    💡 Generate traffic: `$env:API_ADMIN_KEY='admin-secret-123'; .\scripts\tenant-smoke-test.ps1" -ForegroundColor Gray
@@ -273,25 +273,25 @@ if ($checks.failed.Count -eq 0) {
         Write-Host "   docker compose up -d" -ForegroundColor Gray
         Write-Host "   # Wait 10s, then re-run this script" -ForegroundColor Gray
     }
-    
+
     if ($checks.warnings -contains "Recording rules returning data") {
         Write-Host "`n2️⃣  Generate test traffic:" -ForegroundColor Yellow
         Write-Host "   `$env:API_ADMIN_KEY = 'admin-secret-123'" -ForegroundColor Gray
         Write-Host "   .\scripts\tenant-smoke-test.ps1" -ForegroundColor Gray
         Write-Host "   Start-Sleep -Seconds 15" -ForegroundColor Gray
     }
-    
+
     Write-Host "`n3️⃣  Open monitoring interfaces:" -ForegroundColor Green
     Write-Host "   Prometheus Rules:  http://localhost:9090/rules" -ForegroundColor Gray
     Write-Host "   Prometheus Alerts: http://localhost:9090/alerts" -ForegroundColor Gray
     Write-Host "   Grafana Dashboard: http://localhost:3000 (admin/admin)" -ForegroundColor Gray
     Write-Host "   Alertmanager:      http://localhost:9093/#/status" -ForegroundColor Gray
-    
+
     Write-Host "`n4️⃣  Optional: Enable Slack notifications:" -ForegroundColor Cyan
     Write-Host "   `$env:SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/XXX/YYY/ZZZ'" -ForegroundColor Gray
     Write-Host "   # Edit monitoring/alertmanager.yml: change 'default' to 'slack' receiver" -ForegroundColor Gray
     Write-Host "   docker compose restart alertmanager" -ForegroundColor Gray
-    
+
     Write-Host "`n✨ Monitoring stack is healthy! Generate traffic to see gauges light up." -ForegroundColor Green
 }
 else {

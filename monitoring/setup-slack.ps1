@@ -53,11 +53,11 @@ if ($composeContent -notmatch 'alertmanager:') {
 # Add environment variable to alertmanager service (if not already present)
 if ($composeContent -notmatch 'SLACK_WEBHOOK_URL') {
     Write-Host "   Adding SLACK_WEBHOOK_URL to alertmanager service..." -ForegroundColor Gray
-    
+
     # Backup original file
     Copy-Item $composeFile "$composeFile.backup" -Force
     Write-Host "   ✅ Backup created: docker-compose.yml.backup" -ForegroundColor Green
-    
+
     # Note: Manual update recommended for complex YAML
     Write-Host "`n⚠️  Manual update required:" -ForegroundColor Yellow
     Write-Host "   Add this to alertmanager service in docker-compose.yml:" -ForegroundColor Gray
@@ -80,7 +80,7 @@ Set-Location "C:\Users\jonmi\OneDrive\Documents\AetherLink\monitoring"
 try {
     docker compose restart alertmanager | Out-Null
     Start-Sleep -Seconds 3
-    
+
     # Check if container is running
     $containerStatus = docker ps --filter "name=alertmanager" --format "{{.Status}}"
     if ($containerStatus -match "Up") {
@@ -110,7 +110,7 @@ try {
         -ContentType "application/json" `
         -Body $testPayload `
         -ErrorAction Stop
-    
+
     Write-Host "   ✅ Test message sent successfully!" -ForegroundColor Green
     Write-Host "   📱 Check #crm-events-alerts channel in Slack" -ForegroundColor Cyan
 }
@@ -132,13 +132,13 @@ $runTest = Read-Host "Run validation test now? (y/N)"
 if ($runTest -eq 'y' -or $runTest -eq 'Y') {
     Write-Host "`n   Stopping consumer (triggering alert)..." -ForegroundColor Yellow
     docker stop aether-crm-events | Out-Null
-    
+
     Write-Host "   ⏰ Waiting 7 minutes for alert to fire..." -ForegroundColor Cyan
     Write-Host "   (Alert condition: consumer count < 2 for > 7 minutes)" -ForegroundColor Gray
     Write-Host "   Monitor Prometheus: http://localhost:9090/alerts" -ForegroundColor White
     Write-Host "   Monitor Slack: #crm-events-alerts channel" -ForegroundColor White
     Write-Host "`n   Press Ctrl+C to cancel and restore consumer manually`n" -ForegroundColor Yellow
-    
+
     # Wait 7 minutes
     for ($i = 420; $i -gt 0; $i--) {
         $minutes = [math]::Floor($i / 60)
@@ -146,10 +146,10 @@ if ($runTest -eq 'y' -or $runTest -eq 'Y') {
         Write-Host "`r   Time remaining: $($minutes)m $($seconds)s " -NoNewline -ForegroundColor Cyan
         Start-Sleep -Seconds 1
     }
-    
+
     Write-Host "`n`n   ✅ Alert should have fired!" -ForegroundColor Green
     Write-Host "   Check #crm-events-alerts for notification" -ForegroundColor White
-    
+
     Write-Host "`n   Restoring consumer..." -ForegroundColor Yellow
     docker start aether-crm-events | Out-Null
     Write-Host "   ✅ Consumer restarted" -ForegroundColor Green

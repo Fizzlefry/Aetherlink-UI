@@ -8,7 +8,7 @@
     1. Dry-run: Counts sample documents (source LIKE 'sample-%')
     2. Confirms with user
     3. Deletes sample data from DuckDB
-    
+
     Safe and deterministic - only removes docs with sample- prefix.
 
 .PARAMETER DryRun
@@ -20,11 +20,11 @@
 .EXAMPLE
     # Dry run (default)
     .\scripts\teardown-sample.ps1
-    
+
 .EXAMPLE
     # Delete with confirmation
     .\scripts\teardown-sample.ps1 -Force:$false
-    
+
 .EXAMPLE
     # Delete without confirmation
     .\scripts\teardown-sample.ps1 -Force
@@ -70,14 +70,14 @@ $countScript = @'
 import duckdb, json, sys
 try:
     con = duckdb.connect('/app/data/knowledge.duckdb', read_only=True)
-    
+
     # Count chunks with sample- prefix in source
     result = con.execute("""
-        SELECT COUNT(*) 
-        FROM embeddings 
+        SELECT COUNT(*)
+        FROM embeddings
         WHERE metadata ->> 'source' LIKE 'sample-%'
     """).fetchone()
-    
+
     count = result[0] if result else 0
     print(f"{count}")
     sys.exit(0)
@@ -88,23 +88,23 @@ except Exception as e:
 
 try {
     $count = docker exec $Container python -c $countScript 2>&1
-    
+
     if ($LASTEXITCODE -ne 0) {
         Write-Fail "Failed to query database: $count"
         exit 1
     }
-    
+
     $sampleCount = [int]$count.Trim()
-    
+
     if ($sampleCount -eq 0) {
         Write-Info "No sample documents found (count: 0)"
         Write-Pass "Nothing to clean up!"
         exit 0
     }
-    
+
     Write-Warn "Found $sampleCount sample chunk(s) to delete"
     Write-Info "Sample sources: sample-storm-collar, sample-pii-test, sample-audit-log"
-    
+
 }
 catch {
     Write-Fail "Error counting sample documents: $_"
@@ -130,7 +130,7 @@ if (-not $Force) {
     Write-Host ""
     Write-Warn "⚠ This will permanently delete $sampleCount chunk(s)"
     $response = Read-Host "Type 'DELETE' to confirm"
-    
+
     if ($response -ne "DELETE") {
         Write-Info "Cancelled by user"
         exit 0
@@ -148,13 +148,13 @@ $deleteScript = @'
 import duckdb, sys
 try:
     con = duckdb.connect('/app/data/knowledge.duckdb')
-    
+
     # Delete chunks with sample- prefix
     con.execute("""
-        DELETE FROM embeddings 
+        DELETE FROM embeddings
         WHERE metadata ->> 'source' LIKE 'sample-%'
     """)
-    
+
     # Get affected rows (note: DuckDB doesn't return rowcount for DELETE)
     # So we just confirm success
     con.commit()
@@ -167,14 +167,14 @@ except Exception as e:
 
 try {
     $result = docker exec $Container python -c $deleteScript 2>&1
-    
+
     if ($LASTEXITCODE -ne 0) {
         Write-Fail "Failed to delete sample data: $result"
         exit 1
     }
-    
+
     Write-Pass "Deleted $sampleCount sample chunk(s)"
-    
+
 }
 catch {
     Write-Fail "Error deleting sample data: $_"
@@ -190,13 +190,13 @@ Write-Info "Verifying deletion..."
 
 try {
     $verifyCount = docker exec $Container python -c $countScript 2>&1
-    
+
     if ($LASTEXITCODE -ne 0) {
         Write-Warn "Could not verify deletion: $verifyCount"
     }
     else {
         $remainingCount = [int]$verifyCount.Trim()
-        
+
         if ($remainingCount -eq 0) {
             Write-Pass "Verification: 0 sample chunks remain"
         }

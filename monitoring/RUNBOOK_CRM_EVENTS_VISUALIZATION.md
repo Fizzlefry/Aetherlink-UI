@@ -365,14 +365,14 @@ topk(1, sum by (tenant_id) (rate(crm_events_ingested_total[5m])))
 
 ## Success Criteria
 
-✅ **Panel 20** shows timeseries lines for both lead and job events  
-✅ **Panel 21** shows at least one tenant with event rate > 0  
-✅ **Alert** `CrmEventsSinkDown` is loaded in Prometheus (not firing)  
-✅ **Metrics** endpoint `http://localhost:9105/metrics` returns data  
-✅ **Logs** show "Received lead.created for tenant acme" messages  
+✅ **Panel 20** shows timeseries lines for both lead and job events
+✅ **Panel 21** shows at least one tenant with event rate > 0
+✅ **Alert** `CrmEventsSinkDown` is loaded in Prometheus (not firing)
+✅ **Metrics** endpoint `http://localhost:9105/metrics` returns data
+✅ **Logs** show "Received lead.created for tenant acme" messages
 
 ---
 
-**Last Updated:** November 3, 2025  
-**Maintained By:** Platform Team  
+**Last Updated:** November 3, 2025
+**Maintained By:** Platform Team
 **Status:** Production-Ready ✅

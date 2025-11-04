@@ -238,16 +238,16 @@ Your system is production-ready with:
 
 ### Next Major Upgrades (Choose One)
 
-**Option A: Model Governance** 📜  
-Effort: 2-3h | Impact: High  
+**Option A: Model Governance** 📜
+Effort: 2-3h | Impact: High
 → Model cards, signed digests, compliance docs
 
-**Option B: A/B Testing** 🧪  
-Effort: 4-6h | Impact: Critical  
+**Option B: A/B Testing** 🧪
+Effort: 4-6h | Impact: Critical
 → Feature flags, per-bucket metrics, auto-promote
 
-**Option C: Multi-Channel** 📱  
-Effort: 5-7h | Impact: High  
+**Option C: Multi-Channel** 📱
+Effort: 5-7h | Impact: High
 → SMS/Email/WhatsApp, templates, delivery metrics
 
 ---

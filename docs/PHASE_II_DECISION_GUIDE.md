@@ -75,11 +75,11 @@ async def analyze_system_health():
     # Fetch from Prometheus
     cpu_data = fetch_prometheus_metric("node_cpu_usage")
     mem_data = fetch_prometheus_metric("node_memory_usage")
-    
+
     # AI analysis
     if cpu_data > 80:
         annotate_grafana("High CPU Detected", f"CPU at {cpu_data}%")
-    
+
     return {"status": "ok", "analysis": {...}}
 ```
 

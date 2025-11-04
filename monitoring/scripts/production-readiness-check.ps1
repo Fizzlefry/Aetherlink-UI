@@ -16,7 +16,7 @@ function Test-Component {
         [string]$SuccessMessage,
         [string]$FailureMessage
     )
-    
+
     Write-Host "`n[TEST] $Name" -ForegroundColor Yellow
     try {
         $result = & $Test
@@ -79,7 +79,7 @@ Test-Component -Name "Autoheal Alert Rules" -Test {
 # 6. SLO Alerts Configured
 Test-Component -Name "SLO Alert Coverage" -Test {
     $rules = Invoke-RestMethod 'http://localhost:9090/api/v1/rules' -ErrorAction Stop
-    $sloAlerts = $rules.data.groups | ForEach-Object { $_.rules } | Where-Object { 
+    $sloAlerts = $rules.data.groups | ForEach-Object { $_.rules } | Where-Object {
         $_.type -eq 'alerting' -and $_.name -in @(
             'AutohealHeartbeatSLOBreach',
             'AutohealFailureRateSLOBreach',

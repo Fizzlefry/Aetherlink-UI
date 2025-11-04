@@ -183,13 +183,13 @@ experiment_sample_size{experiment="followup_timing",variant="aggressive"} 152
 
 ```promql
 # Conversion rate lift (aggressive vs control)
-experiment_conversion_rate{experiment="followup_timing",variant="aggressive"} 
+experiment_conversion_rate{experiment="followup_timing",variant="aggressive"}
 - experiment_conversion_rate{experiment="followup_timing",variant="control"}
 # Result: +0.116 (11.6% lift)
 
 # Is significant? (>100 samples + >5% lift)
-(experiment_sample_size{experiment="followup_timing"} > 100) 
-and (abs(experiment_conversion_rate{variant="aggressive"} 
+(experiment_sample_size{experiment="followup_timing"} > 100)
+and (abs(experiment_conversion_rate{variant="aggressive"}
     - experiment_conversion_rate{variant="control"}) > 0.05)
 ```
 
@@ -274,7 +274,7 @@ curl -X POST http://localhost:8000/ops/experiments/followup_timing/promote
 **Example**:
 ```python
 # Tenant: "acme_corp", Experiment: "followup_timing"
-hash("acme_corp:followup_timing") = 0x1a2b3c4d... 
+hash("acme_corp:followup_timing") = 0x1a2b3c4d...
 → float = 0.731
 
 # Traffic weights: control=0.5, aggressive=0.5
@@ -430,28 +430,28 @@ message = template.format(name=lead_name)
 
 **Status**: ✅ **PRODUCTION-READY**
 
-**Safety**: ✅ Statistical significance enforced  
-**Performance**: ✅ O(1) variant lookup (consistent hashing)  
-**Observability**: ✅ 4 Prometheus metrics + dashboard  
-**Documentation**: ✅ 800+ line guide with examples  
-**Testing**: ✅ 3 pre-configured experiments ready to enable  
+**Safety**: ✅ Statistical significance enforced
+**Performance**: ✅ O(1) variant lookup (consistent hashing)
+**Observability**: ✅ 4 Prometheus metrics + dashboard
+**Documentation**: ✅ 800+ line guide with examples
+**Testing**: ✅ 3 pre-configured experiments ready to enable
 
 ---
 
 ## 🚀 Commander's Assessment
 
-**Before**: Blind optimization (guess and pray) 🎲  
+**Before**: Blind optimization (guess and pray) 🎲
 **After**: Data-driven optimization (test and promote) 📊
 
-**Time to First Experiment**: 5 minutes (toggle enabled flag)  
-**Time to Statistical Significance**: 1-4 weeks (depending on traffic)  
-**Expected Conversion Lift**: +10-30% (based on variant)  
+**Time to First Experiment**: 5 minutes (toggle enabled flag)
+**Time to Statistical Significance**: 1-4 weeks (depending on traffic)
+**Expected Conversion Lift**: +10-30% (based on variant)
 
 **Impact**: **CRITICAL** - Every major product improvement can now be validated before full rollout!
 
 ---
 
-**Status**: ✅ A/B experimentation framework SHIPPED!  
+**Status**: ✅ A/B experimentation framework SHIPPED!
 **Next**: Enable first experiment and start optimizing! 🧪💥
 
 ---

@@ -1,7 +1,9 @@
 from typing import TypedDict
 
+
 class LeadLookupInput(TypedDict):
     lead_id: str
+
 
 async def lead_lookup(args: LeadLookupInput) -> dict:
     # TODO: wire to real datastore/CRM; this is a safe stub

@@ -1,7 +1,7 @@
 # 📦 SHIPMENT MANIFEST - Production-Hardened Monitoring Stack
 
-**Date**: November 3, 2025  
-**Status**: ✅ **SHIPPED - PRODUCTION READY**  
+**Date**: November 3, 2025
+**Status**: ✅ **SHIPPED - PRODUCTION READY**
 **Deploy Time**: 5 minutes (one command)
 
 ---
@@ -216,8 +216,8 @@ Team → VPN → *.aetherlink.local → Nginx → Services
 Team → Internet → *.aetherlink.com → Traefik (TLS) → Services
 ```
 
-**Migration**: Update `alertmanager.yml` URLs, deploy Traefik, point DNS.  
-**Time**: 10 minutes  
+**Migration**: Update `alertmanager.yml` URLs, deploy Traefik, point DNS.
+**Time**: 10 minutes
 **Downtime**: Zero (parallel deployment)
 
 ---
@@ -351,9 +351,9 @@ Architecture: ARCHITECTURE.md
 
 ---
 
-**Ship Date**: November 3, 2025  
-**Version**: 1.0.0  
-**Certified By**: GitHub Copilot  
+**Ship Date**: November 3, 2025
+**Version**: 1.0.0
+**Certified By**: GitHub Copilot
 **Status**: ✅ **SHIPPED - PRODUCTION READY**
 
 🚀 **Your crew can enable this without fiddling. Just run the scripts.**

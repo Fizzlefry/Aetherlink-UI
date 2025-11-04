@@ -1,6 +1,6 @@
 # Operator Eyes & Runway in Slack - Deployment Summary
 
-**Deployed:** November 2, 2025  
+**Deployed:** November 2, 2025
 **Status:** ✅ Complete
 
 ## What Was Shipped
@@ -14,13 +14,13 @@ Added comprehensive operator view with 5 panels:
 - **Probes Stats**: HTTP vs TCP probes up
 - **Burn Rate Chart**: 1h vs 6h burn trends with thresholds
 
-**Location:** Row 32 on SLO dashboard  
+**Location:** Row 32 on SLO dashboard
 **URL:** http://localhost:3000/d/peakpro_crm_slo
 
 ---
 
 ### 2. Slack Alerts: Runway Annotations
-**Files:** 
+**Files:**
 - `monitoring/prometheus-alerts.yml` (annotations added)
 - `monitoring/alert-templates.tmpl` (template updated)
 

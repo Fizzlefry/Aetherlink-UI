@@ -8,12 +8,12 @@ The CustomerOps AI Agent now includes a **production-grade A/B testing framework
 
 ## 🎯 Key Features
 
-✅ **Consistent Hashing** - Same tenant always gets same variant  
-✅ **Per-Variant Metrics** - Conversion rates tracked automatically  
-✅ **Statistical Significance** - Chi-square tests (p < 0.05)  
-✅ **Auto-Promotion** - Winners automatically promoted to 100% traffic  
-✅ **Sticky Sessions** - Variants persist across requests  
-✅ **Zero Downtime** - Enable/disable experiments without deployment  
+✅ **Consistent Hashing** - Same tenant always gets same variant
+✅ **Per-Variant Metrics** - Conversion rates tracked automatically
+✅ **Statistical Significance** - Chi-square tests (p < 0.05)
+✅ **Auto-Promotion** - Winners automatically promoted to 100% traffic
+✅ **Sticky Sessions** - Variants persist across requests
+✅ **Zero Downtime** - Enable/disable experiments without deployment
 
 ---
 
@@ -34,7 +34,7 @@ The CustomerOps AI Agent now includes a **production-grade A/B testing framework
 }
 ```
 
-**Traffic**: 50/50 split  
+**Traffic**: 50/50 split
 **Min Sample**: 50 per variant
 
 ---
@@ -54,7 +54,7 @@ The CustomerOps AI Agent now includes a **production-grade A/B testing framework
 }
 ```
 
-**Traffic**: 50/50 split  
+**Traffic**: 50/50 split
 **Min Sample**: 100 per variant
 
 ---
@@ -74,7 +74,7 @@ The CustomerOps AI Agent now includes a **production-grade A/B testing framework
 }
 ```
 
-**Traffic**: 50/50 split  
+**Traffic**: 50/50 split
 **Min Sample**: 100 per variant
 
 ---
@@ -180,12 +180,12 @@ experiment_sample_size{experiment="followup_timing",variant="aggressive"} 152
 
 ```promql
 # Conversion rate difference (aggressive vs control)
-experiment_conversion_rate{experiment="followup_timing",variant="aggressive"} 
+experiment_conversion_rate{experiment="followup_timing",variant="aggressive"}
 - experiment_conversion_rate{experiment="followup_timing",variant="control"}
 
 # Is winner statistically significant? (>100 samples + rate difference >5%)
-(experiment_sample_size{experiment="followup_timing"} > 100) 
-and (abs(experiment_conversion_rate{experiment="followup_timing",variant="aggressive"} 
+(experiment_sample_size{experiment="followup_timing"} > 100)
+and (abs(experiment_conversion_rate{experiment="followup_timing",variant="aggressive"}
 - experiment_conversion_rate{experiment="followup_timing",variant="control"}) > 0.05)
 
 # Total experiment outcomes by type
@@ -382,7 +382,7 @@ control: 0.52, test: 0.48
 ```
 
 ### 3. **One Variable at a Time**
-❌ Bad: Test "GPT-4 + 5min delay" vs "GPT-3.5 + 30min delay"  
+❌ Bad: Test "GPT-4 + 5min delay" vs "GPT-3.5 + 30min delay"
 ✅ Good: Test "GPT-4" vs "GPT-3.5" (keep delay same)
 
 ### 4. **Run Long Enough**

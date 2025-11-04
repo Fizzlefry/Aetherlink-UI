@@ -1,6 +1,6 @@
 # 🔒 RBAC: Role-Based Access Control
 
-**Status**: ✅ Operational  
+**Status**: ✅ Operational
 **Backward Compatible**: Yes (defaults to `viewer` if no `x-role` header)
 
 ---

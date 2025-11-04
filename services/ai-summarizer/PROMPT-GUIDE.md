@@ -181,11 +181,11 @@ If no activity in 7+ days:
 ```python
 def build_prompt(lead_id, tenant_id, activity):
     # ... activity lines ...
-    
+
     # Add conditional instructions
     most_recent = activity[0] if activity else None
     days_since_activity = calculate_days(most_recent.at)
-    
+
     if days_since_activity > 7:
         lines.append("IMPORTANT: No activity in 7+ days. Emphasize re-engagement urgency.")
 ```

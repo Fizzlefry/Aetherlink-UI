@@ -1,6 +1,6 @@
 # Autoheal Dry-Run + Cooldown + Ack Links - Deployment Summary
 
-**Deployed:** November 2, 2025  
+**Deployed:** November 2, 2025
 **Status:** ✅ Complete - All Tests Passing
 
 ## What Was Shipped
@@ -45,7 +45,7 @@ autoheal_actions_total{alertname, result}       # Counter by result type
 ---
 
 ### 3. Slack Ack Links (No Slack App Required)
-**Files:** 
+**Files:**
 - `monitoring/alert-templates.tmpl` (template updated)
 - `monitoring/autoheal/main.py` (new `/ack` endpoint)
 
@@ -310,5 +310,5 @@ Phase 3: ENABLED=true, DRY_RUN=false
 ✅ Smoke tests: All passing
 ```
 
-**Production Ready:** Yes (in dry-run mode)  
+**Production Ready:** Yes (in dry-run mode)
 **Automation Ready:** Yes (flip DRY_RUN=false when confident)

@@ -9,7 +9,7 @@
     2. Ingests 3 sample documents (storm collar, PII test, audit log)
     3. Waits for embeddings to process
     4. Runs full validation suite
-    
+
     Perfect for fresh deployments or testing after code changes.
 
 .EXAMPLE
@@ -263,10 +263,10 @@ $attempts = 0
 while ((Get-Date) -lt $deadline -and -not $ready) {
     Start-Sleep -Milliseconds 800
     $attempts++
-    
+
     try {
         $metrics = (Invoke-WebRequest -Uri "$BaseUrl/metrics" -TimeoutSec 3 -UseBasicParsing).Content
-        
+
         # Heuristic: check if /knowledge/ingest endpoint has been hit
         if ($metrics -match 'http_requests_total\{.*endpoint="\/knowledge\/ingest"') {
             $ready = $true
@@ -276,7 +276,7 @@ while ((Get-Date) -lt $deadline -and -not $ready) {
     catch {
         # Metrics endpoint might be slow, keep trying
     }
-    
+
     if ($attempts % 5 -eq 0) {
         Write-Info "  Still waiting... ($attempts attempts)"
     }
@@ -302,9 +302,9 @@ try {
     # Query 1: Storm collar (should hit the guide)
     $null = curl.exe -sS --max-time $Timeout "$BaseUrl/answer?q=how%20to%20install%20storm%20collar&mode=hybrid" -H "x-api-key: $ApiKey" 2>&1
     Write-Pass "Cache primed: storm collar query"
-    
+
     Start-Sleep -Milliseconds 500
-    
+
     # Query 2: Audit logs (should hit the audit doc)
     $null = curl.exe -sS --max-time $Timeout "$BaseUrl/answer?q=system%20performance%20metrics&mode=hybrid" -H "x-api-key: $ApiKey" 2>&1
     Write-Pass "Cache primed: audit query"
@@ -326,23 +326,23 @@ $scriptPath = Join-Path $PSScriptRoot "validate-quick-wins.ps1"
 if (Test-Path $scriptPath) {
     & $scriptPath -ApiKey $ApiKey -BaseUrl $BaseUrl -Timeout $Timeout
     $exitCode = $LASTEXITCODE
-    
+
     Write-Host ""
-    
+
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # METRICS SNAPSHOT
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    
+
     Write-Host ""
     Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
     Write-Host "📊 METRICS SNAPSHOT" -ForegroundColor Cyan
     Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
-    
+
     try {
         $m = (Invoke-WebRequest -Uri "$BaseUrl/metrics" -TimeoutSec 5 -UseBasicParsing).Content
-        $metricsLines = $m | Select-String "aether_rag_answers_total|aether_rag_lowconfidence_total|aether_rag_cache_(hits|misses)_total|http_requests_total\{.*endpoint=""\/answer""|http_requests_total\{.*endpoint=""\/search""" | 
+        $metricsLines = $m | Select-String "aether_rag_answers_total|aether_rag_lowconfidence_total|aether_rag_cache_(hits|misses)_total|http_requests_total\{.*endpoint=""\/answer""|http_requests_total\{.*endpoint=""\/search""" |
         Select-Object -First 12
-        
+
         if ($metricsLines) {
             $metricsLines | ForEach-Object { Write-Host "  $($_.Line)" -ForegroundColor Gray }
         }
@@ -353,14 +353,14 @@ if (Test-Path $scriptPath) {
     catch {
         Write-Warn "Could not fetch metrics snapshot: $_"
     }
-    
+
     Write-Host ""
     Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
-    
+
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # FINAL SUMMARY
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    
+
     Write-Host ""
     if ($exitCode -eq 0) {
         Write-Host "╔══════════════════════════════════════════════════════╗" -ForegroundColor Green
@@ -386,7 +386,7 @@ if (Test-Path $scriptPath) {
         Write-Host "  • Re-run after waiting a few seconds for embeddings" -ForegroundColor Gray
         Write-Host "  • Check logs: docker compose logs --tail=50 api" -ForegroundColor Gray
     }
-    
+
     exit $exitCode
 }
 else {

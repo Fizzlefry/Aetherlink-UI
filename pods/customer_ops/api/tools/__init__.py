@@ -1,5 +1,5 @@
-from .lead_lookup import lead_lookup, LeadLookupInput
-from .schedule_inspection import schedule_inspection, ScheduleInspectionInput
+from .lead_lookup import LeadLookupInput, lead_lookup
+from .schedule_inspection import ScheduleInspectionInput, schedule_inspection
 
 # JSON-schema like specs for LLMs
 TOOLS = [

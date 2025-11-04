@@ -42,7 +42,7 @@ try {
         text   = "Release smoke test document created at $timestamp"
         source = "smoke_$timestamp"
     } | ConvertTo-Json
-    
+
     $job = Invoke-RestMethod "http://localhost:8000/knowledge/ingest-text-async" -Method POST -Headers $h_editor -Body $body -UseBasicParsing
     if ($job.job_id) {
         Write-Host "   ✅ Ingestion job queued: $($job.job_id)" -ForegroundColor Green
@@ -127,14 +127,14 @@ try {
     $containers = docker compose ps --format json | ConvertFrom-Json
     $healthy_count = 0
     $total_count = 0
-    
+
     foreach ($container in $containers) {
         $total_count++
         if ($container.Health -eq "healthy") {
             $healthy_count++
         }
     }
-    
+
     if ($healthy_count -eq $total_count) {
         Write-Host "   ✅ All $total_count containers healthy" -ForegroundColor Green
         $passed++

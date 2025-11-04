@@ -7,9 +7,9 @@ param(
 if (-not $BaseUrl) { $BaseUrl = "http://localhost:8000" }
 if (-not $ApiKey) { $ApiKey = $env:API_KEY_EXPERTCO }
 if (-not $ApiKey) { $ApiKey = $env:API_ADMIN_KEY }
-if (-not $ApiKey) { 
+if (-not $ApiKey) {
   Write-Host "ERROR: No API key found in API_KEY_EXPERTCO or API_ADMIN_KEY" -ForegroundColor Red
-  exit 1 
+  exit 1
 }
 
 Write-Host "Nudging API to generate metrics..." -ForegroundColor Cyan

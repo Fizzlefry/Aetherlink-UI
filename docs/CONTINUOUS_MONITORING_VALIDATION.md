@@ -93,13 +93,13 @@ Added comprehensive monitoring section with:
    [OK] Active Alerts: 0
    [OK] Found 'crm_finance.rules' with 4 rules
    [OK] Found 'crm_finance.recording' with 8 rules
-   
+
 2. Checking Grafana...
    [OK] Grafana connected (database: ok)
-   
+
 3. Checking Alertmanager...
    [Note: Not running in current test]
-   
+
 4. Checking CRM API metrics...
    [OK] CRM metrics exposed
    [OK] CRM metric series: 20

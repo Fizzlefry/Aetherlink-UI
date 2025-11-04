@@ -1,6 +1,9 @@
 import uuid
+
 from starlette.middleware.base import BaseHTTPMiddleware
+
 REQUEST_ID_HEADER = "x-request-id"
+
 
 class RequestIdMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):

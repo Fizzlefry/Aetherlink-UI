@@ -1,31 +1,32 @@
 """
 Proposal generation router - creates PDFs and stores in MinIO.
 """
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+
+import os
 from datetime import datetime, timedelta
 from io import BytesIO
+
+from fastapi import APIRouter, Depends, HTTPException
 from jinja2 import Template
 from minio import Minio
-import os
+from prometheus_client import Counter
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
-from prometheus_client import Counter
+from sqlalchemy.orm import Session
 
-from ..db import get_db
 from ..auth_routes import get_current_user
-from ..models_v2 import Lead, Attachment
+from ..db import get_db
+from ..models_v2 import Attachment, Lead
 
 router = APIRouter(prefix="/proposals", tags=["proposals"])
 
 PROPOSALS_CREATED = Counter(
-    "crm_proposals_generated_total",
-    "Total proposals generated",
-    ["org_id"]
+    "crm_proposals_generated_total", "Total proposals generated", ["org_id"]
 )
 
 # Proposal template
-TEMPLATE = Template("""
+TEMPLATE = Template(
+    """
 PROPOSAL
 
 Date: {{ now }}
@@ -48,7 +49,8 @@ Warranty: Per contract specifications
 Valid for: 30 days from proposal date
 
 Thank you for considering PeakPro Roofing for your project!
-""".strip())
+""".strip()
+)
 
 
 def s3_client() -> Minio:
@@ -67,22 +69,22 @@ def render_pdf(text: str) -> bytes:
     c = canvas.Canvas(buf, pagesize=LETTER)
     width, height = LETTER
     y = height - 72  # Start 1 inch from top
-    
+
     for line in text.splitlines():
         if not line.strip():
             y -= 14  # Empty line
             continue
-            
+
         # Handle long lines
         line_text = line[:100]  # Truncate very long lines
         c.drawString(72, y, line_text)
         y -= 14
-        
+
         # New page if needed
         if y < 72:
             c.showPage()
             y = height - 72
-    
+
     c.showPage()
     c.save()
     buf.seek(0)
@@ -95,7 +97,7 @@ def generate_proposal(
     price: float,
     scope: str = "",
     db: Session = Depends(get_db),
-    user = Depends(get_current_user),
+    user=Depends(get_current_user),
 ):
     """Generate a proposal PDF for a lead and store in MinIO."""
     # Get lead (with org isolation)
@@ -105,19 +107,16 @@ def generate_proposal(
 
     # Render proposal text
     text = TEMPLATE.render(
-        now=datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
-        lead=lead,
-        scope=scope,
-        price=price
+        now=datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"), lead=lead, scope=scope, price=price
     )
-    
+
     # Generate PDF
     pdf_bytes = render_pdf(text)
 
     # Upload to MinIO
     client = s3_client()
     bucket = f"org-{user.org_id}"
-    
+
     # Create bucket if it doesn't exist
     try:
         if not client.bucket_exists(bucket):
@@ -127,12 +126,11 @@ def generate_proposal(
 
     # Generate unique key
     key = f"proposals/lead-{lead.id}-{int(datetime.utcnow().timestamp())}.pdf"
-    
+
     # Upload PDF
     try:
         client.put_object(
-            bucket, key, BytesIO(pdf_bytes), length=len(pdf_bytes),
-            content_type="application/pdf"
+            bucket, key, BytesIO(pdf_bytes), length=len(pdf_bytes), content_type="application/pdf"
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
@@ -144,7 +142,7 @@ def generate_proposal(
         filename=f"proposal-lead-{lead.id}.pdf",
         key=key,
         content_type="application/pdf",
-        size_bytes=len(pdf_bytes)
+        size_bytes=len(pdf_bytes),
     )
     db.add(att)
     db.commit()
@@ -162,5 +160,5 @@ def generate_proposal(
         "lead_id": lead.id,
         "proposal_url": url,
         "attachment_id": att.id,
-        "expires_in_minutes": 15
+        "expires_in_minutes": 15,
     }

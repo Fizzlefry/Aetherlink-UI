@@ -1,7 +1,7 @@
 # Sprint 4 Complete: QuickBooks Online Auto-Invoice Pipeline 🎉
 
-**Status**: ✅ DEPLOYED & VALIDATED  
-**Date**: 2025-11-02  
+**Status**: ✅ DEPLOYED & VALIDATED
+**Date**: 2025-11-02
 **Objective**: Close the loop from payments → invoicing → bookkeeping for finance-grade accuracy
 
 ---
@@ -383,7 +383,7 @@ Invoke-RestMethod -Method Post `
   -ContentType "application/json"
 ```
 
-**Result**: 
+**Result**:
 - ✅ Webhook returns `{"received": true}`
 - ✅ `payment_success` activity logged
 - ✅ Payment metrics incremented
@@ -686,7 +686,7 @@ curl https://yourdomain.com/metrics | grep crm_invoice
 
 ---
 
-**Ship Date**: 2025-11-02  
-**Deployment**: monitoring/crm-api (port 8089)  
-**Status**: ✅ DEPLOYED (OAuth ready when credentials provided)  
+**Ship Date**: 2025-11-02
+**Deployment**: monitoring/crm-api (port 8089)
+**Status**: ✅ DEPLOYED (OAuth ready when credentials provided)
 **Business Impact**: Seamless cash-to-books pipeline with full audit trail 💰📊

@@ -29,7 +29,7 @@ $env:API_KEY_TEMP = "NEWKEY123"
 try {
     $reload = Invoke-RestMethod -Method Post http://localhost:8000/ops/reload-auth -Headers $h -ErrorAction Stop
     Write-Host "✓ Auth reloaded: $($reload.keys) keys" -ForegroundColor Green
-    
+
     # Test new key
     $newKeyResp = Invoke-RestMethod http://localhost:8000/ops/model-status -Headers @{ "x-api-key" = "NEWKEY123" } -ErrorAction Stop
     Write-Host "✓ New key works immediately" -ForegroundColor Green

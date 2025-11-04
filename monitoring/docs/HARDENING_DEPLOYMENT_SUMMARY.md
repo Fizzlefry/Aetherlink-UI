@@ -9,7 +9,7 @@ All hardening updates have been deployed successfully. The monitoring stack now 
 ## ✅ **Changes Deployed**
 
 ### 1. Recording Rules (3 new rules)
-**File**: `monitoring/prometheus-crm-events-rules.yml`  
+**File**: `monitoring/prometheus-crm-events-rules.yml`
 **Group**: `crm_events_lag_capacity`
 
 ```yaml
@@ -103,7 +103,7 @@ for: 7m
 ### 4. Documentation (2 new files)
 
 #### **RUNBOOK_HOTKEY_SKEW.md** (Comprehensive Incident Playbook)
-**Location**: `monitoring/docs/RUNBOOK_HOTKEY_SKEW.md`  
+**Location**: `monitoring/docs/RUNBOOK_HOTKEY_SKEW.md`
 **Size**: 400+ lines
 
 **Sections**:
@@ -117,7 +117,7 @@ for: 7m
 - ✅ Related alerts reference
 
 #### **ONE_LINER_FIXES.md** (Quick Reference Commands)
-**Location**: `monitoring/docs/ONE_LINER_FIXES.md`  
+**Location**: `monitoring/docs/ONE_LINER_FIXES.md`
 **Size**: 300+ lines
 
 **Sections**:
@@ -324,9 +324,9 @@ curl.exe -s "http://localhost:9090/api/v1/query?query=kafka:group_skew_ratio{con
 
 ---
 
-**Deployment Date**: 2025-11-02  
-**Deployed By**: DevOps Team  
-**Status**: ✅ **PRODUCTION READY**  
+**Deployment Date**: 2025-11-02
+**Deployed By**: DevOps Team
+**Status**: ✅ **PRODUCTION READY**
 **Next Review**: After scaling to 2 consumers and verifying drain
 
 ---

@@ -1,16 +1,16 @@
 import json
-import os
-import time
 import logging
-from typing import Any, Dict, List, Optional
-
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-from kafka import KafkaConsumer
+import os
 import threading
+import time
+from typing import Any
+
 import requests
 import yaml
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from kafka import KafkaConsumer
+from pydantic import BaseModel
 
 """
 AetherLink Notifications Consumer
@@ -40,6 +40,7 @@ log = logging.getLogger("notifications-consumer")
 
 app = FastAPI(title="AetherLink Notifications Consumer", version="0.1.0")
 
+
 # ------------------------------------------------------------------------------
 # Models
 # ------------------------------------------------------------------------------
@@ -48,18 +49,24 @@ class Notification(BaseModel):
     tenant_id: str
     title: str
     message: str
-    raw: Dict[str, Any]
+    raw: dict[str, Any]
 
 
 # ------------------------------------------------------------------------------
 # Rules Engine
 # ------------------------------------------------------------------------------
-def load_rules() -> Dict[str, Any]:
+def load_rules() -> dict[str, Any]:
     if not os.path.exists(RULES_PATH):
         log.warning("rules file not found at %s, using default allow", RULES_PATH)
-        return {"rules": [], "default": {"notify": True, "template": "[{tenant_id}] {event_type} on lead #{lead_id}"}}
+        return {
+            "rules": [],
+            "default": {
+                "notify": True,
+                "template": "[{tenant_id}] {event_type} on lead #{lead_id}",
+            },
+        }
 
-    with open(RULES_PATH, "r", encoding="utf-8") as f:
+    with open(RULES_PATH, encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
         data.setdefault("rules", [])
         data.setdefault("default", {"notify": True})
@@ -67,21 +74,21 @@ def load_rules() -> Dict[str, Any]:
 
 
 # Global rules state
-RULESET: Dict[str, Any] = load_rules()
+RULESET: dict[str, Any] = load_rules()
 
 
-def get_ruleset() -> Dict[str, Any]:
+def get_ruleset() -> dict[str, Any]:
     return RULESET
 
 
-def reload_ruleset() -> Dict[str, Any]:
+def reload_ruleset() -> dict[str, Any]:
     global RULESET
     RULESET = load_rules()
     log.info("Rules reloaded: %d rules", len(RULESET.get("rules", [])))
     return RULESET
 
 
-def match_rule(event: Dict[str, Any]) -> Dict[str, Any]:
+def match_rule(event: dict[str, Any]) -> dict[str, Any]:
     """
     Return the first matching rule, or the default.
     """
@@ -98,12 +105,23 @@ def match_rule(event: Dict[str, Any]) -> Dict[str, Any]:
     return RULESET.get("default", {"notify": True})
 
 
-def render_template(tpl: str, event: Dict[str, Any]) -> str:
+def render_template(tpl: str, event: dict[str, Any]) -> str:
     # very simple {field} replace
     def repl(key: str) -> str:
         return str(event.get(key, ""))
+
     out = tpl
-    for part in ["tenant_id", "event_type", "lead_id", "id", "name", "email", "actor", "old_status", "new_status"]:
+    for part in [
+        "tenant_id",
+        "event_type",
+        "lead_id",
+        "id",
+        "name",
+        "email",
+        "actor",
+        "old_status",
+        "new_status",
+    ]:
         out = out.replace("{" + part + "}", repl(part))
     return out
 
@@ -111,26 +129,26 @@ def render_template(tpl: str, event: Dict[str, Any]) -> str:
 # ------------------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------------------
-def passes_tenant_filter(event: Dict[str, Any]) -> bool:
+def passes_tenant_filter(event: dict[str, Any]) -> bool:
     tenant_id = event.get("tenant_id")
     if TENANT_FILTER and tenant_id != TENANT_FILTER:
         return False
     return True
 
 
-def build_notification(event: Dict[str, Any]) -> Optional[Notification]:
+def build_notification(event: dict[str, Any]) -> Notification | None:
     if not passes_tenant_filter(event):
         return None
 
     rule = match_rule(event)
     rule_name = rule.get("name", "default")
-    
+
     if not rule.get("notify", True):
         log.info("Notification suppressed by rule=%s", rule_name)
         return None
 
     log.info("Notification matched rule=%s", rule_name)
-    
+
     tpl = rule.get("template") or "[{tenant_id}] {event_type} on lead #{lead_id}"
     message = render_template(tpl, event)
 
@@ -220,7 +238,7 @@ def post_rules_reload():
 
 
 @app.post("/test-notification", tags=["testing"])
-def test_notification(payload: Dict[str, Any]):
+def test_notification(payload: dict[str, Any]):
     notif = build_notification(payload)
     if notif:
         send_webhook(notif)
@@ -228,7 +246,7 @@ def test_notification(payload: Dict[str, Any]):
     else:
         return JSONResponse(
             status_code=200,
-            content={"message": "Notification suppressed by rules", "event": payload}
+            content={"message": "Notification suppressed by rules", "event": payload},
         )
 
 
@@ -238,5 +256,6 @@ def test_notification(payload: Dict[str, Any]):
 def _boot():
     thread = threading.Thread(target=start_consumer, daemon=True)
     thread.start()
+
 
 _boot()

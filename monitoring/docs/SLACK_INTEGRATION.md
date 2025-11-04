@@ -78,7 +78,7 @@ Status: FIRING
 
 🔥 WARNING — Hot-key skew detected in CRM Events consumer
 
-Skew ratio exceeded 4x threshold for 12 minutes. One partition is accumulating 
+Skew ratio exceeded 4x threshold for 12 minutes. One partition is accumulating
 significantly more lag than others.
 
 📖 Runbook: http://localhost:3000/d/crm-events-pipeline
@@ -200,7 +200,7 @@ route:
         - severity="critical"
       receiver: slack_crm_critical
       repeat_interval: 30m
-    
+
     # Warning alerts → normal channel
     - matchers:
         - team="crm"
@@ -214,7 +214,7 @@ receivers:
         api_url: "${SLACK_WEBHOOK_URL}"
         send_resolved: true
         # ... rest of config
-  
+
   - name: slack_crm
     slack_configs:
       - channel: "#crm-events-alerts"
@@ -227,12 +227,12 @@ receivers:
 # In alertmanager.yml (line 59)
 text: |-
   *🚨 {{ .CommonLabels.alertname }}*
-  
+
   {{ range .Alerts -}}
   *Summary*: {{ .Annotations.summary }}
   *Details*: {{ .Annotations.description }}
   *Runbook*: {{ .Annotations.runbook_url }}
-  
+
   *Prometheus*: http://localhost:9090/alerts
   *Grafana*: http://localhost:3000/d/crm-events-pipeline
   {{ end }}
@@ -243,7 +243,7 @@ text: |-
 ```yaml
 text: |-
   {{ if eq .CommonLabels.severity "critical" }}<!here> :rotating_light:{{ end }}
-  
+
   *{{ .CommonLabels.alertname }}*
   {{ range .Alerts -}}
   {{ .Annotations.summary }}
@@ -370,7 +370,7 @@ route:
         - service="crm-events-sse"
       receiver: slack_crm  # ✅ This matches first
       continue: true
-    
+
     - matchers:
         - team="crm"
       receiver: slack_crm_general  # ⚠️ Won't match CRM Events (already matched)
@@ -431,7 +431,7 @@ Status: FIRING
 
 🔥 WARNING — Hot-key skew detected in CRM Events consumer
 
-Skew ratio is 6.2x (threshold: 4.0x). Partition 2 has 850 messages 
+Skew ratio is 6.2x (threshold: 4.0x). Partition 2 has 850 messages
 while partitions 0 and 1 have ~137 each.
 
 📖 Runbook: http://localhost:3000/d/crm-events-pipeline
@@ -679,11 +679,11 @@ slack_configs:
 text: |-
   {{ if eq .CommonLabels.alertname "CrmEventsHotKeySkewHigh" }}
   :fire: *HOT-KEY SKEW DETECTED*
-  
+
   Check Panel 17 for partition lag distribution.
   {{ else if eq .CommonLabels.alertname "CrmEventsServiceDown" }}
   :rotating_light: *SERVICE DOWN*
-  
+
   Immediate action required!
   {{ else }}
   :warning: *{{ .CommonLabels.alertname }}*

@@ -1,9 +1,8 @@
 """Auto follow-up tasks for high-probability leads."""
+
 from __future__ import annotations
 
-import json
 import time
-from typing import Optional
 
 import requests
 from prometheus_client import Counter
@@ -33,18 +32,18 @@ def run_followup(
     lead_id: str,
     strategy: str,
     message: str,
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
 ) -> str:
     """
     Simple HTTP follow-up hook; replace with SMS/Email/CRM later.
-    
+
     Args:
         base_url: API base URL
         lead_id: Lead identifier
         strategy: Follow-up strategy name (for metrics)
         message: Follow-up message content
         api_key: Optional API key for authentication
-        
+
     Returns:
         "ok" or "error"
     """
@@ -70,7 +69,7 @@ def run_followup(
         FOLLOWUP_JOBS_TOTAL.labels(strategy=strategy, result="ok").inc()
         _post_note(base_url, lead_id, f"Auto-followup sent ({strategy})")
         return "ok"
-    except Exception as e:
+    except Exception:
         FOLLOWUP_JOBS_TOTAL.labels(strategy=strategy, result="error").inc()
         _post_note(base_url, lead_id, f"Auto-followup failed ({strategy})")
         return "error"

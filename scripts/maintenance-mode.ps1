@@ -36,20 +36,20 @@ try {
         -Method POST `
         -ContentType "application/json" `
         -Body $body
-    
+
     Write-Host "✅ Maintenance mode activated" -ForegroundColor Green
     Write-Host "   Silence ID: $($response.silenceID)" -ForegroundColor Gray
     Write-Host "   Start: $startTime" -ForegroundColor Gray
     Write-Host "   End: $endTime" -ForegroundColor Gray
     Write-Host "   Duration: $DurationMinutes minutes" -ForegroundColor Gray
-    
+
     Write-Host "`n📊 View active silences:" -ForegroundColor Cyan
     Write-Host "   http://localhost:9093/#/silences" -ForegroundColor Gray
-    
+
     Write-Host "`n💡 To delete this silence early:" -ForegroundColor Cyan
     Write-Host "   `$silenceId = '$($response.silenceID)'" -ForegroundColor Gray
     Write-Host "   Invoke-RestMethod -Uri `"http://localhost:9093/api/v2/silence/`$silenceId`" -Method DELETE" -ForegroundColor Gray
-    
+
 }
 catch {
     Write-Host "❌ Failed to create silence: $($_.Exception.Message)" -ForegroundColor Red

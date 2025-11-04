@@ -203,6 +203,6 @@ You now have:
 
 ---
 
-**Last Updated**: 2024-11-02  
-**Version**: 1.0 (Production)  
+**Last Updated**: 2024-11-02
+**Version**: 1.0 (Production)
 **Status**: READY TO LAUNCH

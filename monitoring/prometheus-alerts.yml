@@ -721,8 +721,8 @@ groups:
       - alert: AutohealErrorBudgetBurnFast
         expr: |
           (
-            sum(rate(autoheal:heartbeat:age_seconds{job="autoheal"}[5m])) 
-            / 
+            sum(rate(autoheal:heartbeat:age_seconds{job="autoheal"}[5m]))
+            /
             (300 * 0.999)  # SLO target: p95 < 5m (300s) with 99.9% availability
           ) > 14.4  # 5% of monthly budget in 1 hour (30d * 24h / (0.05 * 100) = 14.4x burn)
         for: 5m
@@ -740,8 +740,8 @@ groups:
       - alert: AutohealErrorBudgetBurnSlow
         expr: |
           (
-            sum(rate(autoheal:heartbeat:age_seconds{job="autoheal"}[1h])) 
-            / 
+            sum(rate(autoheal:heartbeat:age_seconds{job="autoheal"}[1h]))
+            /
             (300 * 0.999)
           ) > 2.4  # 10% of monthly budget in 6 hours (30d * 24h / (0.1 * 6) = 2.4x burn)
         for: 30m

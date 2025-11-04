@@ -3,13 +3,15 @@ import os
 import httpx
 import pytest
 
-
 HTTP_OK = 200
 
 
 # Integration-style test: only run when RUN_INTEGRATION_TESTS=1 is set in the env.
 if not os.getenv("RUN_INTEGRATION_TESTS"):
-    pytest.skip("Skipping integration health check (set RUN_INTEGRATION_TESTS=1 to enable)", allow_module_level=True)
+    pytest.skip(
+        "Skipping integration health check (set RUN_INTEGRATION_TESTS=1 to enable)",
+        allow_module_level=True,
+    )
 
 
 @pytest.mark.integration

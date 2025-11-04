@@ -1,7 +1,9 @@
 """
 Test /answer endpoint with citations.
 """
+
 from fastapi.testclient import TestClient
+
 from pods.customer_ops.api.main import app
 
 # Test client
@@ -17,27 +19,27 @@ def test_answer_returns_citations_and_text():
     response = client.get(
         "/answer",
         params={"q": "storm collar installation", "k": 5, "mode": "hybrid"},
-        headers={"x-admin-key": ADMIN_KEY}
+        headers={"x-admin-key": ADMIN_KEY},
     )
-    
+
     assert response.status_code == 200
     data = response.json()
-    
+
     # Check answer text
     assert isinstance(data.get("answer", ""), str)
     assert len(data["answer"]) > 20, "Answer should be substantial"
-    
+
     # Check citations
     cites = data.get("citations", [])
     assert isinstance(cites, list)
     assert len(cites) >= 1, "Should have at least one citation"
-    
+
     # Verify citation structure
     assert "url" in cites[0]
     assert "snippet" in cites[0]
     assert isinstance(cites[0]["url"], str)
     assert isinstance(cites[0]["snippet"], str)
-    
+
     # Check mode
     assert data["used_mode"] == "hybrid"
 
@@ -47,9 +49,9 @@ def test_answer_semantic_mode():
     response = client.get(
         "/answer",
         params={"q": "roof warranty", "k": 3, "mode": "semantic"},
-        headers={"x-admin-key": ADMIN_KEY}
+        headers={"x-admin-key": ADMIN_KEY},
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["used_mode"] == "semantic"
@@ -62,9 +64,9 @@ def test_answer_lexical_mode():
     response = client.get(
         "/answer",
         params={"q": "audit test", "k": 3, "mode": "lexical"},
-        headers={"x-admin-key": ADMIN_KEY}
+        headers={"x-admin-key": ADMIN_KEY},
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["used_mode"] == "lexical"
@@ -76,12 +78,12 @@ def test_answer_no_results():
     response = client.get(
         "/answer",
         params={"q": "xyzabc123nonexistent", "k": 5, "mode": "hybrid"},
-        headers={"x-admin-key": ADMIN_KEY}
+        headers={"x-admin-key": ADMIN_KEY},
     )
-    
+
     assert response.status_code == 200
     data = response.json()
-    
+
     # Should return helpful message
     assert "couldn't find" in data["answer"].lower() or len(data["citations"]) == 0
 
@@ -92,15 +94,15 @@ def test_answer_validates_k_parameter():
     response = client.get(
         "/answer",
         params={"q": "test", "k": 20, "mode": "hybrid"},
-        headers={"x-admin-key": ADMIN_KEY}
+        headers={"x-admin-key": ADMIN_KEY},
     )
     assert response.status_code in [200, 422]  # May validate or cap
-    
+
     # k=0 should fail validation
     response = client.get(
         "/answer",
         params={"q": "test", "k": 0, "mode": "hybrid"},
-        headers={"x-admin-key": ADMIN_KEY}
+        headers={"x-admin-key": ADMIN_KEY},
     )
     assert response.status_code == 422
 
@@ -110,12 +112,12 @@ def test_answer_citations_have_snippets():
     response = client.get(
         "/answer",
         params={"q": "test document", "k": 5, "mode": "hybrid"},
-        headers={"x-admin-key": ADMIN_KEY}
+        headers={"x-admin-key": ADMIN_KEY},
     )
-    
+
     assert response.status_code == 200
     data = response.json()
-    
+
     if data["citations"]:
         for cite in data["citations"]:
             assert "snippet" in cite
@@ -128,12 +130,12 @@ def test_answer_uses_query_tokens():
     response = client.get(
         "/answer",
         params={"q": "audit log test", "k": 5, "mode": "hybrid"},
-        headers={"x-admin-key": ADMIN_KEY}
+        headers={"x-admin-key": ADMIN_KEY},
     )
-    
+
     assert response.status_code == 200
     data = response.json()
-    
+
     # Answer should mention at least one query token
     answer_lower = data["answer"].lower()
     assert any(token in answer_lower for token in ["audit", "log", "test"])
@@ -144,12 +146,12 @@ def test_answer_max_3_citations():
     response = client.get(
         "/answer",
         params={"q": "test", "k": 10, "mode": "hybrid"},
-        headers={"x-admin-key": ADMIN_KEY}
+        headers={"x-admin-key": ADMIN_KEY},
     )
-    
+
     assert response.status_code == 200
     data = response.json()
-    
+
     # Should have max 3 citations
     assert len(data["citations"]) <= 3
 
@@ -162,14 +164,15 @@ def test_answer_rate_limiting():
         response = client.get(
             "/answer",
             params={"q": "test", "k": 1, "mode": "semantic"},
-            headers={"x-admin-key": ADMIN_KEY}
+            headers={"x-admin-key": ADMIN_KEY},
         )
         responses.append(response.status_code)
-    
+
     # Should hit rate limit
     assert 429 in responses
 
 
 if __name__ == "__main__":
     import pytest
+
     pytest.main([__file__, "-v"])

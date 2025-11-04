@@ -281,14 +281,14 @@ def lead_summary_command(ack, command, client):
     ack()
     lead_id = command['text']
     tenant_id = get_tenant_from_slack_user(command['user_id'])
-    
+
     response = requests.get(
         f"http://aether-ai-summarizer:9108/summaries/lead/{lead_id}",
         params={"tenant_id": tenant_id}
     )
-    
+
     summary_data = response.json()
-    
+
     client.chat_postMessage(
         channel=command['channel_id'],
         text=f"*Lead #{lead_id} Summary*\n{summary_data['summary']}"

@@ -5,23 +5,24 @@ from typing import Any, TypeVar
 
 from .config import get_settings
 
-
 # Try to import redis/fakeredis; fall back to in-memory shim for tests
 try:
     import redis  # type: ignore
+
     HAVE_REDIS = True
 except Exception:
     HAVE_REDIS = False
 
 try:
     import fakeredis  # type: ignore
+
     HAVE_FAKEREDIS = True
 except Exception:
     HAVE_FAKEREDIS = False
 
 
 # Type variable for generic return type
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class _RedisShim:
@@ -29,6 +30,7 @@ class _RedisShim:
 
     Supports: get, set, setex, lpush, lrange, pipeline()
     """
+
     def __init__(self):
         self._store: dict = {}
 
@@ -51,7 +53,7 @@ class _RedisShim:
 
     def lrange(self, key: str, start: int, end: int):
         lst = self._store.get(key) or []
-        return lst[start:end + 1]
+        return lst[start : end + 1]
 
     def pipeline(self):
         shim = self
@@ -62,16 +64,16 @@ class _RedisShim:
                 self._shim = shim
 
             def set(self, k, v):
-                self._ops.append(('set', k, v))
+                self._ops.append(("set", k, v))
 
             def lpush(self, k, v):
-                self._ops.append(('lpush', k, v))
+                self._ops.append(("lpush", k, v))
 
             def execute(self):
                 for op, k, v in self._ops:
-                    if op == 'set':
+                    if op == "set":
                         self._shim.set(k, v)
-                    elif op == 'lpush':
+                    elif op == "lpush":
                         self._shim.lpush(k, v)
 
         return Pipe(shim)
@@ -110,16 +112,17 @@ def get_redis_client():
 def cache_result(
     expire: int = 3600,  # 1 hour default
     prefix: str = "rag:",
-    skip_keys: list[str] | None = None
+    skip_keys: list[str] | None = None,
 ) -> Callable:
     """
     Cache decorator that stores function results in Redis.
-    
+
     Args:
         expire: Time in seconds before cache expires
         prefix: Redis key prefix for this cache
         skip_keys: List of kwargs to skip when creating cache key
     """
+
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> T:
@@ -139,12 +142,9 @@ def cache_result(
 
             # Generate and cache result
             result = func(*args, **kwargs)
-            redis_client.setex(
-                name=cache_key,
-                time=expire,
-                value=json.dumps(result)
-            )
+            redis_client.setex(name=cache_key, time=expire, value=json.dumps(result))
             return result
 
         return wrapper
+
     return decorator

@@ -10,7 +10,7 @@
 - Highest privileges (no permission issues)
 - Silent mode (no popup windows)
 
-# Nightly backups hardened  
+# Nightly backups hardened
 - Runs at 1:30 AM daily
 - Runs whether you're logged in or not
 - Highest privileges
@@ -133,24 +133,24 @@ schtasks /Delete /TN "AetherLink-Monitoring-AtStartup" /F  # if created
 ## ⚠️ Known Quirks Handled
 
 ### 1. OneDrive Path Spaces
-**Symptom:** Task fails with "path not found"  
-**Fix:** Already handled - scripts use proper quoting around `$scriptsPath`  
+**Symptom:** Task fails with "path not found"
+**Fix:** Already handled - scripts use proper quoting around `$scriptsPath`
 **Manual check:** Task Scheduler → Task → Actions tab → Verify quotes
 
 ### 2. Docker Desktop Race Condition
-**Symptom:** Monitoring fails to start on logon  
-**Fix:** Already handled - 1-minute delay applied automatically  
-**Manual check:** `schtasks /Query /TN "AetherLink-Monitoring-Autostart" /FO LIST /V | Select-String "Delay"`  
+**Symptom:** Monitoring fails to start on logon
+**Fix:** Already handled - 1-minute delay applied automatically
+**Manual check:** `schtasks /Query /TN "AetherLink-Monitoring-Autostart" /FO LIST /V | Select-String "Delay"`
 **Expected:** `Delay Time: 0:01:00`
 
 ### 3. ExecutionPolicy Blocks
-**Symptom:** "Scripts are disabled on this system"  
-**Fix:** Already handled - tasks use `-ExecutionPolicy Bypass` flag  
+**Symptom:** "Scripts are disabled on this system"
+**Fix:** Already handled - tasks use `-ExecutionPolicy Bypass` flag
 **Manual fix (if needed):** `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser`
 
 ### 4. Windows Sleep Kills Metrics
-**Symptom:** Backups don't run at 1:30 AM because laptop is asleep  
-**Fix:** Configure power settings  
+**Symptom:** Backups don't run at 1:30 AM because laptop is asleep
+**Fix:** Configure power settings
 ```powershell
 # Open Power Options
 powercfg.cpl
@@ -158,7 +158,7 @@ powercfg.cpl
 ```
 
 ### 5. Firewall Blocks Dashboard (if exposing on LAN)
-**Symptom:** Can't access Grafana from other devices  
+**Symptom:** Can't access Grafana from other devices
 **Fix (only if needed):**
 ```powershell
 New-NetFirewallRule -DisplayName "AetherLink Grafana" -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow

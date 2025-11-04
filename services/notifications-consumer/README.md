@@ -204,11 +204,11 @@ def should_notify(event: Dict[str, Any]) -> bool:
     # Only notify on high-value status changes
     if event.get("event_type") == "lead.status_changed":
         return event.get("new_status") in ("qualified", "won")
-    
+
     # Always notify on assignments
     if event.get("event_type") == "lead.assigned":
         return True
-    
+
     return False
 ```
 

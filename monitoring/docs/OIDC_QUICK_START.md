@@ -176,8 +176,8 @@ docker exec autoheal nslookup YOUR_DOMAIN
 
 ```promql
 # Action success rate (target: >95%)
-sum(rate(autoheal_actions_total{result="executed"}[1h])) 
-/ 
+sum(rate(autoheal_actions_total{result="executed"}[1h]))
+/
 sum(rate(autoheal_actions_total[1h]))
 
 # Audit write latency p95 (target: <200ms)

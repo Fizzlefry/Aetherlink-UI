@@ -1,7 +1,7 @@
 # Aetherlink Ship Pack — Complete Implementation Guide
 
-**Deliverables**: Grafana Dashboard, Kafka Consumer SSE, EF Core Migrations  
-**Status**: ✅ Ready to Deploy  
+**Deliverables**: Grafana Dashboard, Kafka Consumer SSE, EF Core Migrations
+**Status**: ✅ Ready to Deploy
 **Date**: November 2, 2025
 
 ---
@@ -469,8 +469,8 @@ curl -X POST http://localhost:8080/api/crm/jobs \
 ## 🐛 Troubleshooting
 
 ### Issue: Kafka topic creation fails
-**Symptoms**: `rpk topic create` returns error  
-**Cause**: Kafka not running  
+**Symptoms**: `rpk topic create` returns error
+**Cause**: Kafka not running
 **Fix**:
 ```powershell
 docker ps | grep kafka  # Check if running
@@ -480,8 +480,8 @@ docker compose -f monitoring/docker-compose.yml up -d kafka
 ---
 
 ### Issue: EF migration fails
-**Symptoms**: `dotnet ef database update` returns connection error  
-**Cause**: PostgreSQL not running or wrong connection string  
+**Symptoms**: `dotnet ef database update` returns connection error
+**Cause**: PostgreSQL not running or wrong connection string
 **Fix**:
 ```powershell
 docker ps | grep postgres-crm  # Check if running
@@ -494,8 +494,8 @@ docker exec postgres-crm psql -U crm -d crm -c "SELECT 1;"
 ---
 
 ### Issue: CRM Events service shows "down"
-**Symptoms**: Status indicator is red  
-**Cause**: Service crashed or Kafka unreachable  
+**Symptoms**: Status indicator is red
+**Cause**: Service crashed or Kafka unreachable
 **Fix**:
 ```powershell
 docker logs aether-crm-events --tail 50  # Check for errors
@@ -505,8 +505,8 @@ docker compose -f monitoring/docker-compose.yml restart crm-events
 ---
 
 ### Issue: No events appear in Command Center
-**Symptoms**: Page loads but shows "Waiting for events..."  
-**Cause**: No events in Kafka or consumer lag  
+**Symptoms**: Page loads but shows "Waiting for events..."
+**Cause**: No events in Kafka or consumer lag
 **Fix**:
 ```powershell
 # Check if events exist in Kafka
@@ -519,8 +519,8 @@ docker exec kafka rpk group describe crm-events-sse
 ---
 
 ### Issue: Grafana dashboard shows "No Data"
-**Symptoms**: All panels show "No Data"  
-**Cause**: Prometheus not scraping or Autoheal not exposing metrics  
+**Symptoms**: All panels show "No Data"
+**Cause**: Prometheus not scraping or Autoheal not exposing metrics
 **Fix**:
 ```powershell
 # Check Prometheus targets
@@ -556,6 +556,6 @@ curl http://localhost:9009/metrics | Select-String "autoheal"
 
 ---
 
-**Deployment Status**: ✅ READY TO SHIP  
-**Validation Required**: Manual Grafana import + E2E test  
+**Deployment Status**: ✅ READY TO SHIP
+**Validation Required**: Manual Grafana import + E2E test
 **Next Steps**: Run `deploy-ship-pack.ps1`, import dashboard, trigger test event

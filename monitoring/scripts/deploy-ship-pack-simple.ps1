@@ -38,17 +38,17 @@ Set-Location (Join-Path $RepoRoot "monitoring")
 try {
     Write-Host "   Building crm-events container..." -ForegroundColor Gray
     docker compose build crm-events 2>&1 | Out-Null
-    
+
     if ($LASTEXITCODE -eq 0) {
         Write-Host "   ✅ Build successful" -ForegroundColor Green
-        
+
         Write-Host "   Starting crm-events service..." -ForegroundColor Gray
         docker compose up -d crm-events 2>&1 | Out-Null
-        
+
         if ($LASTEXITCODE -eq 0) {
             Write-Host "   ✅ Service started" -ForegroundColor Green
             Start-Sleep -Seconds 3
-            
+
             try {
                 $health = Invoke-RestMethod 'http://localhost:9010/' -ErrorAction Stop
                 Write-Host "   ✅ Health check passed" -ForegroundColor Green

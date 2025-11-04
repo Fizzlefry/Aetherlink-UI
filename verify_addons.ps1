@@ -65,7 +65,7 @@ try {
         Write-Host "  ⚠️  Drift metric not found (might be 0 before predictions)" -ForegroundColor Yellow
         $passed++  # OK if no predictions yet
     }
-    
+
     if ($metrics -match "lead_model_last_reload_ts") {
         Write-Host "  ✅ Last reload timestamp exposed" -ForegroundColor Green
     } else {
@@ -85,10 +85,10 @@ try {
         details = "Need urgent metal roof quote for commercial building"
         email = "qa@example.com"
     } | ConvertTo-Json
-    
+
     $response = Invoke-RestMethod -Method POST -Uri "$API_BASE/v1/lead" `
         -ContentType "application/json" -Body $body -ErrorAction Stop
-    
+
     if ($response.pred_prob) {
         Write-Host "  ✅ Lead created with prediction" -ForegroundColor Green
         Write-Host "     Lead ID: $($response.lead_id)" -ForegroundColor Gray

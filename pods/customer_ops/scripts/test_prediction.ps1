@@ -46,7 +46,7 @@ try {
     $leadId = $lead.lead_id
     Write-Host "  ✅ Lead created: $leadId" -ForegroundColor Green
     Write-Host "     Intent: $($lead.intent), Score: $($lead.score)" -ForegroundColor Cyan
-    
+
     if ($lead.pred_prob) {
         $predPercent = [math]::Round($lead.pred_prob * 100, 1)
         Write-Host "     🎯 Predicted Conversion Probability: $predPercent%" -ForegroundColor Magenta

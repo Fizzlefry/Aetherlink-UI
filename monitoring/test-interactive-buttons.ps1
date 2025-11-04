@@ -37,7 +37,7 @@ $alertmanagerConfig = Get-Content "alertmanager.yml" -Raw
 
 if ($alertmanagerConfig -match 'actions:') {
     Write-Host "   ✅ Action buttons configured" -ForegroundColor Green
-    
+
     if ($alertmanagerConfig -match '"📊 View Dashboard"') {
         Write-Host "   ✅ Dashboard button found" -ForegroundColor Green
     }
@@ -110,11 +110,11 @@ switch ($choice) {
         Write-Host "      → Action: Fill duration (1h/4h) and comment, click Create" -ForegroundColor Gray
         Write-Host ""
     }
-    
+
     "2" {
         Write-Host "`n🚀 Triggering Real Alert with Buttons" -ForegroundColor Cyan
         Write-Host ""
-        
+
         # Check if Slack webhook is configured
         if (!$env:SLACK_WEBHOOK_URL) {
             Write-Host "⚠️  SLACK_WEBHOOK_URL not set" -ForegroundColor Yellow
@@ -127,7 +127,7 @@ switch ($choice) {
                 exit 0
             }
         }
-        
+
         Write-Host "⏰ Test Timeline:" -ForegroundColor Yellow
         Write-Host "   T+0:00 - Stop consumer (trigger alert)" -ForegroundColor White
         Write-Host "   T+7:00 - UnderReplicatedConsumers alert fires" -ForegroundColor White
@@ -136,30 +136,30 @@ switch ($choice) {
         Write-Host "   T+8:30 - Click [🔕 Silence Alert] button" -ForegroundColor White
         Write-Host "   T+9:00 - Restart consumer" -ForegroundColor White
         Write-Host ""
-        
+
         $confirm = Read-Host "Start 10-minute button test? (y/N)"
         if ($confirm -ne 'y' -and $confirm -ne 'Y') {
             Write-Host "   Test cancelled" -ForegroundColor Gray
             exit 0
         }
-        
+
         Write-Host "`n🛑 Stopping consumer..." -ForegroundColor Yellow
         docker stop aether-crm-events | Out-Null
         Write-Host "   ✅ Consumer stopped" -ForegroundColor Green
         Write-Host "   ⏰ Alert will fire in ~7 minutes" -ForegroundColor Cyan
         Write-Host ""
-        
+
         Write-Host "📱 Monitor Slack Channel:" -ForegroundColor Cyan
         Write-Host "   Channel: #crm-events-alerts" -ForegroundColor White
         Write-Host "   Expected: Message with 3 action buttons" -ForegroundColor White
         Write-Host ""
-        
+
         Write-Host "🔗 Monitor Dashboards:" -ForegroundColor Cyan
         Write-Host "   Prometheus: http://localhost:9090/alerts" -ForegroundColor White
         Write-Host "   Grafana: http://localhost:3000/d/crm-events-pipeline" -ForegroundColor White
         Write-Host "   Alertmanager: http://localhost:9093" -ForegroundColor White
         Write-Host ""
-        
+
         # Wait 7 minutes with countdown
         Write-Host "⏳ Waiting for alert to fire..." -ForegroundColor Yellow
         for ($i = 420; $i -gt 0; $i--) {
@@ -168,11 +168,11 @@ switch ($choice) {
             Write-Host "`r   Time remaining: $($minutes)m $($seconds)s " -NoNewline -ForegroundColor Cyan
             Start-Sleep -Seconds 1
         }
-        
+
         Write-Host "`n`n   ✅ Alert should have fired!" -ForegroundColor Green
         Write-Host "   📱 Check Slack for message with buttons" -ForegroundColor Cyan
         Write-Host ""
-        
+
         Write-Host "🧪 Button Test Steps:" -ForegroundColor Yellow
         Write-Host "   1. Find the Slack message in #crm-events-alerts" -ForegroundColor White
         Write-Host "   2. Click [📊 View Dashboard] - should open Grafana" -ForegroundColor White
@@ -181,7 +181,7 @@ switch ($choice) {
         Write-Host "   5. In silence form: Set duration to 1h, add comment, click Create" -ForegroundColor White
         Write-Host "   6. Verify silence appears at: http://localhost:9093/#/silences" -ForegroundColor White
         Write-Host ""
-        
+
         $restore = Read-Host "Restore consumer now? (y/N)"
         if ($restore -eq 'y' -or $restore -eq 'Y') {
             Write-Host "`n🔄 Restoring consumer..." -ForegroundColor Yellow
@@ -193,17 +193,17 @@ switch ($choice) {
             Write-Host "`n   ℹ️  To restore later:" -ForegroundColor Cyan
             Write-Host "   docker start aether-crm-events" -ForegroundColor White
         }
-        
+
         Write-Host ""
     }
-    
+
     "3" {
         Write-Host "`n🔄 Restarting Alertmanager..." -ForegroundColor Yellow
         Write-Host "   Applying button configuration..." -ForegroundColor Gray
-        
+
         docker compose restart alertmanager | Out-Null
         Start-Sleep -Seconds 3
-        
+
         $containerStatus = docker ps --filter "name=alertmanager" --format "{{.Status}}"
         if ($containerStatus -match "Up") {
             Write-Host "   ✅ Alertmanager restarted successfully" -ForegroundColor Green
@@ -213,7 +213,7 @@ switch ($choice) {
             Write-Host "   ⚠️  Alertmanager may not be running" -ForegroundColor Yellow
             Write-Host "   Check: docker logs alertmanager" -ForegroundColor Gray
         }
-        
+
         Write-Host ""
         Write-Host "📊 Button Configuration:" -ForegroundColor Cyan
         Write-Host "   ✅ Dashboard button (primary)" -ForegroundColor White
@@ -224,7 +224,7 @@ switch ($choice) {
         Write-Host "   Run option [2] to trigger alert and test buttons" -ForegroundColor Gray
         Write-Host ""
     }
-    
+
     default {
         Write-Host "   Exiting..." -ForegroundColor Gray
         exit 0

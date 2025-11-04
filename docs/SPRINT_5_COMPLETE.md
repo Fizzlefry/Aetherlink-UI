@@ -1,7 +1,7 @@
 # Sprint 5: Finance Automation — Complete 🎯
 
-**Status**: ✅ **DEPLOYED & OPERATIONAL**  
-**Date**: November 2, 2025  
+**Status**: ✅ **DEPLOYED & OPERATIONAL**
+**Date**: November 2, 2025
 **Deployment**: Production-ready in dev environment
 
 ---
@@ -295,7 +295,7 @@ docker exec postgres-crm psql -U crm -d crm -c "\d customers"
 docker exec postgres-crm psql -U crm -d crm -c "\d leads"
 ```
 
-Confirm `qbo_customer_id`, `qbo_last_sync_at` in customers table.  
+Confirm `qbo_customer_id`, `qbo_last_sync_at` in customers table.
 Confirm `qbo_invoice_id`, `qbo_invoice_number`, `qbo_status`, etc. in leads table.
 
 ### Step 3: Test Customer Sync (Live)
@@ -456,14 +456,14 @@ SELECT * FROM portal_activity WHERE event = 'invoice_paid' ORDER BY created_at D
 
 ## 🎉 Success Criteria
 
-✅ **Migration 005 applied** — `qbo_customer_id`, `qbo_last_sync_at` in customers; `qbo_invoice_id`, `qbo_status`, etc. in leads  
-✅ **3 new metrics defined** — `crm_qbo_customer_sync_total`, `crm_invoices_paid_total`, `crm_invoice_sync_errors_total`  
-✅ **Customer sync endpoint working** — `POST /qbo/sync/customer/{id}` returns graceful fallback when QBO not connected  
-✅ **Invoice polling endpoint working** — `POST /qbo/sync/invoice/{id}/check` returns "No QBO invoice linked" for unlinked proposals  
-✅ **Poll all endpoint working** — `POST /qbo/sync/invoice/poll_all` schedules 0 tasks in dev (no invoices linked)  
-✅ **Background poller running** — Logs show "Starting invoice status poller (interval: 30min)"  
-✅ **Grafana panels added** — 4 new finance panels visible in PeakPro CRM - KPIs dashboard  
-✅ **Graceful degradation** — All operations skip cleanly when QBO not connected with `result=skipped` metrics  
+✅ **Migration 005 applied** — `qbo_customer_id`, `qbo_last_sync_at` in customers; `qbo_invoice_id`, `qbo_status`, etc. in leads
+✅ **3 new metrics defined** — `crm_qbo_customer_sync_total`, `crm_invoices_paid_total`, `crm_invoice_sync_errors_total`
+✅ **Customer sync endpoint working** — `POST /qbo/sync/customer/{id}` returns graceful fallback when QBO not connected
+✅ **Invoice polling endpoint working** — `POST /qbo/sync/invoice/{id}/check` returns "No QBO invoice linked" for unlinked proposals
+✅ **Poll all endpoint working** — `POST /qbo/sync/invoice/poll_all` schedules 0 tasks in dev (no invoices linked)
+✅ **Background poller running** — Logs show "Starting invoice status poller (interval: 30min)"
+✅ **Grafana panels added** — 4 new finance panels visible in PeakPro CRM - KPIs dashboard
+✅ **Graceful degradation** — All operations skip cleanly when QBO not connected with `result=skipped` metrics
 
 ---
 
@@ -499,7 +499,7 @@ SELECT * FROM portal_activity WHERE event = 'invoice_paid' ORDER BY created_at D
 
 ---
 
-**Sprint 5 Status**: ✅ **COMPLETE**  
-**Total Lines Added**: ~400 (migration, utilities, router, metrics, models, Grafana panels)  
-**Deployment**: Production-ready in dev environment  
+**Sprint 5 Status**: ✅ **COMPLETE**
+**Total Lines Added**: ~400 (migration, utilities, router, metrics, models, Grafana panels)
+**Deployment**: Production-ready in dev environment
 **Next Sprint**: Production hardening & webhook receiver

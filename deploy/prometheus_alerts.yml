@@ -16,7 +16,7 @@ groups:
           summary: "Lead prediction model AUC degraded"
           description: "Model AUC is {{ $value | humanizePercentage }}, below threshold of 65% for 30 minutes. Consider retraining."
           runbook: "Check /ops/export/outcomes.csv for data quality. Run manual retrain if needed."
-      
+
       # Critical: Model AUC extremely low
       - alert: LeadModelAUCCritical
         expr: lead_model_auc < 0.55
@@ -28,7 +28,7 @@ groups:
           summary: "Lead prediction model AUC critically low"
           description: "Model AUC is {{ $value | humanizePercentage }}, below 55%. Predictions may be unreliable."
           runbook: "Immediately check model training data and retrain. Consider disabling predictions until fixed."
-      
+
       # Prediction Latency High
       - alert: LeadPredLatencyHigh
         expr: (rate(lead_pred_latency_seconds_sum[5m]) / rate(lead_pred_latency_seconds_count[5m])) > 0.1
@@ -40,7 +40,7 @@ groups:
           summary: "Lead prediction latency high"
           description: "Average prediction latency is {{ $value | humanizeDuration }}, above 100ms threshold for 10 minutes."
           runbook: "Check model size and CPU usage. Consider model optimization or scaling."
-      
+
       # Data Drift Detection
       - alert: LeadModelHighDrift
         expr: lead_model_drift_score > 3.0
@@ -52,7 +52,7 @@ groups:
           summary: "Lead prediction model experiencing high feature drift"
           description: "Model drift score is {{ $value | humanize }}, indicating production features are >3 standard deviations from training distribution."
           runbook: "Check if production data distribution has changed. Consider retraining model with recent data."
-      
+
       # Model Not Loaded
       - alert: LeadModelNotLoaded
         expr: lead_model_version == 0
@@ -64,7 +64,7 @@ groups:
           summary: "Lead prediction model not loaded"
           description: "Model version is 0, indicating model failed to load or is not deployed."
           runbook: "Check API logs for model load errors. Verify model.json exists and is valid."
-      
+
       # Training Data Insufficient
       - alert: LeadModelTrainDataLow
         expr: lead_model_n_train < 100
@@ -91,7 +91,7 @@ groups:
           summary: "PII redaction rate spike detected"
           description: "PII redactions increased to {{ $value | humanize }}/sec over 15 minutes."
           runbook: "Normal if traffic increased. Investigate if traffic is flat (may indicate data quality issue)."
-      
+
       # No PII Redactions (Suspicious)
       - alert: PIIRedactionsZero
         expr: rate(pii_redactions_total[1h]) == 0
@@ -118,7 +118,7 @@ groups:
           summary: "Follow-up job failure rate high"
           description: "{{ $value | humanizePercentage }} of follow-up jobs failing over 15 minutes."
           runbook: "Check worker logs for errors. Verify /ops/followup-hook endpoint is accessible."
-      
+
       # Follow-Up Queue Backed Up
       - alert: FollowUpQueueBackedUp
         expr: followup_queue_scheduled > 1000
@@ -130,7 +130,7 @@ groups:
           summary: "Follow-up queue backed up"
           description: "{{ $value }} tasks scheduled in queue for 1+ hour. Worker may be down or overloaded."
           runbook: "Check worker status: docker-compose ps worker. Scale workers if needed."
-      
+
       # No Follow-Up Jobs Executing
       - alert: FollowUpJobsStalled
         expr: rate(followup_jobs_total[30m]) == 0
@@ -157,7 +157,7 @@ groups:
           summary: "Lead conversion rate dropped"
           description: "Conversion rate at {{ $value | humanizePercentage }}, below 5% for 6 hours."
           runbook: "Review recent lead quality. Check if follow-ups are executing. Analyze outcome distribution."
-      
+
       # High Ghost Rate
       - alert: LeadGhostRateHigh
         expr: (rate(lead_outcome_total{outcome="ghosted"}[1h]) / rate(lead_outcome_total[1h])) > 0.5
@@ -184,7 +184,7 @@ groups:
           summary: "API 5xx error rate high"
           description: "{{ $value | humanizePercentage }} of requests returning 5xx errors."
           runbook: "Check API logs for errors. Verify database and Redis connectivity."
-      
+
       # Request Latency High
       - alert: APILatencyHigh
         expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2.0

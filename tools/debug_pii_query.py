@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Debug PII query matching"""
+
 import duckdb
 
 conn = duckdb.connect("/app/data/knowledge.duckdb")

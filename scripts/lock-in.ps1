@@ -23,25 +23,25 @@ $errors = 0
 # ============================================================================
 if (-not $SkipPasswordChange) {
     Write-Host "[1/3] Change Grafana Admin Password" -ForegroundColor Yellow
-    
+
     if ($NewPassword -eq "") {
         Write-Host "`n   ⚠️  SECURITY WARNING: Default password 'admin' is still active!" -ForegroundColor Red
         Write-Host "   Current: admin / admin" -ForegroundColor Gray
         Write-Host ""
-        
+
         $NewPassword = Read-Host "   Enter new admin password (or press Enter to skip)"
     }
-    
+
     if ($NewPassword -ne "") {
         try {
             $auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("admin:admin"))
-            
+
             $body = @{
                 oldPassword = "admin"
                 newPassword = $NewPassword
                 confirmNew  = $NewPassword
             } | ConvertTo-Json
-            
+
             Invoke-RestMethod -Uri "http://localhost:3000/api/user/password" `
                 -Method PUT `
                 -Headers @{
@@ -50,11 +50,11 @@ if (-not $SkipPasswordChange) {
             } `
                 -Body $body `
                 -ErrorAction Stop | Out-Null
-            
+
             Write-Host "   ✅ Admin password changed successfully" -ForegroundColor Green
             Write-Host "   📝 Save this password securely!" -ForegroundColor Yellow
             Write-Host ""
-            
+
         }
         catch {
             Write-Host "   ❌ Failed to change password: $($_.Exception.Message)" -ForegroundColor Red
@@ -83,38 +83,38 @@ $backupDir = ".\backups\initial-$(Get-Date -Format 'yyyy-MM-dd_HH-mm')"
 try {
     # Create backup directory
     New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
-    
+
     Write-Host "   📁 Backup location: $backupDir" -ForegroundColor Gray
-    
+
     # Export dashboards via API (use new password if changed, otherwise default)
     $authPassword = if ($NewPassword -ne "") { $NewPassword } else { "admin" }
     $auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("admin:$authPassword"))
-    
+
     Write-Host "   📊 Exporting dashboards via API..." -ForegroundColor Gray
-    
+
     # Get all dashboards
     $dashboards = Invoke-RestMethod -Uri "http://localhost:3000/api/search?type=dash-db" `
         -Headers @{Authorization = "Basic $auth" } `
         -ErrorAction Stop
-    
+
     foreach ($dash in $dashboards) {
         $uid = $dash.uid
         $title = $dash.title -replace '[^\w\s-]', ''
-        
+
         # Export dashboard JSON
         $dashboard = Invoke-RestMethod -Uri "http://localhost:3000/api/dashboards/uid/$uid" `
             -Headers @{Authorization = "Basic $auth" } `
             -ErrorAction Stop
-        
+
         $exportPath = "$backupDir\$title.json"
         $dashboard.dashboard | ConvertTo-Json -Depth 100 | Set-Content $exportPath
-        
+
         Write-Host "      ✅ $title" -ForegroundColor Green
     }
-    
+
     # Copy config files
     Write-Host "   ⚙️  Backing up config files..." -ForegroundColor Gray
-    
+
     $configFiles = @(
         ".\docker-compose.yml",
         ".\prometheus-config.yml",
@@ -122,14 +122,14 @@ try {
         ".\prometheus-alerts.yml",
         ".\alertmanager.yml"
     )
-    
+
     foreach ($file in $configFiles) {
         if (Test-Path $file) {
             Copy-Item $file "$backupDir\"
             Write-Host "      ✅ $(Split-Path $file -Leaf)" -ForegroundColor Green
         }
     }
-    
+
     # Create manifest
     $manifest = @"
 AETHERLINK MONITORING - INITIAL BACKUP
@@ -168,10 +168,10 @@ Next Steps:
 "@
 
     $manifest | Set-Content "$backupDir\MANIFEST.txt"
-    
+
     Write-Host "`n   ✅ Backup complete: $backupDir" -ForegroundColor Green
     Write-Host "   📝 Manifest: $backupDir\MANIFEST.txt" -ForegroundColor Gray
-    
+
 }
 catch {
     Write-Host "   ❌ Backup failed: $($_.Exception.Message)" -ForegroundColor Red
@@ -189,7 +189,7 @@ try {
     # Create 1-minute silence
     $startTime = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
     $endTime = (Get-Date).ToUniversalTime().AddMinutes(1).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-    
+
     $body = @"
 {
   "matchers": [
@@ -205,18 +205,18 @@ try {
   "comment": "Post-launch test - 1 minute silence"
 }
 "@
-    
+
     $response = Invoke-RestMethod -Uri "http://localhost:9093/api/v2/silences" `
         -Method POST `
         -ContentType "application/json" `
         -Body $body `
         -ErrorAction Stop
-    
+
     Write-Host "   ✅ Maintenance mode test successful" -ForegroundColor Green
     Write-Host "   Silence ID: $($response.silenceID)" -ForegroundColor Gray
     Write-Host "   Duration: 1 minute" -ForegroundColor Gray
     Write-Host "   View: http://localhost:9093/#/silences" -ForegroundColor Gray
-    
+
 }
 catch {
     Write-Host "   ❌ Maintenance mode test failed: $($_.Exception.Message)" -ForegroundColor Red

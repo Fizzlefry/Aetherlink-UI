@@ -9,21 +9,21 @@ on:
 jobs:
   scrub-history:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      
+
       - name: Install dependencies
         run: |
           cd pods/customer_ops
           pip install redis transformers
-      
+
       - name: Dry-run backfill (staging)
         if: github.event_name == 'workflow_dispatch'
         env:
@@ -31,7 +31,7 @@ jobs:
         run: |
           cd pods/customer_ops
           python scripts/scrub_history.py --dry-run
-      
+
       - name: Run backfill (production)
         if: github.event_name == 'schedule'
         env:
@@ -39,7 +39,7 @@ jobs:
         run: |
           cd pods/customer_ops
           python scripts/scrub_history.py
-      
+
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4

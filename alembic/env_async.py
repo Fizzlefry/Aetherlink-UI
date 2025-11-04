@@ -1,7 +1,9 @@
-import os, asyncio
+import asyncio
+import os
 from logging.config import fileConfig
 
 from sqlalchemy.ext.asyncio import create_async_engine
+
 from alembic import context
 
 config = context.config
@@ -21,15 +23,18 @@ if config.config_file_name is not None:
 # Import your Base
 try:
     from pods.customer_ops.models import Base  # adjust this path if needed
+
     target_metadata = Base.metadata
 except Exception as e:
     target_metadata = None
     print(f"[alembic] WARN: could not import Base for autogenerate: {e}")
 
+
 def include_object(object, name, type_, reflected, compare_to):
     if name == "alembic_version" and type_ == "table":
         return False
     return True
+
 
 def run_migrations_offline():
     url = config.get_main_option("sqlalchemy.url")
@@ -45,6 +50,7 @@ def run_migrations_offline():
     with context.begin_transaction():
         context.run_migrations()
 
+
 async def run_migrations_online():
     connectable = create_async_engine(
         config.get_main_option("sqlalchemy.url"),
@@ -52,15 +58,18 @@ async def run_migrations_online():
         future=True,
     )
     async with connectable.connect() as connection:
-        await connection.run_sync(lambda conn: context.configure(
-            connection=conn,
-            target_metadata=target_metadata,
-            include_object=include_object,
-            compare_type=True,
-            compare_server_default=True,
-        ))
+        await connection.run_sync(
+            lambda conn: context.configure(
+                connection=conn,
+                target_metadata=target_metadata,
+                include_object=include_object,
+                compare_type=True,
+                compare_server_default=True,
+            )
+        )
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()

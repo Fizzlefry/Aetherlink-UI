@@ -1,7 +1,7 @@
 # Lag & Recovery Drill Results
 
-**Date**: November 2, 2025  
-**Drill Duration**: ~5 minutes  
+**Date**: November 2, 2025
+**Drill Duration**: ~5 minutes
 **Status**: ✅ **PASSED**
 
 ---
@@ -112,7 +112,7 @@ Successfully validated the complete observability stack (Prometheus alerts + Gra
 
 ## Dashboard Validation
 
-**Dashboard File**: `monitoring/grafana/dashboards/crm_events_pipeline.json`  
+**Dashboard File**: `monitoring/grafana/dashboards/crm_events_pipeline.json`
 **Status**: Ready for import (manual step pending)
 
 ### Expected Panel Behavior (12 panels)
@@ -275,7 +275,7 @@ docker ps | findstr aether
 
 ---
 
-**Drill Executed By**: GitHub Copilot  
-**Validation Date**: November 2, 2025  
-**Documentation Version**: 1.0  
+**Drill Executed By**: GitHub Copilot
+**Validation Date**: November 2, 2025
+**Documentation Version**: 1.0
 **Stack Version**: AetherLink Monitoring v1.0 (Ship Pack + Observability)

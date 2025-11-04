@@ -1,7 +1,7 @@
 # Production Polish: Alert Storm Control, SLO Dashboard & Enhanced Probes
 
-**Status**: ✅ Production Ready  
-**Enhancement Phase**: Post-Sprint 5 Polish  
+**Status**: ✅ Production Ready
+**Enhancement Phase**: Post-Sprint 5 Polish
 **Last Updated**: 2025-11-02
 
 ---
@@ -105,9 +105,9 @@ docker compose start crm-api
 
 ### Dashboard Details
 
-**UID**: `peakpro_crm_slo`  
-**Title**: "PeakPro CRM — SLO & Uptime"  
-**URL**: `http://localhost:3000/d/peakpro_crm_slo`  
+**UID**: `peakpro_crm_slo`
+**Title**: "PeakPro CRM — SLO & Uptime"
+**URL**: `http://localhost:3000/d/peakpro_crm_slo`
 **Refresh**: 30 seconds
 
 ### Panels (6 Total)
@@ -139,7 +139,7 @@ docker compose start crm-api
 - **Query**: `probe_success` (all instances)
 - **Min**: 0, **Max**: 1
 - **Purpose**: Show uptime for all monitored endpoints
-- **Interpretation**: 
+- **Interpretation**:
   - Value = 1: Endpoint healthy
   - Value = 0: Endpoint down
 
@@ -159,9 +159,9 @@ docker compose start crm-api
 
 ### Dashboard Templating
 
-**Variable**: `$org`  
-**Type**: Query  
-**Query**: `label_values(crm_invoices_generated_total, org_id)`  
+**Variable**: `$org`
+**Type**: Query
+**Query**: `label_values(crm_invoices_generated_total, org_id)`
 **Purpose**: Future multi-tenant support (filter by organization)
 
 ### Quick Access
@@ -576,7 +576,7 @@ python -c "
 
 ---
 
-**Last Updated**: 2025-11-02  
-**Next Review**: Sprint 6 planning  
-**Owner**: Platform/SRE Team  
+**Last Updated**: 2025-11-02
+**Next Review**: Sprint 6 planning
+**Owner**: Platform/SRE Team
 **Contact**: #ops-alerts (Slack)

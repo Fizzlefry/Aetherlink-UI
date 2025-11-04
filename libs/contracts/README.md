@@ -5,7 +5,7 @@ API and event specifications for the Aetherlink platform.
 ## 📋 Overview
 
 - **HTTP Errors**: RFC7807 problem+json format
-- **Required Headers**: 
+- **Required Headers**:
   - `x-tenant-id` - Tenant identifier for multi-tenancy
   - `x-request-id` - Request tracing identifier
 - **JWT Claims**:

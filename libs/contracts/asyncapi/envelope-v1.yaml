@@ -47,13 +47,13 @@ components:
           format: uuid
           description: Unique event identifier
           example: "550e8400-e29b-41d4-a716-446655440000"
-        
+
         ts:
           type: string
           format: date-time
           description: Event timestamp (ISO8601)
           example: "2025-11-03T10:30:00Z"
-        
+
         type:
           type: string
           description: Event type (dot-notation)
@@ -62,7 +62,7 @@ components:
             - "lead.created"
             - "appointment.scheduled"
             - "invoice.paid"
-        
+
         source:
           type: string
           description: Source service/system that emitted the event
@@ -71,24 +71,24 @@ components:
             - "apex-flow"
             - "customer-ops"
             - "billing"
-        
+
         tenant_id:
           type: string
           description: Tenant identifier for multi-tenancy routing
           pattern: "^[a-z0-9-]+$"
           example: "acme"
-        
+
         actor:
           type: string
           description: User or system that triggered the event
           example: "user:550e8400-e29b-41d4-a716-446655440000"
-        
+
         correlation_id:
           type: string
           format: uuid
           description: Optional correlation ID for request tracing
           example: "660e8400-e29b-41d4-a716-446655440000"
-        
+
         data:
           type: object
           description: Event-specific payload (schema varies by event type)

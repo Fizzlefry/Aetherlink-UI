@@ -35,18 +35,18 @@ tenant_gauge = Gauge(
 def verify_jwt(token: str) -> dict:
     """
     Verify JWT token and return claims.
-    
+
     In development mode, we skip signature verification.
     In production, fetch JWKS from Keycloak and verify signature.
     """
     try:
         # Get unverified claims first
         claims = jwt.get_unverified_claims(token)
-        
+
         # Verify issuer
         if claims.get("iss") != JWT_ISSUER:
             raise JWTError(f"Invalid issuer: {claims.get('iss')}")
-        
+
         # Verify audience
         aud = claims.get("aud")
         if isinstance(aud, list):
@@ -54,7 +54,7 @@ def verify_jwt(token: str) -> dict:
                 raise JWTError(f"Invalid audience: {aud}")
         elif aud != JWT_AUDIENCE:
             raise JWTError(f"Invalid audience: {aud}")
-        
+
         return claims
     except Exception as e:
         raise HTTPException(
@@ -67,7 +67,7 @@ def verify_jwt(token: str) -> dict:
 async def metrics_middleware(request: Request, call_next):
     """Record metrics for all requests"""
     response = await call_next(request)
-    
+
     try:
         req_total.labels(
             path=request.url.path,
@@ -76,7 +76,7 @@ async def metrics_middleware(request: Request, call_next):
         ).inc()
     except Exception:
         pass  # Don't fail requests if metrics fail
-    
+
     return response
 
 
@@ -99,11 +99,11 @@ def who_am_i(
 ):
     """
     Return current user's identity from JWT token.
-    
+
     Args:
         authorization: Bearer token header
         x_tenant_id: Tenant identifier header
-    
+
     Returns:
         User identity with subject, tenant_id, and roles
     """
@@ -113,28 +113,28 @@ def who_am_i(
             status_code=401,
             detail="Missing authorization header"
         )
-    
+
     if not authorization.lower().startswith("bearer "):
         raise HTTPException(
             status_code=401,
             detail="Invalid authorization header format"
         )
-    
+
     # Extract token
     token = authorization.split(" ", 1)[1]
-    
+
     # Verify JWT
     claims = verify_jwt(token)
-    
+
     # Update tenant metric
     tenant_gauge.set(1 if x_tenant_id else 0)
-    
+
     # Extract roles from realm_access
     roles = []
     realm_access = claims.get("realm_access", {})
     if isinstance(realm_access, dict):
         roles = realm_access.get("roles", [])
-    
+
     return {
         "sub": claims.get("sub"),
         "tenant_id": x_tenant_id,

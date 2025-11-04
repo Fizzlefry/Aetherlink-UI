@@ -245,6 +245,6 @@ curl -X POST http://localhost:8000/ops/experiments/followup_timing/promote | jq 
 
 **Status**: ✅ Ready to flip the switch! 🚀
 
-**Time to First Results**: 2-4 weeks (production traffic)  
-**Expected Lift**: +10-30% conversion rate  
+**Time to First Results**: 2-4 weeks (production traffic)
+**Expected Lift**: +10-30% conversion rate
 **Risk**: Zero (50/50 split, can disable anytime)

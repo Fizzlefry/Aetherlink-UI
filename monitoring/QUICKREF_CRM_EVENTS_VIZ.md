@@ -70,5 +70,5 @@ After:  ApexFlow → Kafka → Sink → Prometheus → Grafana Dashboard
                                              ↘ Alertmanager (if down)
 ```
 
-**Time to complete:** ~5 minutes  
+**Time to complete:** ~5 minutes
 **Dependencies:** CRM Events Sink running, Prometheus scraping `:9105`

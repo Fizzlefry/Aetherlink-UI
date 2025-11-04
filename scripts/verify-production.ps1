@@ -35,7 +35,7 @@ Write-Host "`n[2/6] Checking recording rules..." -ForegroundColor Yellow
 try {
     $response = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/rules" -UseBasicParsing
     $recordingGroup = $response.data.groups | Where-Object { $_.name -eq "aetherlink.recording" }
-    
+
     if ($recordingGroup) {
         $rules = $recordingGroup.rules | Where-Object { $_.record }
         Write-Host "  ✓ Recording rules loaded: $($rules.Count) rules" -ForegroundColor Green
@@ -57,17 +57,17 @@ Write-Host "`n[3/6] Checking new alerts..." -ForegroundColor Yellow
 try {
     $response = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/rules" -UseBasicParsing
     $alerts = $response.data.groups.rules | Where-Object { $_.alert } | Select-Object -ExpandProperty alert
-    
+
     $requiredAlerts = @(
         "CacheEffectivenessDrop",
         "LowConfidenceSpike",
         "LowConfidenceSpikeVIP",
         "CacheEffectivenessDropVIP"
     )
-    
+
     $found = @()
     $missing = @()
-    
+
     foreach ($alert in $requiredAlerts) {
         if ($alerts -contains $alert) {
             $found += $alert
@@ -78,7 +78,7 @@ try {
             Write-Host "  ✗ $alert (missing)" -ForegroundColor Red
         }
     }
-    
+
     if ($missing.Count -eq 0) {
         Write-Host "`n  All 4 production alerts loaded!" -ForegroundColor Green
     }
@@ -112,7 +112,7 @@ foreach ($q in $queries) {
     try {
         $encoded = [uri]::EscapeDataString($q.query)
         $response = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/query?query=$encoded" -UseBasicParsing
-        
+
         if ($response.status -eq "success" -and $response.data.result.Count -gt 0) {
             Write-Host "  ✓ $($q.name)" -ForegroundColor Green
         }
@@ -130,7 +130,7 @@ Write-Host "`n[5/6] Checking Prometheus targets..." -ForegroundColor Yellow
 try {
     $response = Invoke-RestMethod -Uri "http://localhost:9090/api/v1/targets" -UseBasicParsing
     $apiTarget = $response.data.activeTargets | Where-Object { $_.job -eq "aetherlink_api" }
-    
+
     if ($apiTarget -and $apiTarget.health -eq "up") {
         Write-Host "  ✓ AetherLink API target is UP" -ForegroundColor Green
         Write-Host "    Last scrape: $($apiTarget.lastScrape)" -ForegroundColor Gray
@@ -163,7 +163,7 @@ if ($GenerateTraffic) {
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "  Generating Test Traffic" -ForegroundColor Cyan
     Write-Host "========================================`n" -ForegroundColor Cyan
-    
+
     if (-not $env:API_ADMIN_KEY) {
         Write-Host "⚠ API_ADMIN_KEY not set. Set it first:" -ForegroundColor Yellow
         Write-Host '  $env:API_ADMIN_KEY = "admin-secret-123"' -ForegroundColor Gray

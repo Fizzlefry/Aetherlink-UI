@@ -246,17 +246,17 @@ kind=action_ok AND alertname=TcpEndpointDownFast
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const path = url.pathname.replace('/api/ops/autoheal', '');
-  
+
   // Get token from session/auth
   const token = await getServerToken();
-  
+
   // Proxy to Autoheal with authentication
   const response = await fetch(`http://autoheal:9009${path}${url.search}`, {
-    headers: { 
-      'Authorization': `Bearer ${token}` 
+    headers: {
+      'Authorization': `Bearer ${token}`
     }
   });
-  
+
   return new Response(response.body, {
     status: response.status,
     headers: response.headers
