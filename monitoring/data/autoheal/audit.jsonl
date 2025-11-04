@@ -46,3 +46,9 @@
 {"kind":"decision_skip","reason":"not_annotated","alertname":"CrmRecordingRulesStale","ts":1762263243.3957481}
 {"kind":"webhook_received","alerts":1,"ts":1762263509.9455872}
 {"kind":"decision_skip","reason":"not_annotated","alertname":"UptimeProbeFailing","ts":1762263509.94737}
+{"kind":"webhook_received","alerts":1,"ts":1762284678.425173}
+{"kind":"decision_skip","reason":"not_annotated","alertname":"UptimeProbeFailing","ts":1762284678.4357088}
+{"kind":"webhook_received","alerts":1,"ts":1762284682.6189623}
+{"kind":"decision_skip","reason":"not_annotated","alertname":"CrmMetricsScrapeStale","ts":1762284682.6207273}
+{"kind":"webhook_received","alerts":1,"ts":1762284712.62253}
+{"kind":"decision_skip","reason":"not_annotated","alertname":"CrmRecordingRulesStale","ts":1762284712.6243842}
