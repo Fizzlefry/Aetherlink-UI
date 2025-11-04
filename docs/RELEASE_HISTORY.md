@@ -779,6 +779,135 @@ curl http://localhost:5173/health.json
 **Phase IV Complete:**
 AetherLink is now production-ready with clean packaging, documented deployment, and flexible configuration for any environment.
 
+### v1.13.0 - Phase V: Service Registry & Protocols
+**Released:** November 2025
+**Focus:** Dynamic service discovery and standardized inter-service protocols
+
+**Problem Statement:**
+- Services hardcoded in environment variables
+- No dynamic service discovery
+- No standardized protocol documentation
+- Hard to add new services to the mesh
+- Manual configuration for each new service
+
+**Solution: Service Registry + Protocol Standardization**
+
+**Backend Enhancements:**
+
+**Service Registry (Command Center):**
+- In-memory service registry for dynamic discovery
+- Services can self-register at startup
+- Automatic `health_url` defaulting to `/ping`
+- Last seen timestamp tracking
+
+**New Endpoints:**
+
+`POST /ops/register` (RBAC: operator/admin)
+- Register a service with the Command Center
+- Upsert behavior: update if exists, insert if new
+- Tracks: name, url, health_url, version, roles_required, tags, last_seen
+- Request body:
+  ```json
+  {
+    "name": "aether-ai-orchestrator",
+    "url": "http://aether-ai-orchestrator:8011",
+    "health_url": "http://aether-ai-orchestrator:8011/ping",
+    "version": "v1.10.0",
+    "roles_required": ["agent", "operator", "admin"],
+    "tags": ["ai", "routing"]
+  }
+  ```
+
+`GET /ops/services` (RBAC: operator/admin)
+- List all registered services
+- Returns count and service details array
+- Shows last_seen timestamps for monitoring
+
+`DELETE /ops/services/{name}` (RBAC: operator/admin)
+- Remove a service from registry
+- Returns 404 if service not found
+- Useful for cleaning up stale registrations
+
+**Protocol Documentation:**
+
+**1. AetherLink Protocols v1.0** (`docs/AETHERLINK_PROTOCOLS.md`)
+- Service identity requirements (GET /ping mandatory)
+- Auth/RBAC header standard (X-User-Roles)
+- Audit logging requirements
+- Health model (ok/degraded/down)
+- Auto-Heal integration contract
+- Service registration guidelines
+- Error response format
+- Timeout standards
+- Protocol compliance checklist
+
+**2. Event Schema Registry** (`docs/EVENT_SCHEMA_REGISTRY.md`)
+- Event-driven architecture documentation
+- Standard event envelope structure
+- Registered event types:
+  - lead.created (CRM)
+  - ai.summary.created (AI Orchestrator)
+  - ops.autoheal.performed (Auto-Heal)
+  - ops.service.registered (Command Center)
+  - security.rbac.violation (Security)
+- Versioning rules (never break consumers)
+- Topic naming convention (aetherlink.<domain>.<entity>.<action>)
+- Producer/consumer contracts
+
+**3. AI Provider Capability Descriptor** (`config/ai-providers.yaml`)
+- YAML-based provider configuration
+- Capability-based routing (summarize_activity, extract_lead, classify_intent, etc.)
+- Provider metadata (vendor, tier, model)
+- Fallback order specification
+- Timeout and weight configuration
+- Circuit breaker settings
+- Health check intervals
+- Ready for AI Orchestrator v3 capability-based routing
+
+**Testing:**
+
+`tests/service-registry.spec.ts` - 12 comprehensive tests:
+- POST /ops/register without roles → 401 (1 test)
+- POST /ops/register with operator role (1 test)
+- Upsert behavior (update existing service) (1 test)
+- GET /ops/services without roles → 401 (1 test)
+- GET /ops/services with operator role (1 test)
+- Service details validation (1 test)
+- DELETE /ops/services/{name} without roles → 401 (1 test)
+- DELETE /ops/services/{name} removes service (1 test)
+- DELETE non-existent service → 404 (1 test)
+- Default health_url to /ping (1 test)
+- Admin role support (1 test)
+- Last seen timestamp updates (1 test)
+- **12 new tests total**
+
+**Test Coverage:**
+- 72 total Playwright tests (60 → 72, +12 new)
+- 67 passing tests in current state
+
+**CI Integration:**
+- Service registry tests in GitHub Actions
+- RBAC protection verified
+- Upsert behavior validated
+- Default values tested
+
+**Benefits:**
+- **Dynamic discovery:** Services announce themselves instead of hardcoded lists
+- **Standardized protocols:** Clear contracts for all inter-service communication
+- **Event-driven ready:** Schema registry prepared for async workflows
+- **Capability routing:** AI providers described by capabilities, not just names
+- **Developer experience:** Clear checklist for adding new services
+- **Operational visibility:** See which services are registered and when
+- **Future-proof:** Ready for 10-12+ services without config explosion
+
+**User Impact:**
+> "No more editing docker-compose every time we add a service"
+
+Services can now join the mesh dynamically. Protocol docs ensure new services integrate correctly. Event schema registry prepares for async event-driven workflows. AI providers described by capabilities for smarter routing.
+
+**Phase V Foundation:**
+This release completes the "protocol layer" - the standardization that makes AetherLink ready to scale from 4 services to dozens without breaking existing patterns.
+
 ---
 
 ## Release Tag Timeline
@@ -792,11 +921,11 @@ v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ─�
 ## Release Tag Timeline
 
 ```
-v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0 ──► v1.10.0 ──► v1.11.0 ──► v1.12.0
-  │          │          │          │          │          │          │          │          │          │          │          │          │
-Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III Phase III Phase III Phase IV
-Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr  AI Orch v2 Security Production
-            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment  Fallback   Audit   Packaging
+v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0 ──► v1.10.0 ──► v1.11.0 ──► v1.12.0 ──► v1.13.0
+  │          │          │          │          │          │          │          │          │          │          │          │          │          │
+Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III Phase III Phase III Phase IV  Phase V
+Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr  AI Orch v2 Security Production Service
+            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment  Fallback   Audit   Packaging Registry
 ```
 
 ---
@@ -818,6 +947,7 @@ Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centraliz
 | v1.10.0  | +9 fallback | ~52        | AI provider fallback & health |
 | v1.11.0  | +8 audit    | ~60        | Security audit logging |
 | v1.12.0  | +0 packaging| ~60        | Production deployment (no new tests) |
+| v1.13.0  | +12 registry| ~72        | Service registry & protocols |
 
 ---
 

@@ -1,5 +1,8 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+from typing import List, Dict, Optional
+from datetime import datetime, timezone
 import httpx
 import os
 from rbac import require_roles
@@ -31,6 +34,23 @@ SERVICE_MAP = {
     "apexflow": os.getenv("APEXFLOW_URL", "http://aether-apexflow:9109/health"),
     "kafka": os.getenv("KAFKA_URL", "http://aether-kafka:9010/health"),
 }
+
+# Phase IV: Service Registry (in-memory, for v1.13.0+)
+# Services can dynamically register themselves instead of hardcoding in env
+REGISTERED_SERVICES: Dict[str, dict] = {}
+
+class ServiceRegistration(BaseModel):
+    """Schema for service registration requests"""
+    name: str = Field(..., description="Unique service name, e.g. aether-ai-orchestrator")
+    url: str = Field(..., description="Base URL for the service")
+    health_url: Optional[str] = Field(None, description="Health or ping endpoint")
+    version: Optional[str] = Field(None, description="Service version, e.g. v1.10.0")
+    roles_required: Optional[List[str]] = Field(None, description="RBAC roles this service expects")
+    tags: Optional[List[str]] = Field(None, description="Labels like ['ai','ops','ui']")
+
+def _now_iso() -> str:
+    """Return current UTC timestamp in ISO8601 format"""
+    return datetime.now(timezone.utc).isoformat()
 
 @app.get("/ops/health", dependencies=[Depends(operator_only)])
 async def ops_health():
@@ -82,6 +102,69 @@ async def audit_stats():
     """
     return get_audit_stats()
 
+# Phase IV: Service Registry Endpoints (v1.13.0)
+
+@app.post("/ops/register", dependencies=[Depends(operator_only)])
+def register_service(payload: ServiceRegistration):
+    """
+    Register a service with the Command Center.
+    
+    Services can announce themselves at startup instead of being hardcoded.
+    Useful for dynamic service discovery and auto-configuration.
+    
+    Requires: operator or admin role
+    """
+    # Upsert: update if exists, insert if new
+    REGISTERED_SERVICES[payload.name] = {
+        "name": payload.name,
+        "url": payload.url,
+        "health_url": payload.health_url or f"{payload.url}/ping",
+        "version": payload.version,
+        "roles_required": payload.roles_required or [],
+        "tags": payload.tags or [],
+        "last_seen": _now_iso(),
+    }
+    return {
+        "status": "ok",
+        "registered": payload.name,
+        "service_count": len(REGISTERED_SERVICES)
+    }
+
+@app.get("/ops/services", dependencies=[Depends(operator_only)])
+def list_services():
+    """
+    List all registered services.
+    
+    Returns all services that have registered via POST /ops/register.
+    Useful for discovering available services and their capabilities.
+    
+    Requires: operator or admin role
+    """
+    return {
+        "status": "ok",
+        "count": len(REGISTERED_SERVICES),
+        "services": list(REGISTERED_SERVICES.values()),
+    }
+
+@app.delete("/ops/services/{name}", dependencies=[Depends(operator_only)])
+def delete_service(name: str):
+    """
+    Remove a service from the registry.
+    
+    Useful for cleaning up stale service registrations.
+    
+    Requires: operator or admin role
+    """
+    if name not in REGISTERED_SERVICES:
+        raise HTTPException(status_code=404, detail=f"Service '{name}' not found in registry")
+    
+    del REGISTERED_SERVICES[name]
+    return {
+        "status": "ok",
+        "deleted": name,
+        "remaining_count": len(REGISTERED_SERVICES)
+    }
+
 @app.get("/")
 def root():
     """
@@ -93,5 +176,8 @@ def root():
         "endpoints": {
             "/ops/health": "Aggregated service health",
             "/ops/ping": "Command Center health check",
+            "/ops/register": "Register a service (POST)",
+            "/ops/services": "List registered services",
+            "/audit/stats": "Security audit statistics",
         }
     }

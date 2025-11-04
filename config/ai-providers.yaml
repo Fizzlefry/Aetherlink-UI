@@ -1,0 +1,128 @@
+# AetherLink AI Provider Capability Descriptor
+# Version: 1
+# Used by: AI Orchestrator v2+ for capability-based routing
+
+version: 1
+
+providers:
+  - name: claude
+    type: http
+    url: http://host.docker.internal:9991
+    capabilities:
+      - summarize_activity
+      - extract_lead
+      - classify_intent
+      - generate_response
+    timeout_ms: 6000
+    weight: 100 # highest priority
+    model: claude-sonnet-3.5
+    metadata:
+      vendor: anthropic
+      tier: premium
+
+  - name: ollama
+    type: ollama
+    url: http://host.docker.internal:11434
+    model: llama3
+    capabilities:
+      - summarize_activity
+      - generate_response
+    timeout_ms: 8000
+    weight: 80 # fallback
+    metadata:
+      vendor: meta
+      tier: local
+
+  - name: openai
+    type: http
+    url: https://api.openai.com/v1/chat/completions
+    capabilities:
+      - summarize_activity
+      - classify_intent
+      - generate_response
+      - extract_entities
+    timeout_ms: 5000
+    weight: 60 # last resort (costs money)
+    model: gpt-4
+    metadata:
+      vendor: openai
+      tier: premium
+
+# Fallback order for orchestrator
+# Highest to lowest priority
+fallback_order:
+  - claude
+  - ollama
+  - openai
+
+# Capability definitions
+capabilities:
+  summarize_activity:
+    description: "Summarize customer activity/notes into concise text"
+    input_schema:
+      type: object
+      properties:
+        text:
+          type: string
+          description: "Raw activity text to summarize"
+      required: ["text"]
+
+  extract_lead:
+    description: "Extract structured lead data from unstructured text"
+    input_schema:
+      type: object
+      properties:
+        text:
+          type: string
+          description: "Unstructured text containing lead info"
+      required: ["text"]
+
+  classify_intent:
+    description: "Classify user intent from message"
+    input_schema:
+      type: object
+      properties:
+        message:
+          type: string
+          description: "User message to classify"
+      required: ["message"]
+
+  generate_response:
+    description: "Generate conversational response"
+    input_schema:
+      type: object
+      properties:
+        prompt:
+          type: string
+          description: "System prompt and user message"
+      required: ["prompt"]
+
+  extract_entities:
+    description: "Extract named entities (people, companies, dates)"
+    input_schema:
+      type: object
+      properties:
+        text:
+          type: string
+          description: "Text to extract entities from"
+      required: ["text"]
+
+# Routing rules
+routing:
+  # Use weight-based routing within same capability tier
+  algorithm: weighted_fallback
+
+  # Retry logic
+  max_retries: 3
+  retry_delay_ms: 500
+
+  # Circuit breaker
+  failure_threshold: 5 # mark unhealthy after N failures
+  recovery_time_seconds: 60 # try again after this delay
+
+  # Health tracking
+  health_check_interval_seconds: 30
+  unhealthy_response_threshold: 3 # consecutive failures
+
+# Future: load from database or etcd for dynamic updates
+# For now: restart AI Orchestrator to reload this file
