@@ -110,3 +110,20 @@ services:
       AI_SUMMARIZER_URL: "http://aether-ai-summarizer:9108"
       # GRAFANA_ANNOTATIONS_URL: "http://aether-grafana:3000/api/annotations"
     restart: unless-stopped
+
+  aether-auto-heal:
+    build:
+      context: ../services/auto-heal
+    container_name: aether-auto-heal
+    ports:
+      - "8012:8002"
+    environment:
+      AUTOHEAL_SERVICES: '["aether-crm-ui","aether-command-center","aether-ai-orchestrator"]'
+      AUTOHEAL_HEALTH_ENDPOINTS: '{"aether-command-center":"http://aether-command-center:8000/ops/ping","aether-ai-orchestrator":"http://aether-ai-orchestrator:8001/ping"}'
+      AUTOHEAL_INTERVAL_SECONDS: "30"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - command-center
+      - ai-orchestrator
+    restart: unless-stopped

@@ -7,6 +7,23 @@ type ServiceStatus = {
     url: string;
 };
 
+type HealAttempt = {
+    service: string;
+    action: string;
+    success: boolean;
+    msg: string;
+    timestamp: number;
+};
+
+type AutoHealStatus = {
+    watching: string[];
+    interval_seconds: number;
+    last_report: {
+        last_run: number | null;
+        attempts: HealAttempt[];
+    };
+};
+
 type HealthResponse = {
     status: string;
     services: Record<string, ServiceStatus>;
@@ -14,6 +31,7 @@ type HealthResponse = {
 
 const CommandCenter: React.FC = () => {
     const [data, setData] = useState<HealthResponse | null>(null);
+    const [autoHealData, setAutoHealData] = useState<AutoHealStatus | null>(null);
     const [loading, setLoading] = useState(true);
     const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
@@ -30,10 +48,25 @@ const CommandCenter: React.FC = () => {
         }
     };
 
+    const fetchAutoHeal = async () => {
+        try {
+            const res = await fetch("http://localhost:8012/autoheal/status");
+            const json = await res.json();
+            setAutoHealData(json);
+        } catch (err) {
+            console.error("Failed to load auto-heal status", err);
+        }
+    };
+
     useEffect(() => {
         fetchHealth();
-        const interval = setInterval(fetchHealth, 15000); // refresh every 15s
-        return () => clearInterval(interval);
+        fetchAutoHeal();
+        const healthInterval = setInterval(fetchHealth, 15000); // refresh every 15s
+        const healInterval = setInterval(fetchAutoHeal, 15000);
+        return () => {
+            clearInterval(healthInterval);
+            clearInterval(healInterval);
+        };
     }, []);
 
     if (loading) {
@@ -165,6 +198,66 @@ const CommandCenter: React.FC = () => {
                     })}
             </div>
 
+            {/* Auto-Heal Status */}
+            {autoHealData && (
+                <div style={{ marginTop: "3rem", padding: "1.5rem", background: "white", borderRadius: "12px", border: "1px solid #e5e7eb" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+                        <h3 style={{ fontWeight: "600", color: "#374151" }}>🏥 Auto-Heal Status</h3>
+                        <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+                            Monitoring {autoHealData.watching.length} services
+                        </span>
+                    </div>
+
+                    <div style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "1rem" }}>
+                        <div style={{ marginBottom: "0.5rem" }}>
+                            <span style={{ fontWeight: "500", color: "#374151" }}>Check Interval:</span> {autoHealData.interval_seconds}s
+                        </div>
+                        {autoHealData.last_report.last_run && (
+                            <div>
+                                <span style={{ fontWeight: "500", color: "#374151" }}>Last Check:</span>{" "}
+                                {new Date(autoHealData.last_report.last_run * 1000).toLocaleString()}
+                            </div>
+                        )}
+                    </div>
+
+                    {autoHealData.last_report.attempts.length > 0 ? (
+                        <div>
+                            <h4 style={{ fontWeight: "600", fontSize: "0.875rem", color: "#374151", marginBottom: "0.75rem" }}>
+                                Recent Healing Attempts:
+                            </h4>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                                {autoHealData.last_report.attempts.map((attempt, idx) => (
+                                    <div
+                                        key={idx}
+                                        style={{
+                                            padding: "0.75rem",
+                                            background: attempt.success ? "#d1fae5" : "#fee2e2",
+                                            borderRadius: "6px",
+                                            fontSize: "0.875rem",
+                                        }}
+                                    >
+                                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
+                                            <span style={{ fontSize: "1rem" }}>{attempt.success ? "✅" : "❌"}</span>
+                                            <span style={{ fontWeight: "600", color: "#374151" }}>{attempt.service}</span>
+                                            <span style={{ color: "#6b7280" }}>
+                                                {new Date(attempt.timestamp * 1000).toLocaleTimeString()}
+                                            </span>
+                                        </div>
+                                        <div style={{ color: "#6b7280", fontSize: "0.75rem", marginLeft: "1.5rem" }}>
+                                            {attempt.action}: {attempt.msg}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <div style={{ padding: "0.75rem", background: "#d1fae5", borderRadius: "6px", fontSize: "0.875rem", color: "#059669" }}>
+                            ✅ All services healthy - no healing attempts needed
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Footer Info */}
             <div style={{ marginTop: "3rem", padding: "1.5rem", background: "white", borderRadius: "12px", border: "1px solid #e5e7eb" }}>
                 <h3 style={{ fontWeight: "600", marginBottom: "0.75rem", color: "#374151" }}>📊 About Command Center</h3>
@@ -174,7 +267,7 @@ const CommandCenter: React.FC = () => {
                     while red badges show services that need attention.
                 </p>
                 <div style={{ marginTop: "1rem", fontSize: "0.75rem", color: "#9ca3af" }}>
-                    Phase II Milestone 1 - Command Center v0.1.0
+                    Phase II - Command Center + AI Orchestrator + RBAC + Auto-Heal (v1.5.0)
                 </div>
             </div>
         </div>
