@@ -4,6 +4,7 @@ WORKDIR /app
 
 # Copy application files
 COPY ./main.py /app/main.py
+COPY ./rbac.py /app/rbac.py
 
 # Install dependencies
 RUN pip install --no-cache-dir fastapi uvicorn[standard] httpx

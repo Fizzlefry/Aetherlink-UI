@@ -1,9 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import os
+from rbac import require_roles
 
 app = FastAPI(title="AetherLink Command Center", version="0.1.0")
+
+# RBAC: Only operators and admins can access ops endpoints
+operator_only = require_roles(["operator", "admin"])
 
 # Add CORS middleware to allow UI to call this
 app.add_middleware(
@@ -24,11 +28,13 @@ SERVICE_MAP = {
     "kafka": os.getenv("KAFKA_URL", "http://aether-kafka:9010/health"),
 }
 
-@app.get("/ops/health")
+@app.get("/ops/health", dependencies=[Depends(operator_only)])
 async def ops_health():
     """
     Aggregates health status from all AetherLink services.
     Returns overall status and individual service details.
+    
+    Requires: operator or admin role
     """
     results = {}
     async with httpx.AsyncClient(timeout=2.5) as client:

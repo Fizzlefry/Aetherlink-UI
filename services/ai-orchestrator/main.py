@@ -1,11 +1,15 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
 import os
 import time
+from rbac import require_roles
 
 app = FastAPI(title="AetherLink AI Orchestrator", version="0.1.0")
+
+# RBAC: Agents, operators, and admins can use AI orchestration
+ai_allowed = require_roles(["agent", "operator", "admin"])
 
 # CORS for UI access
 app.add_middleware(
@@ -42,11 +46,13 @@ async def annotate(message: str):
     except Exception as e:
         print(f"Failed to annotate Grafana: {e}")
 
-@app.post("/orchestrate", response_model=OrchestrateResponse)
+@app.post("/orchestrate", response_model=OrchestrateResponse, dependencies=[Depends(ai_allowed)])
 async def orchestrate(req: OrchestrateRequest):
     """
     Decide which AI backend to call based on intent.
     v1: route to existing ai-summarizer for known intents.
+    
+    Requires: agent, operator, or admin role
     """
     start = time.perf_counter()
     provider_used = "ai-summarizer"
