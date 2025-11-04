@@ -530,16 +530,158 @@ cp config/.env.ci config/.env.docker
 
 AI features now continue working even if the primary provider fails, making the entire platform more production-ready and resilient.
 
+### v1.11.0 - M6: Security Audit Logging
+**Released:** November 2025
+**Focus:** Security monitoring & operational visibility
+
+**Problem Statement:**
+- No visibility into who accesses what
+- Authorization failures (401/403) go untracked
+- Can't identify usage patterns or suspicious activity
+- No audit trail for security compliance
+
+**Solution: Security Audit Middleware**
+
+**Backend Implementation:**
+
+**Audit Middleware:**
+- Shared audit module: `services/common/audit.py` (replicated per service)
+- FastAPI HTTP middleware logs every request
+- Captures: timestamp, service, path, method, user roles, status code, client IP
+- Logs to stdout (Docker logs capture for centralization)
+- In-memory statistics tracking
+
+**Audit Statistics:**
+- Total request count
+- 401 unauthorized attempts
+- 403 forbidden attempts
+- Top 10 paths by usage
+- Status code breakdown
+
+**New Endpoints:**
+
+`GET /audit/stats` (all services)
+- Real-time audit statistics
+- RBAC-protected (operator/admin for command-center, agent/operator/admin for ai-orchestrator)
+- Response structure:
+  ```json
+  {
+    "total_requests": 150,
+    "denied_401_unauthorized": 5,
+    "denied_403_forbidden": 3,
+    "by_path": {
+      "/ops/health": 50,
+      "/orchestrate": 30,
+      "/ping": 25
+    },
+    "by_status": {
+      "200": 140,
+      "401": 5,
+      "403": 3,
+      "502": 2
+    }
+  }
+  ```
+
+**Services Updated:**
+- **Command Center** (`services/command-center`)
+  - Added `audit.py` middleware
+  - Added `/audit/stats` endpoint (operator/admin)
+  - Updated Dockerfile to copy audit.py
+
+- **AI Orchestrator** (`services/ai-orchestrator`)
+  - Added `audit.py` middleware
+  - Added `/audit/stats` endpoint (agent/operator/admin)
+  - Updated Dockerfile to copy audit.py
+
+- **Auto-Heal** (`services/auto-heal`)
+  - Added `audit.py` middleware
+  - Added `/audit/stats` endpoint (no RBAC for monitoring)
+  - Updated Dockerfile to copy audit.py
+
+**Audit Log Format:**
+```json
+{
+  "ts": "2025-11-04T15:14:23.000000",
+  "service": "AetherLink Command Center",
+  "path": "/ops/health",
+  "method": "GET",
+  "roles": "operator",
+  "status": 200,
+  "client_ip": "172.17.0.1"
+}
+```
+
+**Testing:**
+
+**New Test File:** `tests/audit-logging.spec.ts`
+- Audit stats endpoint validation (3 tests)
+- 401 unauthorized tracking (1 test)
+- 403 forbidden tracking (1 test)
+- Path usage tracking (1 test)
+- Status code breakdown (1 test)
+- RBAC enforcement audit (1 test)
+- **8 new tests total**
+
+**Test Coverage:**
+- All three services expose /audit/stats
+- Audit tracks authorization failures
+- Path and status breakdowns populate correctly
+- RBAC violations are logged
+
+**CI Integration:**
+- 60 total Playwright tests (52 → 60, +8 new)
+- 55 passing tests in current state
+- Automated in GitHub Actions
+
+**Security Benefits:**
+
+**Operational Visibility:**
+- "Who keeps hitting /ops/health without operator?" → Check denied_401 + by_path
+- "Are we getting lots of 403s?" → Check denied_403_forbidden
+- "What's the actual usage of the orchestrator?" → Check by_path breakdown
+- "Which endpoints are failing?" → Check by_status
+
+**Audit Trail:**
+- Every request logged to stdout
+- Docker logs capture for centralization
+- Can pipe to Splunk, ELK, or other SIEM
+- Timestamp + roles + status = security audit trail
+
+**Compliance:**
+- Track who accessed what and when
+- Authorization failure visibility
+- Role-based access logging
+- Client IP tracking for forensics
+
+**Implementation Pattern:**
+- Copy audit.py per service (same pattern as rbac.py)
+- Single line to add middleware: `app.middleware("http")(audit_middleware)`
+- Automatic request/response interception
+- Zero impact on existing endpoints
+
+**Benefits:**
+- **Security monitoring:** Know who hits what, when, and with what result
+- **Compliance ready:** Full audit trail for sensitive endpoints
+- **Ops intelligence:** Usage patterns, top paths, failure rates
+- **Debug-friendly:** Client IP + roles + status in every log
+- **Low overhead:** In-memory stats, async logging, minimal latency impact
+
+**User Impact:**
+> "We want to know who hit what and whether it was allowed or denied"
+
+Every request to sensitive services is now tracked, logged, and aggregated into real-time statistics. Operators can identify suspicious activity, track usage patterns, and meet security compliance requirements.
+
 ---
 
 ## Release Tag Timeline
 
 ```
-v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0 ──► v1.10.0
-  │          │          │          │          │          │          │          │          │          │          │
-Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III Phase III
-Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr  AI Orch v2
-            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment  Fallback
+v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0 ──► v1.10.0 ──► v1.11.0
+  │          │          │          │          │          │          │          │          │          │          │          │
+Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III Phase III Phase III
+Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr  AI Orch v2 Security
+            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment  Fallback   Audit
 ```
 
 ---
@@ -559,6 +701,7 @@ Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centraliz
 | v1.8.0   | +4 UI health| ~40        | UI health endpoint |
 | v1.9.0   | +13 history | ~49        | Auto-heal history & stats |
 | v1.10.0  | +9 fallback | ~52        | AI provider fallback & health |
+| v1.11.0  | +8 audit    | ~60        | Security audit logging |
 
 ---
 

@@ -5,16 +5,21 @@ Monitors service health and automatically restarts failed containers.
 Provides API endpoints for monitoring and status reporting.
 """
 
+import json
 import os
 import time
-import json
-from typing import Dict, List, Any
-import httpx
+from typing import Any
+
 import docker
+import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from audit import audit_middleware, get_audit_stats
 
 app = FastAPI(title="AetherLink Auto-Heal", version="0.1.0")
+
+# Phase III M6: Security Audit Logging
+app.middleware("http")(audit_middleware)
 
 # CORS for UI access
 app.add_middleware(
@@ -26,18 +31,17 @@ app.add_middleware(
 )
 
 # Services to watch (container names)
-WATCH: List[str] = json.loads(
+WATCH: list[str] = json.loads(
     os.getenv(
-        "AUTOHEAL_SERVICES",
-        '["aether-crm-ui","aether-command-center","aether-ai-orchestrator"]'
+        "AUTOHEAL_SERVICES", '["aether-crm-ui","aether-command-center","aether-ai-orchestrator"]'
     )
 )
 
 # Health check endpoints for each service
-HEALTH_ENDPOINTS: Dict[str, str] = json.loads(
+HEALTH_ENDPOINTS: dict[str, str] = json.loads(
     os.getenv(
         "AUTOHEAL_HEALTH_ENDPOINTS",
-        '{"aether-command-center":"http://aether-command-center:8000/ops/ping","aether-ai-orchestrator":"http://aether-ai-orchestrator:8001/ping"}'
+        '{"aether-command-center":"http://aether-command-center:8000/ops/ping","aether-ai-orchestrator":"http://aether-ai-orchestrator:8001/ping"}',
     )
 )
 
@@ -48,28 +52,28 @@ INTERVAL = int(os.getenv("AUTOHEAL_INTERVAL_SECONDS", "30"))
 docker_client = docker.from_env()
 
 # Last report cache
-last_report: Dict[str, Any] = {
+last_report: dict[str, Any] = {
     "last_run": None,
     "attempts": [],
 }
 
 # History of healing attempts (keep last 50)
-healing_history: List[Dict[str, Any]] = []
+healing_history: list[dict[str, Any]] = []
 MAX_HISTORY = 50
 
 
 def check_service(name: str) -> bool:
     """
     Check if a service is healthy.
-    
+
     Args:
         name: Container name to check
-        
+
     Returns:
         True if service is healthy, False otherwise
     """
     url = HEALTH_ENDPOINTS.get(name)
-    
+
     if not url:
         # If no health URL, just check docker status
         try:
@@ -77,7 +81,7 @@ def check_service(name: str) -> bool:
             return container.status == "running"
         except Exception:
             return False
-    
+
     # Check via HTTP health endpoint
     try:
         resp = httpx.get(url, timeout=2.5)
@@ -89,10 +93,10 @@ def check_service(name: str) -> bool:
 def restart_service(name: str) -> tuple[bool, str]:
     """
     Attempt to restart a failed service container.
-    
+
     Args:
         name: Container name to restart
-        
+
     Returns:
         Tuple of (success: bool, message: str)
     """
@@ -108,7 +112,7 @@ def restart_service(name: str) -> tuple[bool, str]:
 def autoheal_status():
     """
     Get current auto-heal status and last run report.
-    
+
     Returns:
         Status including watched services and last healing attempts
     """
@@ -123,16 +127,16 @@ def autoheal_status():
 def autoheal_history(limit: int = 10):
     """
     Get history of healing attempts.
-    
+
     Args:
         limit: Number of recent attempts to return (default: 10, max: 50)
-        
+
     Returns:
         List of recent healing attempts, newest first
     """
     # Limit to MAX_HISTORY
     actual_limit = min(limit, MAX_HISTORY)
-    
+
     # Return newest first
     return {
         "history": list(reversed(healing_history[-actual_limit:])),
@@ -145,7 +149,7 @@ def autoheal_history(limit: int = 10):
 def autoheal_stats():
     """
     Get statistics about healing attempts.
-    
+
     Returns:
         Statistics including success rate, most healed service, etc.
     """
@@ -157,25 +161,37 @@ def autoheal_stats():
             "success_rate": 0.0,
             "services": {},
         }
-    
+
     total = len(healing_history)
     successful = sum(1 for h in healing_history if h["success"])
     failed = total - successful
-    
+
     # Count by service
-    service_counts: Dict[str, int] = {}
+    service_counts: dict[str, int] = {}
     for h in healing_history:
         svc = h["service"]
         service_counts[svc] = service_counts.get(svc, 0) + 1
-    
+
     return {
         "total_attempts": total,
         "successful": successful,
         "failed": failed,
         "success_rate": round(successful / total * 100, 2) if total > 0 else 0.0,
         "services": service_counts,
-        "most_healed": max(service_counts.items(), key=lambda x: x[1])[0] if service_counts else None,
+        "most_healed": max(service_counts.items(), key=lambda x: x[1])[0]
+        if service_counts
+        else None,
     }
+
+
+@app.get("/audit/stats")
+async def audit_stats():
+    """
+    Get audit statistics for security monitoring.
+    
+    Phase III M6: Returns request counts, auth failures, and usage patterns.
+    """
+    return get_audit_stats()
 
 
 @app.get("/ping")
@@ -197,12 +213,12 @@ def health():
 def loop_once():
     """
     Run one iteration of health checks and healing attempts.
-    
+
     Checks all watched services and restarts any that are down.
     Updates last_report with results and maintains history.
     """
     attempts = []
-    
+
     for svc in WATCH:
         ok = check_service(svc)
         if not ok:
@@ -216,31 +232,31 @@ def loop_once():
                 "timestamp": time.time(),
             }
             attempts.append(attempt)
-            
+
             # Add to history
             healing_history.append(attempt)
             # Keep only last MAX_HISTORY items
             if len(healing_history) > MAX_HISTORY:
                 healing_history.pop(0)
-            
+
             if success:
                 print(f"✅ Successfully restarted {svc}")
             else:
                 print(f"❌ Failed to restart {svc}: {msg}")
-    
+
     last_report["last_run"] = time.time()
     last_report["attempts"] = attempts
-    
+
     if attempts:
         print(f"Healing attempt complete: {len(attempts)} services processed")
 
 
 # Background loop for standalone execution
 if __name__ == "__main__":
-    print(f"🏥 AetherLink Auto-Heal starting...")
+    print("🏥 AetherLink Auto-Heal starting...")
     print(f"📋 Watching services: {WATCH}")
     print(f"⏱️  Check interval: {INTERVAL}s")
-    
+
     while True:
         loop_once()
         time.sleep(INTERVAL)

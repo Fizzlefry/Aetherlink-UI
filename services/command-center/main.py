@@ -3,8 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import os
 from rbac import require_roles
+from audit import audit_middleware, get_audit_stats
 
 app = FastAPI(title="AetherLink Command Center", version="0.1.0")
+
+# Phase III M6: Security Audit Logging
+app.middleware("http")(audit_middleware)
 
 # RBAC: Only operators and admins can access ops endpoints
 operator_only = require_roles(["operator", "admin"])
@@ -67,6 +71,16 @@ def ping():
     Simple health check for the Command Center service itself.
     """
     return {"status": "ok"}
+
+@app.get("/audit/stats", dependencies=[Depends(operator_only)])
+async def audit_stats():
+    """
+    Get audit statistics for security monitoring.
+    
+    Phase III M6: Returns request counts, auth failures, and usage patterns.
+    Requires: operator or admin role
+    """
+    return get_audit_stats()
 
 @app.get("/")
 def root():

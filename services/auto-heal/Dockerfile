@@ -3,6 +3,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 COPY ./main.py /app/main.py
+COPY ./audit.py /app/audit.py
 
 RUN pip install --no-cache-dir fastapi uvicorn[standard] httpx docker
 
