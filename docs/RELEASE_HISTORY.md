@@ -670,18 +670,133 @@ AI features now continue working even if the primary provider fails, making the 
 **User Impact:**
 > "We want to know who hit what and whether it was allowed or denied"
 
+**User Impact:**
+> "We want to know who hit what and whether it was allowed or denied"
+
 Every request to sensitive services is now tracked, logged, and aggregated into real-time statistics. Operators can identify suspicious activity, track usage patterns, and meet security compliance requirements.
+
+### v1.12.0 - Phase IV: Production Packaging
+**Released:** November 2025
+**Focus:** Turnkey deployment for any machine or cloud
+
+**Problem Statement:**
+- AetherLink proven in dev, but no clean deployment path
+- Manual Docker commands error-prone
+- No template for production configuration
+- Missing deployment documentation
+- Hard to share/deploy to new environments
+
+**Solution: Production Packaging**
+
+**Deployment Files:**
+
+**1. Production Compose: `deploy/docker-compose.prod.yml`**
+- Multi-service orchestration (Command Center, AI Orchestrator, Auto-Heal, UI)
+- Health checks for all services (30s interval, 3 retries)
+- Restart policies (`unless-stopped`)
+- Docker socket volume for Auto-Heal
+- Bridge network (`aetherlink`)
+- TAG environment variable support for versioned images
+- Centralized config via `../config/.env.prod`
+
+**Services Defined:**
+- `command-center` → port 8010
+- `ai-orchestrator` → port 8011
+- `auto-heal` → port 8012
+- `ui` → port 5173
+
+**2. Configuration Template: `config/.env.prod.template`**
+- Complete template with all Phase I-III variables
+- Placeholder values for secrets (`REPLACE_ME`)
+- Comments explaining each section
+- Ready for copy → fill → deploy workflow
+
+**Configuration Sections:**
+- Core service URLs (internal Docker networking)
+- Health endpoint mappings
+- Auto-Heal service list & check interval
+- AI Orchestrator provider order & URLs
+- RBAC defaults (operator, admin roles)
+- Audit logging config (enabled, buffer limit)
+- Optional metrics (Grafana, Prometheus)
+
+**3. Install Guide: `docs/INSTALL.md`**
+- Complete step-by-step deployment guide
+- Prerequisites checklist (Docker, Compose, permissions)
+- Environment preparation instructions
+- Image build/push options (local & registry)
+- Service verification commands
+- Auto-Heal behavior explanation
+- Security/audit endpoint usage
+- Stop/update procedures
+- Production hardening notes (TLS, secrets, logging)
+
+**Deployment Workflow:**
+
+**Quick Start:**
+```bash
+# 1. Prepare config
+cp config/.env.prod.template config/.env.prod
+vim config/.env.prod  # fill in your values
+
+# 2. Build images (if local)
+docker build -t aetherlink/command-center:latest services/command-center
+docker build -t aetherlink/ai-orchestrator:latest services/ai-orchestrator
+docker build -t aetherlink/auto-heal:latest services/auto-heal
+docker build -t aetherlink/ui:latest services/ui
+
+# 3. Start everything
+cd deploy
+docker compose -f docker-compose.prod.yml up -d
+
+# 4. Verify
+curl http://localhost:8010/ops/ping
+curl http://localhost:8011/ping
+curl http://localhost:8012/ping
+curl http://localhost:5173/health.json
+```
+
+**Verification Endpoints:**
+- Command Center: `/ops/ping`, `/ops/health`
+- AI Orchestrator: `/ping`, `/providers/health`
+- Auto-Heal: `/ping`, `/autoheal/status`
+- UI: `/health.json`
+
+**Production Notes:**
+- Use Nginx/Traefik for TLS termination
+- Store secrets in Vault or AWS Secrets Manager
+- Push images to registry (not local builds on prod)
+- Hook Docker logs to ELK/Splunk (audit logs ready)
+- Set resource limits in Compose (memory, CPU)
+
+**Benefits:**
+- **Portability:** Deploy to any Docker host in minutes
+- **Repeatability:** Same config structure for dev/staging/prod
+- **Documentation:** Complete guide for new team members
+- **Versioning:** TAG variable for controlled rollouts
+- **Best practices:** Health checks, restart policies, centralized config
+
+**Phase IV Complete:**
+AetherLink is now production-ready with clean packaging, documented deployment, and flexible configuration for any environment.
 
 ---
 
 ## Release Tag Timeline
 
 ```
-v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0 ──► v1.10.0 ──► v1.11.0
-  │          │          │          │          │          │          │          │          │          │          │          │
-Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III Phase III Phase III
-Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr  AI Orch v2 Security
-            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment  Fallback   Audit
+v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0 ──► v1.10.0 ──► v1.11.0 ──► v1.12.0
+```
+
+---
+
+## Release Tag Timeline
+
+```
+v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0 ──► v1.10.0 ──► v1.11.0 ──► v1.12.0
+  │          │          │          │          │          │          │          │          │          │          │          │          │
+Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III Phase III Phase III Phase IV
+Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr  AI Orch v2 Security Production
+            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment  Fallback   Audit   Packaging
 ```
 
 ---
@@ -702,6 +817,7 @@ Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centraliz
 | v1.9.0   | +13 history | ~49        | Auto-heal history & stats |
 | v1.10.0  | +9 fallback | ~52        | AI provider fallback & health |
 | v1.11.0  | +8 audit    | ~60        | Security audit logging |
+| v1.12.0  | +0 packaging| ~60        | Production deployment (no new tests) |
 
 ---
 

@@ -1,0 +1,92 @@
+version: "3.9"
+
+# Production-ready-ish compose for AetherLink
+# Runs the Phase II + Phase III services you finished:
+# - Command Center (8010)
+# - AI Orchestrator (8011)
+# - Auto-Heal (8012)
+# - UI (5173) – static-ish front layer
+#
+# Notes:
+# - All services pull config from ../config/.env.prod
+# - All have healthchecks + restart policies
+# - Auto-Heal mounts docker.sock so it can restart containers
+
+services:
+  command-center:
+    image: aetherlink/command-center:${TAG:-latest}
+    container_name: aether-command-center
+    restart: unless-stopped
+    env_file:
+      - ../config/.env.prod
+    ports:
+      - "8010:8010"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/ops/ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - aetherlink
+
+  ai-orchestrator:
+    image: aetherlink/ai-orchestrator:${TAG:-latest}
+    container_name: aether-ai-orchestrator
+    restart: unless-stopped
+    env_file:
+      - ../config/.env.prod
+    ports:
+      - "8011:8011"
+    depends_on:
+      - command-center
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8011/ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - aetherlink
+
+  auto-heal:
+    image: aetherlink/auto-heal:${TAG:-latest}
+    container_name: aether-auto-heal
+    restart: unless-stopped
+    env_file:
+      - ../config/.env.prod
+    # so it can restart others
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8012:8012"
+    depends_on:
+      - command-center
+      - ai-orchestrator
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8012/ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - aetherlink
+
+  ui:
+    # if you later build and push your UI image, set it here
+    image: aetherlink/ui:${TAG:-latest}
+    container_name: aether-crm-ui
+    restart: unless-stopped
+    env_file:
+      - ../config/.env.prod
+    ports:
+      - "5173:5173"
+    healthcheck:
+      # you added /health.json in v1.8.0
+      test: ["CMD", "curl", "-f", "http://localhost:5173/health.json"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - aetherlink
+
+networks:
+  aetherlink:
+    driver: bridge
