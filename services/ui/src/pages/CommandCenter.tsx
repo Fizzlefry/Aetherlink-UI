@@ -39,6 +39,14 @@ type AutoHealStats = {
     most_healed?: string;
 };
 
+type ProviderHealth = {
+    healthy: boolean;
+    last_error: string | null;
+    last_checked: string | null;
+    total_calls: number;
+    failed_calls: number;
+};
+
 type HealthResponse = {
     status: string;
     services: Record<string, ServiceStatus>;
@@ -49,6 +57,7 @@ const CommandCenter: React.FC = () => {
     const [autoHealData, setAutoHealData] = useState<AutoHealStatus | null>(null);
     const [autoHealHistory, setAutoHealHistory] = useState<AutoHealHistory | null>(null);
     const [autoHealStats, setAutoHealStats] = useState<AutoHealStats | null>(null);
+    const [providerHealth, setProviderHealth] = useState<Record<string, ProviderHealth> | null>(null);
     const [loading, setLoading] = useState(true);
     const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
@@ -95,22 +104,35 @@ const CommandCenter: React.FC = () => {
         }
     };
 
+    const fetchProviderHealth = async () => {
+        try {
+            const res = await fetch("http://localhost:8011/providers/health");
+            const json = await res.json();
+            setProviderHealth(json);
+        } catch (err) {
+            console.error("Failed to load provider health", err);
+        }
+    };
+
     useEffect(() => {
         fetchHealth();
         fetchAutoHeal();
         fetchAutoHealHistory();
         fetchAutoHealStats();
+        fetchProviderHealth();
 
         const healthInterval = setInterval(fetchHealth, 15000); // refresh every 15s
         const healInterval = setInterval(fetchAutoHeal, 15000);
         const historyInterval = setInterval(fetchAutoHealHistory, 15000);
         const statsInterval = setInterval(fetchAutoHealStats, 15000);
+        const providerInterval = setInterval(fetchProviderHealth, 15000);
 
         return () => {
             clearInterval(healthInterval);
             clearInterval(healInterval);
             clearInterval(historyInterval);
             clearInterval(statsInterval);
+            clearInterval(providerInterval);
         };
     }, []);
 
@@ -357,6 +379,120 @@ const CommandCenter: React.FC = () => {
                 </div>
             )}
 
+            {/* AI Provider Health - Phase III M5 */}
+            {providerHealth && (
+                <div style={{ marginTop: "3rem" }}>
+                    <h2 style={{ fontSize: "1.5rem", fontWeight: "600", marginBottom: "1.5rem", color: "#111827", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <span>🤖</span>
+                        AI Provider Health
+                        <span style={{ fontSize: "0.875rem", fontWeight: "normal", color: "#6b7280" }}>
+                            (v2.0.0 - Fallback Enabled)
+                        </span>
+                    </h2>
+
+                    <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+                        {Object.entries(providerHealth).map(([providerName, info]) => {
+                            const isHealthy = info.healthy;
+                            const bgColor = isHealthy ? "#f0fdf4" : "#fef2f2";
+                            const borderColor = isHealthy ? "#86efac" : "#fca5a5";
+                            const statusColor = isHealthy ? "#16a34a" : "#dc2626";
+
+                            return (
+                                <div
+                                    key={providerName}
+                                    style={{
+                                        padding: "1.5rem",
+                                        background: bgColor,
+                                        borderRadius: "8px",
+                                        border: `2px solid ${borderColor}`,
+                                    }}
+                                >
+                                    {/* Provider Name and Status */}
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                                        <h3 style={{ fontSize: "1.125rem", fontWeight: "600", textTransform: "capitalize", color: "#111827" }}>
+                                            {providerName}
+                                        </h3>
+                                        <span style={{
+                                            fontSize: "0.75rem",
+                                            padding: "0.25rem 0.75rem",
+                                            borderRadius: "9999px",
+                                            background: statusColor,
+                                            color: "white",
+                                            fontWeight: "600",
+                                        }}>
+                                            {isHealthy ? "✓ HEALTHY" : "✗ DOWN"}
+                                        </span>
+                                    </div>
+
+                                    {/* Provider Stats */}
+                                    <div style={{ display: "flex", gap: "1.5rem", marginBottom: "1rem" }}>
+                                        <div>
+                                            <div style={{ fontSize: "0.75rem", color: "#6b7280", fontWeight: "500" }}>SUCCESS</div>
+                                            <div style={{ fontSize: "1.5rem", fontWeight: "600", color: "#16a34a" }}>
+                                                {info.total_calls}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: "0.75rem", color: "#6b7280", fontWeight: "500" }}>FAILED</div>
+                                            <div style={{ fontSize: "1.5rem", fontWeight: "600", color: "#dc2626" }}>
+                                                {info.failed_calls}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: "0.75rem", color: "#6b7280", fontWeight: "500" }}>SUCCESS RATE</div>
+                                            <div style={{ fontSize: "1.5rem", fontWeight: "600", color: "#374151" }}>
+                                                {info.total_calls + info.failed_calls > 0
+                                                    ? Math.round((info.total_calls / (info.total_calls + info.failed_calls)) * 100)
+                                                    : 0}%
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Last Error */}
+                                    {info.last_error && (
+                                        <div style={{
+                                            marginTop: "1rem",
+                                            padding: "0.75rem",
+                                            background: "#fee2e2",
+                                            borderRadius: "6px",
+                                            border: "1px solid #fca5a5"
+                                        }}>
+                                            <div style={{ fontSize: "0.75rem", fontWeight: "600", color: "#991b1b", marginBottom: "0.25rem" }}>
+                                                LAST ERROR:
+                                            </div>
+                                            <div style={{ fontSize: "0.75rem", color: "#991b1b", fontFamily: "monospace" }}>
+                                                {info.last_error}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Last Checked */}
+                                    {info.last_checked && (
+                                        <div style={{ marginTop: "0.75rem", fontSize: "0.75rem", color: "#9ca3af", textAlign: "right" }}>
+                                            Last checked: {new Date(info.last_checked).toLocaleString()}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Provider Fallback Info */}
+                    <div style={{
+                        marginTop: "1.5rem",
+                        padding: "1rem",
+                        background: "#eff6ff",
+                        borderRadius: "8px",
+                        border: "1px solid #bfdbfe"
+                    }}>
+                        <div style={{ fontSize: "0.875rem", color: "#1e40af", lineHeight: "1.5" }}>
+                            <strong>💡 Provider Fallback:</strong> The AI Orchestrator automatically tries providers in order (claude → ollama → openai).
+                            If one provider fails, the system seamlessly falls back to the next available provider, ensuring uninterrupted AI functionality.
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Footer Info */}
             <div style={{ marginTop: "3rem", padding: "1.5rem", background: "white", borderRadius: "12px", border: "1px solid #e5e7eb" }}>
                 <h3 style={{ fontWeight: "600", marginBottom: "0.75rem", color: "#374151" }}>📊 About Command Center</h3>
@@ -366,7 +502,7 @@ const CommandCenter: React.FC = () => {
                     while red badges show services that need attention.
                 </p>
                 <div style={{ marginTop: "1rem", fontSize: "0.75rem", color: "#9ca3af" }}>
-                    Phase II - Command Center + AI Orchestrator + RBAC + Auto-Heal (v1.5.0)
+                    Phase III M5 - AI Orchestrator v2 with Provider Fallback (v1.10.0)
                 </div>
             </div>
         </div>

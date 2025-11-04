@@ -9,7 +9,7 @@ AetherLink's evolution from basic CRM backend to production-ready, self-healing 
 ## Phase I: Foundation (v1.0.0 - v1.1.0)
 
 ### v1.0.0 - Backend Validation
-**Released:** November 2025  
+**Released:** November 2025
 **Focus:** Core CRM functionality
 
 **Features:**
@@ -30,7 +30,7 @@ AetherLink's evolution from basic CRM backend to production-ready, self-healing 
 - Grafana + Prometheus monitoring
 
 ### v1.1.0 - UI Auth Resilience
-**Released:** November 2025  
+**Released:** November 2025
 **Focus:** Frontend authentication
 
 **Features:**
@@ -50,7 +50,7 @@ AetherLink's evolution from basic CRM backend to production-ready, self-healing 
 ## Phase II: Operational Intelligence (v1.2.0 - v1.5.0)
 
 ### v1.2.0 - M1: Command Center
-**Released:** November 2025  
+**Released:** November 2025
 **Focus:** Real-time ops dashboard
 
 **Features:**
@@ -71,7 +71,7 @@ AetherLink's evolution from basic CRM backend to production-ready, self-healing 
 **Testing:** 3 Playwright tests
 
 ### v1.3.0 - M2: AI Orchestrator
-**Released:** November 2025  
+**Released:** November 2025
 **Focus:** Intelligent AI routing layer
 
 **Features:**
@@ -93,7 +93,7 @@ AetherLink's evolution from basic CRM backend to production-ready, self-healing 
 **Testing:** 4 Playwright tests
 
 ### v1.4.0 - M3: RBAC
-**Released:** November 2025  
+**Released:** November 2025
 **Focus:** Role-based access control
 
 **Features:**
@@ -119,7 +119,7 @@ AetherLink's evolution from basic CRM backend to production-ready, self-healing 
 **Testing:** 11 Playwright tests (6 Command Center + 5 AI Orchestrator)
 
 ### v1.5.0 - M4: Auto-Heal
-**Released:** November 2025  
+**Released:** November 2025
 **Focus:** Self-healing container management
 
 **Features:**
@@ -156,7 +156,7 @@ AetherLink's evolution from basic CRM backend to production-ready, self-healing 
 ## Phase III: Hardening & Automation (v1.6.0+)
 
 ### v1.6.0 - M1: CI/CD Pipeline
-**Released:** November 2025  
+**Released:** November 2025
 **Focus:** Automated testing & build validation
 
 **Features:**
@@ -205,7 +205,7 @@ AetherLink's evolution from basic CRM backend to production-ready, self-healing 
 - PR checks before merge
 
 ### v1.7.0 - M2: Centralized Configuration
-**Released:** November 2025  
+**Released:** November 2025
 **Focus:** Environment portability & deployment flexibility
 
 **Features:**
@@ -253,7 +253,7 @@ cp config/.env.ci config/.env.docker
 - Consistent variable naming
 
 ### v1.8.0 - M3: UI Health Endpoint
-**Released:** November 2025  
+**Released:** November 2025
 **Focus:** Complete self-healing coverage
 
 **Features:**
@@ -295,7 +295,7 @@ cp config/.env.ci config/.env.docker
 - Consistent health check pattern
 
 ### v1.9.0 - M4: Command Center Enrichment
-**Released:** November 2025  
+**Released:** November 2025
 **Focus:** Operational intelligence & history tracking
 
 **Features:**
@@ -392,34 +392,173 @@ cp config/.env.ci config/.env.docker
 - History for troubleshooting
 - Success rate trends
 
+### v1.10.0 - M5: AI Orchestrator v2 (Provider Fallback)
+**Released:** November 2025
+**Focus:** AI reliability & resilience through multi-provider fallback
+
+**Problem Statement:**
+- Single AI provider = single point of failure
+- If Claude API is down, entire AI system stalls
+- No visibility into provider health
+- Manual intervention required
+
+**Solution: Provider Fallback Architecture**
+
+**Backend Enhancements:**
+
+**Provider Configuration:**
+- Environment-based provider order: `PROVIDER_ORDER=claude,ollama,openai`
+- Individual provider URLs via env vars
+- Configurable priority without code changes
+
+**Health Tracking:**
+- In-memory health status per provider
+- Tracks: healthy, last_error, last_checked, total_calls, failed_calls
+- Automatic marking on success/failure
+
+**Fallback Logic:**
+- Try providers in configured order
+- Skip recently failed (unhealthy) providers
+- Return first successful response
+- Include `used_provider` in response
+- 502 error with all provider details if complete failure
+
+**New Endpoints:**
+
+`GET /providers/health`
+- Real-time provider status
+- Per-provider statistics
+- Health tracking visibility
+- Response structure:
+  ```json
+  {
+    "claude": {
+      "healthy": true,
+      "last_error": null,
+      "last_checked": "2025-11-04T20:53:00Z",
+      "total_calls": 15,
+      "failed_calls": 0
+    },
+    "ollama": {...},
+    "openai": {...}
+  }
+  ```
+
+`GET /ping` (Enhanced)
+- Now includes provider order: `"providers": ["claude", "ollama", "openai"]`
+- Service version: `"ai-orchestrator-v2"`
+
+`POST /orchestrate` (Enhanced)
+- Returns `used_provider` field showing which provider succeeded
+- Enhanced 502 error with all provider errors and latency
+
+**Frontend Enhancements:**
+
+**AI Provider Health Panel:**
+- Real-time provider status dashboard
+- Success/failure counters per provider
+- Success rate calculation
+- Last error visibility
+- Color-coded health indicators (green/red)
+- Auto-refresh every 15 seconds
+
+**UI Location:**
+- Command Center page
+- Below Auto-Heal History
+- Above Footer Info
+
+**Configuration Files Updated:**
+- `config/.env.dev` - 5 new variables (PROVIDER_ORDER + 3 URLs)
+- `config/.env.docker` - Container networking URLs
+- `config/.env.ci` - CI-specific URLs (127.0.0.1)
+
+**Testing:**
+
+**New Test File:** `tests/ai-orchestrator-fallback.spec.ts`
+- Provider health endpoint validation (3 tests)
+- Fallback behavior verification (4 tests)
+- Error handling scenarios (2 tests)
+- **9 new tests total**
+
+**Test Coverage:**
+- Health tracking structure
+- Ping endpoint provider list
+- Valid/invalid intent handling
+- RBAC enforcement (401/403)
+- Provider fallback logic
+- Health updates after failures
+
+**CI Integration:**
+- 52 total Playwright tests (36 → 52, +16 including pre-existing)
+- 47 passing tests in current state
+- Automated in GitHub Actions
+
+**Technical Implementation:**
+
+**Code Changes:**
+- `services/ai-orchestrator/main.py` - Complete v2 rewrite
+  - Enhanced imports (List, Dict, Any, datetime)
+  - Provider configuration from env
+  - Health tracking functions: `mark_provider_failure()`, `mark_provider_success()`
+  - Generic provider call: `call_provider()`
+  - Enhanced orchestrate logic with fallback loop
+  - New provider health endpoint
+- `services/ui/src/pages/CommandCenter.tsx` - AI Provider Health panel
+  - New type: `ProviderHealth`
+  - Provider health fetching function
+  - Auto-refresh interval (15s)
+  - Provider status cards with stats
+  - Success rate calculation
+  - Error display
+
+**Deployment:**
+- Docker container rebuild required
+- All 3 env files updated
+- No database migrations needed
+- Backward compatible API (existing endpoints unchanged)
+
+**Benefits:**
+- **Real-world reliability:** No single provider failure stalls entire system
+- **Automatic failover:** Zero manual intervention required
+- **Operational visibility:** See which providers are healthy/failing
+- **Cost optimization:** Can prioritize cheaper providers first
+- **Graceful degradation:** System continues working with partial failures
+- **Debug-friendly:** Full error context in 502 responses
+
+**User Impact:**
+> "if your primary LLM is slow/down, everything else you built shouldn't stall"
+
+AI features now continue working even if the primary provider fails, making the entire platform more production-ready and resilient.
+
 ---
 
 ## Release Tag Timeline
 
 ```
-v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0
-  │          │          │          │          │          │          │          │          │          │
-Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III
-Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr
-            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment
+v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0 ──► v1.10.0
+  │          │          │          │          │          │          │          │          │          │          │
+Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III Phase III
+Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr  AI Orch v2
+            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment  Fallback
 ```
 
 ---
 
 ## Test Coverage by Version
 
-| Version | Tests Added | Cumulative | Notes |
-|---------|-------------|------------|-------|
-| v1.0.0  | Backend E2E | ~10        | Initial backend validation |
-| v1.1.0  | Auth flows  | ~13        | UI authentication |
-| v1.2.0  | +3 (M1)     | ~16        | Command Center |
-| v1.3.0  | +4 (M2)     | ~20        | AI Orchestrator |
-| v1.4.0  | +11 (M3)    | ~31        | RBAC enforcement |
-| v1.5.0  | +5 (M4)     | ~36        | Auto-Heal self-healing |
-| v1.6.0  | CI guards   | ~36        | Automated in CI |
-| v1.7.0  | Config docs | ~36        | Deployment guide |
-| v1.8.0  | +4 UI health| ~40        | UI health endpoint |
-| v1.9.0  | +13 history | ~49        | Auto-heal history & stats |
+| Version  | Tests Added | Cumulative | Notes |
+|----------|-------------|------------|-------|
+| v1.0.0   | Backend E2E | ~10        | Initial backend validation |
+| v1.1.0   | Auth flows  | ~13        | UI authentication |
+| v1.2.0   | +3 (M1)     | ~16        | Command Center |
+| v1.3.0   | +4 (M2)     | ~20        | AI Orchestrator |
+| v1.4.0   | +11 (M3)    | ~31        | RBAC enforcement |
+| v1.5.0   | +5 (M4)     | ~36        | Auto-Heal self-healing |
+| v1.6.0   | CI guards   | ~36        | Automated in CI |
+| v1.7.0   | Config docs | ~36        | Deployment guide |
+| v1.8.0   | +4 UI health| ~40        | UI health endpoint |
+| v1.9.0   | +13 history | ~49        | Auto-heal history & stats |
+| v1.10.0  | +9 fallback | ~52        | AI provider fallback & health |
 
 ---
 
