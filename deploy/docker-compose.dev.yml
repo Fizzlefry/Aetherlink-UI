@@ -92,6 +92,10 @@ services:
     container_name: aether-command-center
     env_file:
       - ../config/.env.docker
+    environment:
+      - EVENT_DB_PATH=/app/data/events.db
+    volumes:
+      - command-center-data:/app/data
     ports:
       - "8010:8000"
     restart: unless-stopped
@@ -120,3 +124,6 @@ services:
       - command-center
       - ai-orchestrator
     restart: unless-stopped
+
+volumes:
+  command-center-data:
