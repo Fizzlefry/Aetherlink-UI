@@ -66,6 +66,7 @@ const OperatorDashboard: React.FC = () => {
     const [templates, setTemplates] = useState<AlertTemplate[]>([]);
     const [historicalDeliveries, setHistoricalDeliveries] = useState<Delivery[]>([]);
     const [tenant, setTenant] = useState<string>("all");
+    const [statusFilter, setStatusFilter] = useState<string>("all");
     const [loading, setLoading] = useState<boolean>(true);
     const [loadingTemplates, setLoadingTemplates] = useState<boolean>(false);
     const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
@@ -424,17 +425,35 @@ const OperatorDashboard: React.FC = () => {
             <div className="bg-slate-900/40 border border-slate-700 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
                     <h2 className="text-lg font-semibold text-white">📜 Recent Delivery History</h2>
-                    <button
-                        onClick={() => fetchDeliveryHistory(tenant)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded transition font-medium"
-                    >
-                        🔄 Refresh
-                    </button>
+                    <div className="flex items-center gap-3">
+                        {/* Phase VIII M6: Status Filter */}
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="bg-slate-900 border border-slate-700 rounded px-3 py-1.5 text-slate-100 text-sm"
+                        >
+                            <option value="all">All Statuses</option>
+                            <option value="delivered">✅ Delivered</option>
+                            <option value="failed">❗ Failed</option>
+                            <option value="pending">⏳ Pending</option>
+                            <option value="dead_letter">🛑 Dead Letter</option>
+                        </select>
+                        <button
+                            onClick={() => fetchDeliveryHistory(tenant)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded transition font-medium"
+                        >
+                            🔄 Refresh
+                        </button>
+                    </div>
                 </div>
                 {loadingHistory ? (
                     <p className="text-gray-400 text-sm">Loading deliveries…</p>
-                ) : historicalDeliveries.length === 0 ? (
-                    <p className="text-gray-400 text-sm">No recent deliveries found.</p>
+                ) : historicalDeliveries.filter((d) => statusFilter === "all" || d.status === statusFilter).length === 0 ? (
+                    <p className="text-gray-400 text-sm">
+                        {historicalDeliveries.length === 0
+                            ? "No recent deliveries found."
+                            : `No deliveries with status "${statusFilter}".`}
+                    </p>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm text-gray-300">
@@ -450,56 +469,58 @@ const OperatorDashboard: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {historicalDeliveries.map((d) => {
-                                    const statusBadgeClass =
-                                        d.status === "delivered"
-                                            ? "bg-emerald-500/20 text-emerald-100 border-emerald-700/50"
-                                            : d.status === "failed"
-                                                ? "bg-red-500/20 text-red-100 border-red-700/50"
-                                                : d.status === "dead_letter"
-                                                    ? "bg-red-950/60 text-red-200 border-red-800/50"
-                                                    : "bg-slate-600/20 text-slate-100 border-slate-700";
+                                {historicalDeliveries
+                                    .filter((d) => statusFilter === "all" || d.status === statusFilter)
+                                    .map((d) => {
+                                        const statusBadgeClass =
+                                            d.status === "delivered"
+                                                ? "bg-emerald-500/20 text-emerald-100 border-emerald-700/50"
+                                                : d.status === "failed"
+                                                    ? "bg-red-500/20 text-red-100 border-red-700/50"
+                                                    : d.status === "dead_letter"
+                                                        ? "bg-red-950/60 text-red-200 border-red-800/50"
+                                                        : "bg-slate-600/20 text-slate-100 border-slate-700";
 
-                                    return (
-                                        <tr key={d.id} className="border-b border-slate-800/50 hover:bg-slate-800/20">
-                                            <td className="py-2 pr-4">
-                                                <span
-                                                    className={`px-2 py-1 rounded text-xs border ${statusBadgeClass}`}
-                                                >
-                                                    {d.status}
-                                                </span>
-                                            </td>
-                                            <td className="py-2 pr-4 text-xs">
-                                                <div className="font-medium">{d.event_type ?? "—"}</div>
-                                                {d.rule_name && (
-                                                    <div className="text-gray-500">({d.rule_name})</div>
-                                                )}
-                                            </td>
-                                            <td className="py-2 pr-4 text-xs">
-                                                {d.target ? d.target.slice(0, 35) + (d.target.length > 35 ? "…" : "") : "—"}
-                                            </td>
-                                            <td className="py-2 pr-4 text-xs">
-                                                <div>
-                                                    {d.attempts ?? 0}/{d.max_attempts ?? 5}
-                                                </div>
-                                                {d.next_retry_at && (
-                                                    <div className="text-gray-500">
-                                                        Next: {new Date(d.next_retry_at).toLocaleTimeString()}
+                                        return (
+                                            <tr key={d.id} className="border-b border-slate-800/50 hover:bg-slate-800/20">
+                                                <td className="py-2 pr-4">
+                                                    <span
+                                                        className={`px-2 py-1 rounded text-xs border ${statusBadgeClass}`}
+                                                    >
+                                                        {d.status}
+                                                    </span>
+                                                </td>
+                                                <td className="py-2 pr-4 text-xs">
+                                                    <div className="font-medium">{d.event_type ?? "—"}</div>
+                                                    {d.rule_name && (
+                                                        <div className="text-gray-500">({d.rule_name})</div>
+                                                    )}
+                                                </td>
+                                                <td className="py-2 pr-4 text-xs">
+                                                    {d.target ? d.target.slice(0, 35) + (d.target.length > 35 ? "…" : "") : "—"}
+                                                </td>
+                                                <td className="py-2 pr-4 text-xs">
+                                                    <div>
+                                                        {d.attempts ?? 0}/{d.max_attempts ?? 5}
                                                     </div>
-                                                )}
-                                            </td>
-                                            <td className="py-2 pr-4 text-xs">{d.tenant_id ?? "—"}</td>
-                                            <td className="py-2 pr-4 text-xs">
-                                                {d.created_at
-                                                    ? new Date(d.created_at).toLocaleString()
-                                                    : "—"}
-                                            </td>
-                                            <td className="py-2 pr-4 text-xs max-w-xs truncate" title={d.last_error ?? ""}>
-                                                {d.last_error ?? "—"}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                                                    {d.next_retry_at && (
+                                                        <div className="text-gray-500">
+                                                            Next: {new Date(d.next_retry_at).toLocaleTimeString()}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="py-2 pr-4 text-xs">{d.tenant_id ?? "—"}</td>
+                                                <td className="py-2 pr-4 text-xs">
+                                                    {d.created_at
+                                                        ? new Date(d.created_at).toLocaleString()
+                                                        : "—"}
+                                                </td>
+                                                <td className="py-2 pr-4 text-xs max-w-xs truncate" title={d.last_error ?? ""}>
+                                                    {d.last_error ?? "—"}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                             </tbody>
                         </table>
                     </div>
