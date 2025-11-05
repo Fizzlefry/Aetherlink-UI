@@ -10,7 +10,7 @@ import json
 import os
 import sys
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -18,7 +18,7 @@ from fastapi.responses import StreamingResponse
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from event_store import get_event_stats, list_recent, save_event
+import event_store
 from rbac import require_roles
 
 router = APIRouter(prefix="/events", tags=["events"])
@@ -125,7 +125,7 @@ async def publish_event(event: dict, request: Request):
 
     # Save to persistent store (M2)
     try:
-        save_event(event)
+        event_store.save_event(event)
     except Exception as e:
         print(f"[events] ⚠️  Failed to save event: {e}")
         # Don't fail publish if storage fails
@@ -165,7 +165,7 @@ async def recent(
     Phase VI M5: Added severity and since filtering
     """
     try:
-        data = list_recent(
+        data = event_store.list_recent(
             limit=limit,
             event_type=event_type,
             source=source,
@@ -198,7 +198,7 @@ async def stats():
         - by_severity: Breakdown by severity level (info, warning, error, critical)
     """
     try:
-        stats_data = get_event_stats()
+        stats_data = event_store.get_event_stats()
     except Exception as e:
         print(f"[events] ⚠️  Failed to fetch stats: {e}")
         stats_data = {"total": 0, "last_24h": 0, "by_severity": {}}
@@ -246,3 +246,73 @@ async def stream_events():
                 subscribers.remove(q)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+# ============================================================================
+# Phase VII M2: Event Retention & Archival
+# ============================================================================
+
+@router.post("/prune", dependencies=[Depends(require_roles(["operator", "admin"]))])
+async def manual_prune():
+    """
+    Manually trigger event pruning.
+    
+    Phase VII M2: Deletes events older than EVENT_RETENTION_DAYS.
+    Optionally archives them first if EVENT_ARCHIVE_ENABLED=true.
+    
+    Requires: operator or admin role
+    
+    Returns:
+        Pruning summary with counts and configuration
+    """
+    try:
+        result = event_store.prune_old_events()
+        
+        # Emit ops.events.pruned event for observability
+        prune_event = {
+            "event_id": str(uuid.uuid4()),
+            "event_type": "ops.events.pruned",
+            "source": "aether-command-center",
+            "severity": "info",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "tenant_id": "system",
+            "payload": {
+                "pruned_count": result["pruned_count"],
+                "cutoff": result["cutoff"],
+                "retention_days": result["retention_days"],
+                "archived": result["archived"],
+                "archived_count": result.get("archived_count"),
+                "strategy": "archive+delete" if result["archived"] else "delete-only",
+            },
+            "_meta": {
+                "received_at": datetime.now(timezone.utc).isoformat(),
+                "client_ip": "127.0.0.1",
+            },
+        }
+        
+        # Save prune event (after prune, so it doesn't get immediately deleted)
+        event_store.save_event(prune_event)
+        
+        # Broadcast to SSE subscribers
+        await _broadcast_event(prune_event)
+        
+        return result
+    
+    except Exception as e:
+        print(f"[events] ❌ Prune failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/retention", dependencies=[Depends(require_roles(["operator", "admin"]))])
+async def retention_settings():
+    """
+    Get current event retention configuration.
+    
+    Phase VII M2: Returns retention settings for ops visibility.
+    
+    Requires: operator or admin role
+    
+    Returns:
+        Retention configuration
+    """
+    return event_store.get_retention_settings()

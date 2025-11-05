@@ -19,7 +19,7 @@ app = FastAPI(title="AetherLink Command Center", version="0.1.0")
 # Phase VI: Initialize event store and alert store on startup
 @app.on_event("startup")
 async def startup_event():
-    """Initialize event control plane and alert system."""
+    """Initialize event control plane, alert system, and retention worker."""
     print("[command-center] 🚀 Starting Command Center")
     event_store.init_db()
     print("[command-center] ✅ Event Control Plane ready")
@@ -31,6 +31,63 @@ async def startup_event():
     # Start alert evaluator background task
     asyncio.create_task(alert_evaluator.alert_evaluator_loop())
     print("[command-center] 🚨 Alert Evaluator started")
+    
+    # Phase VII M2: Start retention worker background task
+    asyncio.create_task(retention_worker())
+    print("[command-center] 🗑️  Retention Worker started")
+
+
+# Phase VII M2: Background retention worker
+async def retention_worker():
+    """
+    Background task that prunes old events periodically.
+    
+    Phase VII M2: Runs every EVENT_RETENTION_CRON_SECONDS to keep database lean.
+    """
+    # Wait for service to fully start
+    await asyncio.sleep(5)
+    
+    retention_interval = int(os.getenv("EVENT_RETENTION_CRON_SECONDS", "3600"))
+    
+    print(f"[retention_worker] 🔄 Starting retention loop (interval: {retention_interval}s)")
+    
+    while True:
+        try:
+            result = event_store.prune_old_events()
+            
+            if result["pruned_count"] > 0:
+                print(f"[retention_worker] ✅ Pruned {result['pruned_count']} events")
+                
+                # Emit ops.events.pruned event for observability
+                prune_event = {
+                    "event_id": str(uuid.uuid4()),
+                    "event_type": "ops.events.pruned",
+                    "source": "aether-command-center",
+                    "severity": "info",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "tenant_id": "system",
+                    "payload": {
+                        "pruned_count": result["pruned_count"],
+                        "cutoff": result["cutoff"],
+                        "retention_days": result["retention_days"],
+                        "archived": result["archived"],
+                        "archived_count": result.get("archived_count"),
+                        "strategy": "archive+delete" if result["archived"] else "delete-only",
+                    },
+                    "_meta": {
+                        "received_at": datetime.now(timezone.utc).isoformat(),
+                        "client_ip": "127.0.0.1",
+                    },
+                }
+                
+                # Save prune event (after prune completed)
+                event_store.save_event(prune_event)
+        
+        except Exception as e:
+            print(f"[retention_worker] ⚠️  Retention failed: {e}")
+        
+        # Wait for next interval
+        await asyncio.sleep(retention_interval)
 
 # Phase VI: Mount event and alert routers
 app.include_router(events.router)

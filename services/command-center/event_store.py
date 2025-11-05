@@ -261,3 +261,117 @@ def get_event_stats() -> dict[str, Any]:
         "last_24h": last_24h,
         "by_severity": by_severity,
     }
+
+
+# ============================================================================
+# Phase VII M2: Event Retention & Archival
+# ============================================================================
+
+from datetime import datetime, timedelta, timezone
+
+RETENTION_DAYS = int(os.getenv("EVENT_RETENTION_DAYS", "30"))
+ARCHIVE_ENABLED = os.getenv("EVENT_ARCHIVE_ENABLED", "false").lower() == "true"
+ARCHIVE_DIR = os.getenv("EVENT_ARCHIVE_DIR", "/app/data/archive")
+
+
+def prune_old_events() -> dict[str, Any]:
+    """
+    Prune events older than retention window.
+    
+    Phase VII M2: Deletes events older than EVENT_RETENTION_DAYS.
+    Optionally archives them to NDJSON before deletion.
+    
+    Returns:
+        Pruning summary with cutoff timestamp and counts
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(days=RETENTION_DAYS)
+    cutoff_iso = cutoff.isoformat()
+    
+    conn = get_conn()
+    
+    # Count events to be pruned
+    count_result = conn.execute(
+        "SELECT COUNT(*) as cnt FROM events WHERE timestamp < ?",
+        (cutoff_iso,)
+    ).fetchone()
+    prune_count = count_result["cnt"] if count_result else 0
+    
+    archived_count = 0
+    
+    # Optional: Archive before deletion
+    if ARCHIVE_ENABLED and prune_count > 0:
+        try:
+            Path(ARCHIVE_DIR).mkdir(parents=True, exist_ok=True)
+            
+            # Fetch rows to archive
+            rows = conn.execute(
+                """
+                SELECT event_id, event_type, source, severity, tenant_id, 
+                       payload, timestamp, received_at, client_ip
+                FROM events 
+                WHERE timestamp < ?
+                ORDER BY timestamp ASC
+                """,
+                (cutoff_iso,)
+            ).fetchall()
+            
+            if rows:
+                # Create archive file with cutoff date
+                archive_filename = f"events-{cutoff.date()}.ndjson"
+                archive_path = Path(ARCHIVE_DIR) / archive_filename
+                
+                with archive_path.open("a", encoding="utf-8") as f:
+                    for row in rows:
+                        event_dict = {
+                            "event_id": row["event_id"],
+                            "event_type": row["event_type"],
+                            "source": row["source"],
+                            "severity": row["severity"],
+                            "tenant_id": row["tenant_id"],
+                            "payload": row["payload"],
+                            "timestamp": row["timestamp"],
+                            "received_at": row["received_at"],
+                            "client_ip": row["client_ip"],
+                        }
+                        f.write(json.dumps(event_dict) + "\n")
+                        archived_count += 1
+                
+                print(f"[event_store] 📦 Archived {archived_count} events to {archive_path}")
+        
+        except Exception as e:
+            print(f"[event_store] ⚠️  Archive failed: {e}")
+            # Continue with deletion even if archive fails
+    
+    # Delete old events
+    conn.execute("DELETE FROM events WHERE timestamp < ?", (cutoff_iso,))
+    conn.commit()
+    conn.close()
+    
+    print(f"[event_store] 🗑️  Pruned {prune_count} events older than {cutoff.date()}")
+    
+    return {
+        "status": "ok",
+        "cutoff": cutoff_iso,
+        "retention_days": RETENTION_DAYS,
+        "pruned_count": prune_count,
+        "archived": ARCHIVE_ENABLED,
+        "archived_count": archived_count if ARCHIVE_ENABLED else None,
+        "archive_dir": ARCHIVE_DIR if ARCHIVE_ENABLED else None,
+    }
+
+
+def get_retention_settings() -> dict[str, Any]:
+    """
+    Get current retention configuration.
+    
+    Phase VII M2: Returns retention settings for ops visibility.
+    
+    Returns:
+        Retention configuration dictionary
+    """
+    return {
+        "retention_days": RETENTION_DAYS,
+        "interval_seconds": int(os.getenv("EVENT_RETENTION_CRON_SECONDS", "3600")),
+        "archive_enabled": ARCHIVE_ENABLED,
+        "archive_dir": ARCHIVE_DIR,
+    }
