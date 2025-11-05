@@ -5,6 +5,7 @@ from typing import List, Dict, Optional
 from datetime import datetime, timezone
 import httpx
 import os
+import uuid
 from rbac import require_roles
 from audit import audit_middleware, get_audit_stats
 import event_store
@@ -65,6 +66,35 @@ def _now_iso() -> str:
     """Return current UTC timestamp in ISO8601 format"""
     return datetime.now(timezone.utc).isoformat()
 
+
+# Phase VI M4: Event publishing helper (internal to Command Center)
+async def publish_event_internal(event_type: str, payload: dict):
+    """
+    Publish an event internally (Command Center publishes about itself).
+    
+    Calls the event store directly instead of using HTTP to avoid circular dependency.
+    Used for service registration/unregistration events.
+    
+    Args:
+        event_type: Event type (e.g., "service.registered")
+        payload: Event payload with severity and details
+    """
+    try:
+        event = {
+            "event_id": str(uuid.uuid4()),
+            "event_type": event_type,
+            "source": "aether-command-center",
+            "severity": payload.get("severity", "info"),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "tenant_id": payload.get("tenant_id", "system"),
+            "payload": payload,
+        }
+        # Call event store directly instead of HTTP
+        event_store.save_event(event)
+    except Exception:
+        # Silent fail - don't break registry operations if event store fails
+        pass
+
 @app.get("/ops/health", dependencies=[Depends(operator_only)])
 async def ops_health():
     """
@@ -118,7 +148,7 @@ async def audit_stats():
 # Phase IV: Service Registry Endpoints (v1.13.0)
 
 @app.post("/ops/register", dependencies=[Depends(operator_only)])
-def register_service(payload: ServiceRegistration):
+async def register_service(payload: ServiceRegistration):
     """
     Register a service with the Command Center.
     
@@ -137,6 +167,16 @@ def register_service(payload: ServiceRegistration):
         "tags": payload.tags or [],
         "last_seen": _now_iso(),
     }
+    
+    # Phase VI M4: Emit registration event
+    await publish_event_internal("service.registered", {
+        "service": payload.name,
+        "url": payload.url,
+        "version": payload.version,
+        "tags": payload.tags or [],
+        "severity": "info",
+    })
+    
     return {
         "status": "ok",
         "registered": payload.name,
@@ -160,7 +200,7 @@ def list_services():
     }
 
 @app.delete("/ops/services/{name}", dependencies=[Depends(operator_only)])
-def delete_service(name: str):
+async def delete_service(name: str):
     """
     Remove a service from the registry.
     
@@ -172,6 +212,13 @@ def delete_service(name: str):
         raise HTTPException(status_code=404, detail=f"Service '{name}' not found in registry")
     
     del REGISTERED_SERVICES[name]
+    
+    # Phase VI M4: Emit unregistration event
+    await publish_event_internal("service.unregistered", {
+        "service": name,
+        "severity": "warning",
+    })
+    
     return {
         "status": "ok",
         "deleted": name,

@@ -8,6 +8,8 @@ Provides API endpoints for monitoring and status reporting.
 import json
 import os
 import time
+import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 import docker
@@ -52,8 +54,40 @@ INTERVAL = int(os.getenv("AUTOHEAL_INTERVAL_SECONDS", "30"))
 COMMAND_CENTER_URL = os.getenv("COMMAND_CENTER_URL", "http://aether-command-center:8010")
 PULL_FROM_REGISTRY = os.getenv("AUTOHEAL_PULL_FROM_REGISTRY", "true").lower() == "true"
 
+# Phase VI: Event publishing
+EVENTS_URL = f"{COMMAND_CENTER_URL}/events/publish"
+
 # Docker client for container management
 docker_client = docker.from_env()
+
+
+# Phase VI M4: Event publishing helper
+async def publish_event(event_type: str, payload: dict):
+    """
+    Publish an event to the Command Center event control plane.
+    
+    Non-blocking: failures don't break auto-heal functionality.
+    Uses operator role for RBAC-protected event API.
+    
+    Args:
+        event_type: Event type (e.g., "autoheal.attempted")
+        payload: Event payload with severity and details
+    """
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        body = {
+            "event_id": str(uuid.uuid4()),
+            "event_type": event_type,
+            "source": "aether-auto-heal",
+            "severity": payload.get("severity", "info"),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "payload": payload,
+        }
+        headers = {"X-User-Roles": "operator"}
+        try:
+            await client.post(EVENTS_URL, json=body, headers=headers)
+        except Exception:
+            # Silent fail - don't break healing if event publishing fails
+            pass
 
 # Last report cache
 last_report: dict[str, Any] = {
@@ -275,6 +309,14 @@ async def loop_once():
         ok = check_service(svc)
         if not ok:
             print(f"Service {svc} is down, attempting restart...")
+            
+            # Phase VI M4: Emit event before heal attempt
+            await publish_event("autoheal.attempted", {
+                "service": svc,
+                "reason": "health check failed",
+                "severity": "warning",
+            })
+            
             success, msg = restart_service(svc)
             attempt = {
                 "service": svc,
@@ -293,8 +335,21 @@ async def loop_once():
 
             if success:
                 print(f"✅ Successfully restarted {svc}")
+                # Phase VI M4: Emit success event
+                await publish_event("autoheal.succeeded", {
+                    "service": svc,
+                    "action": "docker restart",
+                    "severity": "info",
+                })
             else:
                 print(f"❌ Failed to restart {svc}: {msg}")
+                # Phase VI M4: Emit failure event
+                await publish_event("autoheal.failed", {
+                    "service": svc,
+                    "action": "docker restart",
+                    "error": msg,
+                    "severity": "error",
+                })
 
     last_report["last_run"] = time.time()
     last_report["attempts"] = attempts

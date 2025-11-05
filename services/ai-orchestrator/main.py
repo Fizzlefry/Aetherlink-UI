@@ -1,6 +1,7 @@
 import os
 import time
-from datetime import datetime
+import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 import httpx
@@ -61,6 +62,38 @@ provider_health: dict[str, dict[str, Any]] = {
 # Legacy endpoints
 AI_SUMMARIZER_URL = os.getenv("AI_SUMMARIZER_URL", "http://aether-ai-summarizer:9108")
 GRAFANA_ANNOTATIONS_URL = os.getenv("GRAFANA_ANNOTATIONS_URL")  # optional
+
+# Phase VI: Event publishing
+EVENTS_URL = f"{COMMAND_CENTER_URL}/events/publish"
+
+
+# Phase VI M4: Event publishing helper
+async def publish_event(event_type: str, payload: dict):
+    """
+    Publish an event to the Command Center event control plane.
+    
+    Non-blocking: failures don't break AI orchestration functionality.
+    Uses operator role for RBAC-protected event API.
+    
+    Args:
+        event_type: Event type (e.g., "ai.provider.used")
+        payload: Event payload with severity and details
+    """
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        body = {
+            "event_id": str(uuid.uuid4()),
+            "event_type": event_type,
+            "source": "aether-ai-orchestrator",
+            "severity": payload.get("severity", "info"),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "payload": payload,
+        }
+        headers = {"X-User-Roles": "operator"}
+        try:
+            await client.post(EVENTS_URL, json=body, headers=headers)
+        except Exception:
+            # Silent fail - don't break orchestration if event publishing fails
+            pass
 
 
 class OrchestrateRequest(BaseModel):
@@ -180,6 +213,25 @@ async def orchestrate(req: OrchestrateRequest):
                 f"AI orchestrator handled intent={req.intent} in {latency_ms:.1f}ms via {provider}"
             )
 
+            # Phase VI M4: Emit provider used event
+            await publish_event("ai.provider.used", {
+                "provider": provider,
+                "intent": req.intent,
+                "latency_ms": latency_ms,
+                "severity": "info",
+            })
+
+            # Phase VI M4: Emit fallback event if we had failures before success
+            if errors:
+                await publish_event("ai.fallback.used", {
+                    "provider_chain": PROVIDER_ORDER,
+                    "successful_provider": provider,
+                    "failed_providers": errors,
+                    "intent": req.intent,
+                    "latency_ms": latency_ms,
+                    "severity": "warning",
+                })
+
             return OrchestrateResponse(
                 status="ok",
                 provider=provider,
@@ -199,6 +251,15 @@ async def orchestrate(req: OrchestrateRequest):
     await annotate(
         f"AI orchestrator failed for intent={req.intent}: all {len(PROVIDER_ORDER)} providers failed"
     )
+
+    # Phase VI M4: Emit failure event when all providers fail
+    await publish_event("ai.fallback.failed", {
+        "provider_chain": PROVIDER_ORDER,
+        "errors": errors,
+        "intent": req.intent,
+        "latency_ms": latency_ms,
+        "severity": "error",
+    })
 
     raise HTTPException(
         status_code=502,
