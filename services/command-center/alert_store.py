@@ -5,11 +5,10 @@ Phase VI M6: Alert threshold definitions and rule evaluation.
 Stores alert rules in SQLite alongside events.
 """
 
-import sqlite3
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timezone
 import os
-
+import sqlite3
+from datetime import UTC, datetime
+from typing import Any
 
 DB_PATH = os.getenv("ALERT_DB_PATH", "/app/data/alerts.db")
 
@@ -24,10 +23,10 @@ def get_conn():
 def init_db():
     """
     Initialize alert rules database.
-    
+
     Creates tables for alert rules if they don't exist.
     Called on Command Center startup.
-    
+
     Phase VII M3: Added tenant_id column for multi-tenant alert scoping.
     """
     conn = get_conn()
@@ -48,7 +47,7 @@ def init_db():
         )
     """
     )
-    
+
     # Phase VII M3: Migration - add tenant_id column if not exists
     try:
         conn.execute("ALTER TABLE alert_rules ADD COLUMN tenant_id TEXT")
@@ -58,7 +57,7 @@ def init_db():
         # Column already exists, ignore
         if "duplicate column" not in str(e).lower():
             print(f"[alert_store] ⚠️  Migration warning: {e}")
-    
+
     conn.commit()
     conn.close()
     print("[alert_store] ✅ Alert rules database initialized")
@@ -68,17 +67,17 @@ def create_rule(
     name: str,
     window_seconds: int,
     threshold: int,
-    severity: Optional[str] = None,
-    event_type: Optional[str] = None,
-    source: Optional[str] = None,
+    severity: str | None = None,
+    event_type: str | None = None,
+    source: str | None = None,
     enabled: bool = True,
-    tenant_id: Optional[str] = None,
+    tenant_id: str | None = None,
 ) -> int:
     """
     Create a new alert rule.
-    
+
     Phase VII M3: Added tenant_id for multi-tenant alert scoping.
-    
+
     Args:
         name: Human-readable rule name
         window_seconds: Time window to look back
@@ -88,16 +87,16 @@ def create_rule(
         source: Filter by source service (optional)
         enabled: Whether rule is active
         tenant_id: Bind rule to tenant (optional, NULL = global/admin rule)
-    
+
     Returns:
         Rule ID
     """
     conn = get_conn()
-    now = datetime.now(timezone.utc).isoformat()
-    
+    now = datetime.now(UTC).isoformat()
+
     cur = conn.execute(
         """
-        INSERT INTO alert_rules 
+        INSERT INTO alert_rules
         (name, severity, event_type, source, window_seconds, threshold, enabled, tenant_id, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
@@ -114,25 +113,25 @@ def create_rule(
             now,
         ),
     )
-    
+
     rule_id = cur.lastrowid
     conn.commit()
     conn.close()
-    
+
     return rule_id
 
 
-def list_rules() -> List[Dict[str, Any]]:
+def list_rules() -> list[dict[str, Any]]:
     """
     List all alert rules.
-    
+
     Returns:
         List of rule dictionaries
     """
     conn = get_conn()
     cur = conn.execute(
         """
-        SELECT id, name, severity, event_type, source, window_seconds, 
+        SELECT id, name, severity, event_type, source, window_seconds,
                threshold, enabled, created_at, updated_at
         FROM alert_rules
         ORDER BY id DESC
@@ -140,7 +139,7 @@ def list_rules() -> List[Dict[str, Any]]:
     )
     rows = cur.fetchall()
     conn.close()
-    
+
     return [
         {
             "id": r["id"],
@@ -158,13 +157,13 @@ def list_rules() -> List[Dict[str, Any]]:
     ]
 
 
-def get_rule(rule_id: int) -> Optional[Dict[str, Any]]:
+def get_rule(rule_id: int) -> dict[str, Any] | None:
     """
     Get a specific alert rule.
-    
+
     Args:
         rule_id: Rule ID
-    
+
     Returns:
         Rule dictionary or None if not found
     """
@@ -180,10 +179,10 @@ def get_rule(rule_id: int) -> Optional[Dict[str, Any]]:
     )
     row = cur.fetchone()
     conn.close()
-    
+
     if not row:
         return None
-    
+
     return {
         "id": row["id"],
         "name": row["name"],
@@ -201,10 +200,10 @@ def get_rule(rule_id: int) -> Optional[Dict[str, Any]]:
 def delete_rule(rule_id: int) -> bool:
     """
     Delete an alert rule.
-    
+
     Args:
         rule_id: Rule ID
-    
+
     Returns:
         True if deleted, False if not found
     """
@@ -213,24 +212,24 @@ def delete_rule(rule_id: int) -> bool:
     deleted = cur.rowcount > 0
     conn.commit()
     conn.close()
-    
+
     return deleted
 
 
 def update_rule_enabled(rule_id: int, enabled: bool) -> bool:
     """
     Enable or disable an alert rule.
-    
+
     Args:
         rule_id: Rule ID
         enabled: New enabled state
-    
+
     Returns:
         True if updated, False if not found
     """
     conn = get_conn()
-    now = datetime.now(timezone.utc).isoformat()
-    
+    now = datetime.now(UTC).isoformat()
+
     cur = conn.execute(
         """
         UPDATE alert_rules
@@ -239,9 +238,9 @@ def update_rule_enabled(rule_id: int, enabled: bool) -> bool:
         """,
         (1 if enabled else 0, now, rule_id),
     )
-    
+
     updated = cur.rowcount > 0
     conn.commit()
     conn.close()
-    
+
     return updated

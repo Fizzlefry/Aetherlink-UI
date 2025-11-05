@@ -7,6 +7,7 @@ Phase VI M2: Persistent event storage using SQLite.
 import json
 import os
 import sqlite3
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -46,6 +47,19 @@ def init_db():
     conn.execute("CREATE INDEX IF NOT EXISTS idx_events_type_ts ON events(event_type, timestamp)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_events_source_ts ON events(source, timestamp)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_events_tenant_ts ON events(tenant_id, timestamp)")
+
+    # Phase VII M4: Per-tenant retention policies
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS tenant_retention (
+            tenant_id TEXT PRIMARY KEY,
+            retention_days INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+
     conn.commit()
     conn.close()
     print("[event_store] ✅ Database initialized")
@@ -189,7 +203,7 @@ def count_events(
 ) -> int:
     """
     Count total events with optional filters.
-    
+
     Phase VI M6: Added severity and since for alert evaluation.
     """
     conn = get_conn()
@@ -263,7 +277,11 @@ def get_event_stats(tenant_id: str | None = None) -> dict[str, Any]:
     by_severity = {row["severity"]: row["cnt"] for row in severity_cur.fetchall()}
 
     # Last 24 hours
-    last_24h_where = " AND timestamp >= datetime('now', '-1 day')" if tenant_id else " WHERE timestamp >= datetime('now', '-1 day')"
+    last_24h_where = (
+        " AND timestamp >= datetime('now', '-1 day')"
+        if tenant_id
+        else " WHERE timestamp >= datetime('now', '-1 day')"
+    )
     last_24h_query = f"""
         SELECT COUNT(*) as cnt
         FROM events
@@ -286,59 +304,209 @@ def get_event_stats(tenant_id: str | None = None) -> dict[str, Any]:
 # Phase VII M2: Event Retention & Archival
 # ============================================================================
 
-from datetime import datetime, timedelta, timezone
-
 RETENTION_DAYS = int(os.getenv("EVENT_RETENTION_DAYS", "30"))
 ARCHIVE_ENABLED = os.getenv("EVENT_ARCHIVE_ENABLED", "false").lower() == "true"
 ARCHIVE_DIR = os.getenv("EVENT_ARCHIVE_DIR", "/app/data/archive")
 
 
+# ============================================================================
+# Phase VII M4: Per-Tenant Retention Policies
+# ============================================================================
+
+
+def get_tenant_retention_map() -> dict[str, int]:
+    """
+    Get per-tenant retention overrides.
+
+    Phase VII M4: Returns map of tenant_id -> retention_days for tenants
+    with custom retention policies. Tenants not in this map use global default.
+
+    Returns:
+        Dictionary mapping tenant_id to retention_days
+    """
+    conn = get_conn()
+    try:
+        cur = conn.execute("SELECT tenant_id, retention_days FROM tenant_retention")
+        rows = cur.fetchall()
+        return {row["tenant_id"]: row["retention_days"] for row in rows}
+    finally:
+        conn.close()
+
+
+def set_tenant_retention(tenant_id: str, retention_days: int) -> dict[str, Any]:
+    """
+    Set or update tenant-specific retention policy.
+
+    Args:
+        tenant_id: Tenant identifier
+        retention_days: Number of days to retain events for this tenant
+
+    Returns:
+        Summary with tenant_id and retention_days
+    """
+    conn = get_conn()
+    now = datetime.now(UTC).isoformat()
+
+    try:
+        # Upsert tenant retention policy
+        conn.execute(
+            """
+            INSERT INTO tenant_retention (tenant_id, retention_days, created_at, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(tenant_id) DO UPDATE SET
+                retention_days = excluded.retention_days,
+                updated_at = excluded.updated_at
+            """,
+            (tenant_id, retention_days, now, now),
+        )
+        conn.commit()
+        return {"tenant_id": tenant_id, "retention_days": retention_days, "updated_at": now}
+    finally:
+        conn.close()
+
+
+def delete_tenant_retention(tenant_id: str) -> dict[str, Any]:
+    """
+    Delete tenant-specific retention policy (reverts to global default).
+
+    Args:
+        tenant_id: Tenant identifier
+
+    Returns:
+        Summary with deleted tenant_id
+    """
+    conn = get_conn()
+    try:
+        conn.execute("DELETE FROM tenant_retention WHERE tenant_id = ?", (tenant_id,))
+        conn.commit()
+        return {"tenant_id": tenant_id, "reverted_to_global": True}
+    finally:
+        conn.close()
+
+
+def prune_old_events_with_per_tenant() -> list[dict[str, Any]]:
+    """
+    Prune events with per-tenant retention policies.
+
+    Phase VII M4: Prunes system events using global retention, then prunes
+    each tenant's events using their custom retention policy (if set) or
+    global default.
+
+    Returns:
+        List of pruning results, one per scope (global/system and per tenant)
+    """
+    results = []
+    tenant_map = get_tenant_retention_map()
+    now = datetime.now(UTC)
+    conn = get_conn()
+
+    try:
+        # 1) Prune system/global events (tenant_id IS NULL) using global retention
+        cutoff_global = now - timedelta(days=RETENTION_DAYS)
+        cutoff_global_iso = cutoff_global.isoformat()
+
+        cur = conn.execute(
+            "DELETE FROM events WHERE (tenant_id IS NULL OR tenant_id = 'system') AND timestamp < ?",
+            (cutoff_global_iso,),
+        )
+        conn.commit()
+        global_pruned = cur.rowcount
+
+        results.append(
+            {
+                "scope": "system",
+                "retention_days": RETENTION_DAYS,
+                "cutoff": cutoff_global_iso,
+                "pruned_count": global_pruned,
+            }
+        )
+
+        print(f"[event_store] 🗑️  Pruned {global_pruned} system events (retention: {RETENTION_DAYS}d)")
+
+        # 2) Get all distinct tenant_ids from events (excluding NULL/system)
+        tenant_rows = conn.execute(
+            "SELECT DISTINCT tenant_id FROM events WHERE tenant_id IS NOT NULL AND tenant_id != 'system'"
+        ).fetchall()
+        active_tenants = {row["tenant_id"] for row in tenant_rows}
+
+        # 3) Prune per tenant (use override if exists, else global default)
+        for tenant_id in active_tenants:
+            retention_days = tenant_map.get(tenant_id, RETENTION_DAYS)
+            cutoff_tenant = now - timedelta(days=retention_days)
+            cutoff_tenant_iso = cutoff_tenant.isoformat()
+
+            cur = conn.execute(
+                "DELETE FROM events WHERE tenant_id = ? AND timestamp < ?",
+                (tenant_id, cutoff_tenant_iso),
+            )
+            conn.commit()
+            tenant_pruned = cur.rowcount
+
+            results.append(
+                {
+                    "scope": tenant_id,
+                    "retention_days": retention_days,
+                    "cutoff": cutoff_tenant_iso,
+                    "pruned_count": tenant_pruned,
+                }
+            )
+
+            if tenant_pruned > 0:
+                print(
+                    f"[event_store] 🗑️  Pruned {tenant_pruned} events for {tenant_id} (retention: {retention_days}d)"
+                )
+
+        return results
+
+    finally:
+        conn.close()
+
+
 def prune_old_events() -> dict[str, Any]:
     """
     Prune events older than retention window.
-    
+
     Phase VII M2: Deletes events older than EVENT_RETENTION_DAYS.
     Optionally archives them to NDJSON before deletion.
-    
+
     Returns:
         Pruning summary with cutoff timestamp and counts
     """
-    cutoff = datetime.now(timezone.utc) - timedelta(days=RETENTION_DAYS)
+    cutoff = datetime.now(UTC) - timedelta(days=RETENTION_DAYS)
     cutoff_iso = cutoff.isoformat()
-    
+
     conn = get_conn()
-    
+
     # Count events to be pruned
     count_result = conn.execute(
-        "SELECT COUNT(*) as cnt FROM events WHERE timestamp < ?",
-        (cutoff_iso,)
+        "SELECT COUNT(*) as cnt FROM events WHERE timestamp < ?", (cutoff_iso,)
     ).fetchone()
     prune_count = count_result["cnt"] if count_result else 0
-    
+
     archived_count = 0
-    
+
     # Optional: Archive before deletion
     if ARCHIVE_ENABLED and prune_count > 0:
         try:
             Path(ARCHIVE_DIR).mkdir(parents=True, exist_ok=True)
-            
+
             # Fetch rows to archive
             rows = conn.execute(
                 """
-                SELECT event_id, event_type, source, severity, tenant_id, 
+                SELECT event_id, event_type, source, severity, tenant_id,
                        payload, timestamp, received_at, client_ip
-                FROM events 
+                FROM events
                 WHERE timestamp < ?
                 ORDER BY timestamp ASC
                 """,
-                (cutoff_iso,)
+                (cutoff_iso,),
             ).fetchall()
-            
+
             if rows:
                 # Create archive file with cutoff date
                 archive_filename = f"events-{cutoff.date()}.ndjson"
                 archive_path = Path(ARCHIVE_DIR) / archive_filename
-                
+
                 with archive_path.open("a", encoding="utf-8") as f:
                     for row in rows:
                         event_dict = {
@@ -354,20 +522,20 @@ def prune_old_events() -> dict[str, Any]:
                         }
                         f.write(json.dumps(event_dict) + "\n")
                         archived_count += 1
-                
+
                 print(f"[event_store] 📦 Archived {archived_count} events to {archive_path}")
-        
+
         except Exception as e:
             print(f"[event_store] ⚠️  Archive failed: {e}")
             # Continue with deletion even if archive fails
-    
+
     # Delete old events
     conn.execute("DELETE FROM events WHERE timestamp < ?", (cutoff_iso,))
     conn.commit()
     conn.close()
-    
+
     print(f"[event_store] 🗑️  Pruned {prune_count} events older than {cutoff.date()}")
-    
+
     return {
         "status": "ok",
         "cutoff": cutoff_iso,
@@ -382,9 +550,9 @@ def prune_old_events() -> dict[str, Any]:
 def get_retention_settings() -> dict[str, Any]:
     """
     Get current retention configuration.
-    
+
     Phase VII M2: Returns retention settings for ops visibility.
-    
+
     Returns:
         Retention configuration dictionary
     """

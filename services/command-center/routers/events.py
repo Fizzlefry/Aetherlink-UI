@@ -10,7 +10,7 @@ import json
 import os
 import sys
 import uuid
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -169,17 +169,17 @@ async def recent(
     """
     # Extract tenant from header (set by TenantContextMiddleware)
     header_tenant = getattr(request.state, "tenant_id", None)
-    
+
     # Role-based tenant enforcement:
     # - Admin/operator with no query param → uses header tenant (or none for all)
     # - Admin/operator with query param → can override to see specific tenant
     # - Non-admin → locked to header tenant (but require_roles already blocks non-admin)
     user_roles = getattr(request.state, "user_roles", [])
     is_admin = any(r in ("admin", "operator") for r in user_roles)
-    
+
     # Effective tenant: use query param if admin provided it, otherwise header
     effective_tenant = tenant_id if (is_admin and tenant_id) else header_tenant
-    
+
     try:
         data = event_store.list_recent(
             limit=limit,
@@ -221,14 +221,14 @@ async def stats(
     """
     # Extract tenant from header (set by TenantContextMiddleware)
     header_tenant = getattr(request.state, "tenant_id", None)
-    
+
     # Role-based tenant enforcement
     user_roles = getattr(request.state, "user_roles", [])
     is_admin = any(r in ("admin", "operator") for r in user_roles)
-    
+
     # Effective tenant: use query param if admin provided it, otherwise header
     effective_tenant = tenant_id if (is_admin and tenant_id) else header_tenant
-    
+
     try:
         stats_data = event_store.get_event_stats(tenant_id=effective_tenant)
     except Exception as e:
@@ -284,52 +284,61 @@ async def stream_events():
 # Phase VII M2: Event Retention & Archival
 # ============================================================================
 
+
 @router.post("/prune", dependencies=[Depends(require_roles(["operator", "admin"]))])
 async def manual_prune():
     """
-    Manually trigger event pruning.
-    
-    Phase VII M2: Deletes events older than EVENT_RETENTION_DAYS.
-    Optionally archives them first if EVENT_ARCHIVE_ENABLED=true.
-    
+    Manually trigger event pruning with per-tenant retention policies.
+
+    Phase VII M2: Deletes events older than retention window.
+    Phase VII M4: Uses per-tenant retention policies with global fallback.
+
     Requires: operator or admin role
-    
+
     Returns:
-        Pruning summary with counts and configuration
+        Pruning summary with counts per tenant/scope
     """
     try:
-        result = event_store.prune_old_events()
-        
-        # Emit ops.events.pruned event for observability
-        prune_event = {
-            "event_id": str(uuid.uuid4()),
-            "event_type": "ops.events.pruned",
-            "source": "aether-command-center",
-            "severity": "info",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "tenant_id": "system",
-            "payload": {
-                "pruned_count": result["pruned_count"],
-                "cutoff": result["cutoff"],
-                "retention_days": result["retention_days"],
-                "archived": result["archived"],
-                "archived_count": result.get("archived_count"),
-                "strategy": "archive+delete" if result["archived"] else "delete-only",
-            },
-            "_meta": {
-                "received_at": datetime.now(timezone.utc).isoformat(),
-                "client_ip": "127.0.0.1",
-            },
+        # Phase VII M4: Use per-tenant retention
+        results = event_store.prune_old_events_with_per_tenant()
+
+        total_pruned = sum(r["pruned_count"] for r in results)
+
+        # Emit ops.events.pruned event for each scope
+        for result in results:
+            if result["pruned_count"] > 0:
+                prune_event = {
+                    "event_id": str(uuid.uuid4()),
+                    "event_type": "ops.events.pruned",
+                    "source": "aether-command-center",
+                    "severity": "info",
+                    "timestamp": datetime.now(UTC).isoformat(),
+                    "tenant_id": result["scope"] if result["scope"] != "system" else "system",
+                    "payload": {
+                        "scope": result["scope"],
+                        "pruned_count": result["pruned_count"],
+                        "cutoff": result["cutoff"],
+                        "retention_days": result["retention_days"],
+                        "strategy": "per-tenant-retention",
+                    },
+                    "_meta": {
+                        "received_at": datetime.now(UTC).isoformat(),
+                        "client_ip": "127.0.0.1",
+                    },
+                }
+
+                # Save prune event (after prune, so it doesn't get immediately deleted)
+                event_store.save_event(prune_event)
+
+                # Broadcast to SSE subscribers
+                await _broadcast_event(prune_event)
+
+        return {
+            "status": "ok",
+            "total_pruned": total_pruned,
+            "scopes": results,
         }
-        
-        # Save prune event (after prune, so it doesn't get immediately deleted)
-        event_store.save_event(prune_event)
-        
-        # Broadcast to SSE subscribers
-        await _broadcast_event(prune_event)
-        
-        return result
-    
+
     except Exception as e:
         print(f"[events] ❌ Prune failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -339,12 +348,109 @@ async def manual_prune():
 async def retention_settings():
     """
     Get current event retention configuration.
-    
+
     Phase VII M2: Returns retention settings for ops visibility.
-    
+
     Requires: operator or admin role
-    
+
     Returns:
         Retention configuration
     """
     return event_store.get_retention_settings()
+
+
+# ============================================================================
+# Phase VII M4: Per-Tenant Retention Management
+# ============================================================================
+
+
+@router.get("/retention/tenants", dependencies=[Depends(require_roles(["operator", "admin"]))])
+async def list_tenant_retention():
+    """
+    List all tenant-specific retention policies.
+
+    Phase VII M4: Returns map of tenant_id -> retention_days for tenants
+    with custom retention policies. Tenants not in this map use global default.
+
+    Requires: operator or admin role
+
+    Returns:
+        Dictionary mapping tenant_id to retention_days
+    """
+    try:
+        tenant_map = event_store.get_tenant_retention_map()
+        return {
+            "status": "ok",
+            "tenant_policies": tenant_map,
+            "global_default_days": event_store.RETENTION_DAYS,
+        }
+    except Exception as e:
+        print(f"[events] ❌ Failed to list tenant retention: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/retention/tenants/{tenant_id}", dependencies=[Depends(require_roles(["operator", "admin"]))])
+async def set_tenant_retention_policy(tenant_id: str, retention_days: int):
+    """
+    Set or update tenant-specific retention policy.
+
+    Phase VII M4: Allows customizing retention window per tenant.
+    Example: Premium tenants get 90 days, basic tenants get 7 days.
+
+    Args:
+        tenant_id: Tenant identifier
+        retention_days: Number of days to retain events (query param or body)
+
+    Requires: operator or admin role
+
+    Returns:
+        Updated retention policy
+    """
+    try:
+        if retention_days < 1:
+            raise HTTPException(status_code=400, detail="retention_days must be >= 1")
+
+        result = event_store.set_tenant_retention(tenant_id, retention_days)
+
+        return {
+            "status": "ok",
+            "tenant_id": result["tenant_id"],
+            "retention_days": result["retention_days"],
+            "updated_at": result["updated_at"],
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[events] ❌ Failed to set tenant retention: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/retention/tenants/{tenant_id}", dependencies=[Depends(require_roles(["operator", "admin"]))])
+async def delete_tenant_retention_policy(tenant_id: str):
+    """
+    Delete tenant-specific retention policy (reverts to global default).
+
+    Phase VII M4: Removes custom retention override for tenant.
+
+    Args:
+        tenant_id: Tenant identifier
+
+    Requires: operator or admin role
+
+    Returns:
+        Confirmation that tenant reverted to global retention
+    """
+    try:
+        result = event_store.delete_tenant_retention(tenant_id)
+
+        return {
+            "status": "ok",
+            "tenant_id": result["tenant_id"],
+            "reverted_to_global": result["reverted_to_global"],
+            "global_default_days": event_store.RETENTION_DAYS,
+        }
+
+    except Exception as e:
+        print(f"[events] ❌ Failed to delete tenant retention: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

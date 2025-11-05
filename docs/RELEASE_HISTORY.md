@@ -1200,6 +1200,131 @@ ORDER BY id DESC LIMIT 50;
 - **Operational**: Tenant-scoped alerts reduce false positive noise
 - **Future-Proof**: Foundation for per-tenant billing, quotas, RBAC policies
 
+---
+
+### v1.20.0 - Phase VII M4: Per-Tenant Retention Policies
+**Released:** November 2025
+**Focus:** Fine-grained event data lifecycle management per tenant
+
+**Problem Solved:**
+Previous retention (v1.18.0) used a single global `EVENT_RETENTION_DAYS` setting for all events. In multi-tenant SaaS deployments (v1.19.0), this creates operational challenges:
+- **Premium tenants** may need longer retention (90+ days for compliance/audit trails)
+- **Test/QA tenants** produce high event volume but need short retention (1-7 days)
+- **Basic tier tenants** default to standard retention (30 days)
+- **System events** need separate lifecycle from tenant events
+
+Without per-tenant policies, operators must choose between:
+- Short global retention → Premium customers lose audit history
+- Long global retention → Database bloat from noisy test tenants
+
+**Features:**
+
+**1. Tenant Retention Table** (`event_store.py`):
+- New SQLite table: `tenant_retention (tenant_id PRIMARY KEY, retention_days, created_at, updated_at)`
+- Stores per-tenant retention overrides
+- Tenants without override use global `EVENT_RETENTION_DAYS` default
+
+**2. Per-Tenant Pruning Logic** (`prune_old_events_with_per_tenant()`):
+- Prunes system events (tenant_id=NULL) using global retention
+- Gets distinct tenant_ids from active events
+- Looks up each tenant's retention policy (override or global default)
+- Prunes each tenant's events separately with appropriate cutoff
+- Returns list of results (one per scope: system + tenants)
+
+**3. Tenant Retention Management Functions**:
+- `get_tenant_retention_map()` - Returns {tenant_id: retention_days} for all overrides
+- `set_tenant_retention(tenant_id, retention_days)` - Upsert tenant policy
+- `delete_tenant_retention(tenant_id)` - Revert tenant to global default
+
+**4. Updated Retention Worker** (`main.py`):
+- Switched from `prune_old_events()` to `prune_old_events_with_per_tenant()`
+- Emits separate `ops.events.pruned` event for each scope
+- Each pruned event tagged with appropriate tenant_id
+- Operators see per-tenant pruning in EventStream UI
+
+**5. Tenant Retention API Endpoints** (`routers/events.py`):
+- `GET /events/retention/tenants` - List all tenant policies + global default
+- `PUT /events/retention/tenants/{tenant_id}?retention_days=N` - Set tenant policy
+- `DELETE /events/retention/tenants/{tenant_id}` - Revert to global default
+
+**6. Updated Manual Prune** (`POST /events/prune`):
+- Now uses per-tenant retention instead of global-only
+- Returns `{total_pruned, scopes: [{scope, pruned_count, retention_days, cutoff}]}`
+- Emits ops.events.pruned per scope for observability
+
+**Architecture:**
+```
+retention_worker() runs every 3600s
+    ↓
+prune_old_events_with_per_tenant()
+    ↓
+1) Prune system events (tenant_id=NULL) → global retention (30d)
+2) Get active tenant_ids from events
+3) For each tenant:
+   - Look up retention override OR use global default
+   - Prune that tenant's events with specific cutoff
+4) Return results array (one per scope)
+    ↓
+Emit ops.events.pruned for each scope
+    ↓
+Operators see: "tenant-qa pruned 15 events (1d retention)"
+               "tenant-premium pruned 0 events (90d retention)"
+```
+
+**Database Schema:**
+```sql
+-- New table for tenant-specific retention policies
+CREATE TABLE IF NOT EXISTS tenant_retention (
+    tenant_id TEXT PRIMARY KEY,
+    retention_days INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+```
+
+**API Examples:**
+```bash
+# Set aggressive retention for test tenant
+PUT /events/retention/tenants/tenant-qa?retention_days=1
+
+# Premium customer gets 90-day retention
+PUT /events/retention/tenants/tenant-premium?retention_days=90
+
+# Enterprise customer with compliance requirements
+PUT /events/retention/tenants/tenant-acme?retention_days=60
+
+# List all policies
+GET /events/retention/tenants
+# Returns:
+{
+  "tenant_policies": {
+    "tenant-qa": 1,
+    "tenant-premium": 90,
+    "tenant-acme": 60
+  },
+  "global_default_days": 30
+}
+
+# Revert tenant to global default
+DELETE /events/retention/tenants/tenant-qa
+```
+
+**Testing Results:**
+- ✅ Set tenant-qa=1d, tenant-premium=90d, tenant-acme=60d via API
+- ✅ Published 2-day-old event for tenant-qa
+- ✅ Triggered manual prune: 1 event pruned from tenant-qa (verified 1d policy)
+- ✅ tenant-premium events retained (90d policy)
+- ✅ ops.events.pruned emitted per-tenant with correct scope tagging
+- ✅ Per-scope results visible in EventStream UI
+
+**Benefits:**
+- **SaaS-Grade Lifecycle**: Each tenant gets appropriate retention for their tier
+- **Cost Optimization**: Aggressive pruning for noisy test/QA tenants
+- **Compliance Ready**: Premium/enterprise tenants get extended retention
+- **Operational Visibility**: Per-tenant pruning visible via ops.events.pruned
+- **Backward Compatible**: Tenants without override use global default
+- **No Downtime**: Policies can be adjusted via API without restart
+
 **Docker Changes:**
 - No Dockerfile updates needed (uses existing event_store.py)
 - Environment variables propagated via docker-compose.yml

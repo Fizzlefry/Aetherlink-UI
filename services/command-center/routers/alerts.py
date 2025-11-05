@@ -4,19 +4,18 @@ Alert Rules API Router
 Phase VI M6: CRUD endpoints for alert threshold rules.
 """
 
+import os
+import sys
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
-from typing import Optional
-import sys
-import os
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import alert_store
 import alert_evaluator
+import alert_store
 from rbac import require_roles
-
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
@@ -25,13 +24,11 @@ class AlertRuleCreate(BaseModel):
     """Schema for creating alert rules"""
 
     name: str = Field(..., description="Human-readable rule name")
-    severity: Optional[str] = Field(
+    severity: str | None = Field(
         None, description="Filter by severity (info, warning, error, critical)"
     )
-    event_type: Optional[str] = Field(
-        None, description="Filter by event type (e.g., autoheal.failed)"
-    )
-    source: Optional[str] = Field(
+    event_type: str | None = Field(None, description="Filter by event type (e.g., autoheal.failed)")
+    source: str | None = Field(
         None, description="Filter by source service (e.g., aether-auto-heal)"
     )
     window_seconds: int = Field(..., description="Time window in seconds", gt=0)
@@ -44,9 +41,9 @@ class AlertRuleResponse(BaseModel):
 
     id: int
     name: str
-    severity: Optional[str]
-    event_type: Optional[str]
-    source: Optional[str]
+    severity: str | None
+    event_type: str | None
+    source: str | None
     window_seconds: int
     threshold: int
     enabled: bool
@@ -78,7 +75,7 @@ async def create_rule(request: Request, rule: AlertRuleCreate):
     """
     # Phase VII M3: Auto-inject tenant_id from middleware
     tenant_id = getattr(request.state, "tenant_id", None)
-    
+
     try:
         rule_id = alert_store.create_rule(
             name=rule.name,
@@ -122,9 +119,7 @@ async def list_rules():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get(
-    "/rules/{rule_id}", dependencies=[Depends(require_roles(["operator", "admin"]))]
-)
+@router.get("/rules/{rule_id}", dependencies=[Depends(require_roles(["operator", "admin"]))])
 async def get_rule(rule_id: int):
     """
     Get a specific alert rule.
@@ -140,9 +135,7 @@ async def get_rule(rule_id: int):
     return {"status": "ok", "rule": rule}
 
 
-@router.delete(
-    "/rules/{rule_id}", dependencies=[Depends(require_roles(["operator", "admin"]))]
-)
+@router.delete("/rules/{rule_id}", dependencies=[Depends(require_roles(["operator", "admin"]))])
 async def delete_rule(rule_id: int):
     """
     Delete an alert rule.
