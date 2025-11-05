@@ -12,7 +12,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from rbac import require_roles
-from routers import alerts, events
+from routers import alert_templates, alerts, delivery_history, events
 from starlette.middleware.base import BaseHTTPMiddleware
 
 
@@ -63,6 +63,14 @@ async def startup_event():
     # Phase VII M2: Start retention worker background task
     asyncio.create_task(retention_worker())
     print("[command-center] 🗑️  Retention Worker started")
+
+    # Phase VIII M2: Seed default alert templates
+    alert_templates.seed_default_templates()
+    print("[command-center] 📋 Alert Templates ready")
+
+    # Phase VIII M3: Seed delivery history
+    delivery_history.seed_delivery_history()
+    print("[command-center] 📜 Delivery History ready")
 
 
 # Phase VII M2: Background retention worker
@@ -129,6 +137,10 @@ async def retention_worker():
 # Phase VI: Mount event and alert routers
 app.include_router(events.router)
 app.include_router(alerts.router)
+# Phase VIII M2: Mount alert templates router
+app.include_router(alert_templates.router)
+# Phase VIII M3: Mount delivery history router
+app.include_router(delivery_history.router)
 
 # Phase III M6: Security Audit Logging
 app.middleware("http")(audit_middleware)

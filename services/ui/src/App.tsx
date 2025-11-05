@@ -3,6 +3,7 @@ import { fetchLeads, fetchOwners, patchLead, createLead, Owner, fetchLeadActivit
 import { getTenantFromToken } from "./auth";
 import type Keycloak from "keycloak-js";
 import CommandCenter from "./pages/CommandCenter";
+import OperatorDashboard from "./pages/OperatorDashboard";
 
 const STATUS_OPTIONS = ["new", "contacted", "qualified", "proposal", "won", "lost"];
 const VIEW_KEY = "aetherlink.crm.view";
@@ -10,7 +11,7 @@ const VIEW_KEY = "aetherlink.crm.view";
 function App({ keycloak }: { keycloak: Keycloak }) {
     const token = keycloak.token || "";
     const username = keycloak.tokenParsed?.preferred_username || "";
-    const [activeTab, setActiveTab] = useState<"leads" | "command-center">("leads");
+    const [activeTab, setActiveTab] = useState<"leads" | "command-center" | "operator">("leads");
     const [leads, setLeads] = useState<any[]>([]);
     const [total, setTotal] = useState(0);
     const [limit, setLimit] = useState(25);
@@ -307,6 +308,22 @@ function App({ keycloak }: { keycloak: Keycloak }) {
                             >
                                 🎛️ Command Center
                             </button>
+                            <button
+                                onClick={() => setActiveTab("operator")}
+                                style={{
+                                    padding: "1rem 1.5rem",
+                                    background: "transparent",
+                                    border: "none",
+                                    borderBottom: activeTab === "operator" ? "3px solid #3b82f6" : "3px solid transparent",
+                                    color: activeTab === "operator" ? "#3b82f6" : "#6b7280",
+                                    cursor: "pointer",
+                                    fontSize: "0.9375rem",
+                                    fontWeight: 500,
+                                    transition: "all 0.2s"
+                                }}
+                            >
+                                📊 Operator
+                            </button>
                         </div>
                     </div>
 
@@ -338,6 +355,8 @@ function App({ keycloak }: { keycloak: Keycloak }) {
             {/* Content Area */}
             {activeTab === "command-center" ? (
                 <CommandCenter />
+            ) : activeTab === "operator" ? (
+                <OperatorDashboard />
             ) : (
                 <div style={{ padding: "1.5rem" }}>
                     <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
