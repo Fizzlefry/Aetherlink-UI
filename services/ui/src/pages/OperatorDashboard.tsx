@@ -1,4 +1,29 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+
+// Phase VIII M8: Time window types
+type TimeWindowKey = '15m' | '1h' | '24h' | 'all';
+
+const TIME_WINDOW_OPTIONS: { label: string; value: TimeWindowKey }[] = [
+    { label: 'Last 15m', value: '15m' },
+    { label: 'Last 1h', value: '1h' },
+    { label: 'Last 24h', value: '24h' },
+    { label: 'All', value: 'all' },
+];
+
+function getSinceDate(window: TimeWindowKey): Date | null {
+    const now = new Date();
+    switch (window) {
+        case '15m':
+            return new Date(now.getTime() - 15 * 60 * 1000);
+        case '1h':
+            return new Date(now.getTime() - 60 * 60 * 1000);
+        case '24h':
+            return new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        case 'all':
+        default:
+            return null;
+    }
+}
 
 type EventStats = {
     status: string;
@@ -67,6 +92,7 @@ const OperatorDashboard: React.FC = () => {
     const [historicalDeliveries, setHistoricalDeliveries] = useState<Delivery[]>([]);
     const [tenant, setTenant] = useState<string>("all");
     const [statusFilter, setStatusFilter] = useState<string>("all");
+    const [timeWindow, setTimeWindow] = useState<TimeWindowKey>("1h"); // Phase VIII M8
     const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(null);
     const [selectedDelivery, setSelectedDelivery] = useState<any>(null);
     const [loadingDeliveryDetail, setLoadingDeliveryDetail] = useState<boolean>(false);
@@ -210,6 +236,25 @@ const OperatorDashboard: React.FC = () => {
             alert(`❌ Replay failed: ${err.message || "Network error"}`);
         }
     };
+
+    // Phase VIII M8: Filter deliveries by time window and status
+    const filteredHistoricalDeliveries = useMemo(() => {
+        const since = getSinceDate(timeWindow);
+
+        return historicalDeliveries
+            .filter((d) => {
+                // Time filter
+                if (!since) return true;
+                if (!d.created_at) return true; // Include if no timestamp
+                const createdAt = new Date(d.created_at);
+                return createdAt >= since;
+            })
+            .filter((d) => {
+                // Status filter
+                if (statusFilter === "all") return true;
+                return d.status === statusFilter;
+            });
+    }, [historicalDeliveries, timeWindow, statusFilter]);
 
     // Handle materializing template into real alert rule
     const handleMaterialize = async (tpl: AlertTemplate) => {
@@ -480,6 +525,18 @@ const OperatorDashboard: React.FC = () => {
                 <div className="flex items-center justify-between mb-3">
                     <h2 className="text-lg font-semibold text-white">📜 Recent Delivery History</h2>
                     <div className="flex items-center gap-3">
+                        {/* Phase VIII M8: Time Window Selector */}
+                        <select
+                            value={timeWindow}
+                            onChange={(e) => setTimeWindow(e.target.value as TimeWindowKey)}
+                            className="bg-slate-900 border border-slate-700 rounded px-3 py-1.5 text-slate-100 text-sm"
+                        >
+                            {TIME_WINDOW_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                    ⏰ {opt.label}
+                                </option>
+                            ))}
+                        </select>
                         {/* Phase VIII M6: Status Filter */}
                         <select
                             value={statusFilter}
@@ -502,11 +559,11 @@ const OperatorDashboard: React.FC = () => {
                 </div>
                 {loadingHistory ? (
                     <p className="text-gray-400 text-sm">Loading deliveries…</p>
-                ) : historicalDeliveries.filter((d) => statusFilter === "all" || d.status === statusFilter).length === 0 ? (
+                ) : filteredHistoricalDeliveries.length === 0 ? (
                     <p className="text-gray-400 text-sm">
                         {historicalDeliveries.length === 0
                             ? "No recent deliveries found."
-                            : `No deliveries with status "${statusFilter}".`}
+                            : `No deliveries found for time window "${TIME_WINDOW_OPTIONS.find(o => o.value === timeWindow)?.label}" and status "${statusFilter}".`}
                     </p>
                 ) : (
                     <div className="overflow-x-auto">
@@ -523,8 +580,7 @@ const OperatorDashboard: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {historicalDeliveries
-                                    .filter((d) => statusFilter === "all" || d.status === statusFilter)
+                                {filteredHistoricalDeliveries
                                     .map((d) => {
                                         const statusBadgeClass =
                                             d.status === "delivered"
