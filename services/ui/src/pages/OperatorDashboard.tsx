@@ -101,6 +101,11 @@ const OperatorDashboard: React.FC = () => {
     const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+    // Phase VIII M9: Bulk replay state
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [bulkRunning, setBulkRunning] = useState<boolean>(false);
+    const [bulkResults, setBulkResults] = useState<{ id: string; ok: boolean; error?: string }[] | null>(null);
+
     const fetchAll = async (selectedTenant: string) => {
         try {
             setErrorMsg(null);
@@ -234,6 +239,74 @@ const OperatorDashboard: React.FC = () => {
             }
         } catch (err: any) {
             alert(`❌ Replay failed: ${err.message || "Network error"}`);
+        }
+    };
+
+    // Phase VIII M9: Bulk replay handlers
+    const toggleSelection = (id: string) => {
+        setSelectedIds((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+        );
+    };
+
+    const toggleSelectAll = () => {
+        const allFilteredIds = filteredHistoricalDeliveries.map((d) => d.id);
+        const allSelected = allFilteredIds.every((id) => selectedIds.includes(id));
+        setSelectedIds(allSelected ? [] : allFilteredIds);
+    };
+
+    const handleBulkReplay = async () => {
+        if (selectedIds.length === 0) return;
+
+        const confirmed = window.confirm(
+            `Replay ${selectedIds.length} selected deliveries?\n\nThis will re-enqueue them into the delivery pipeline.`
+        );
+        if (!confirmed) return;
+
+        setBulkRunning(true);
+        setBulkResults(null);
+
+        const results: { id: string; ok: boolean; error?: string }[] = [];
+        const baseUrl = "http://localhost:8010";
+
+        for (const id of selectedIds) {
+            try {
+                const res = await fetch(`${baseUrl}/alerts/deliveries/${id}/replay`, {
+                    method: "POST",
+                    headers: { "X-User-Roles": "operator" },
+                });
+
+                if (res.ok) {
+                    results.push({ id, ok: true });
+                } else {
+                    const error = await res.json();
+                    results.push({ id, ok: false, error: error.detail || "Unknown error" });
+                }
+            } catch (err: any) {
+                results.push({ id, ok: false, error: err.message || "Network error" });
+            }
+        }
+
+        setBulkResults(results);
+        setBulkRunning(false);
+        setSelectedIds([]); // Clear selection
+
+        // Refresh history to show new pending deliveries
+        await fetchDeliveryHistory(tenant);
+
+        // Show summary
+        const succeeded = results.filter((r) => r.ok).length;
+        const failed = results.filter((r) => !r.ok).length;
+        alert(
+            `✅ Bulk Replay Complete!\n\n` +
+            `Total: ${results.length}\n` +
+            `Succeeded: ${succeeded}\n` +
+            `Failed: ${failed}${failed > 0 ? '\n\nCheck console for error details.' : ''}`
+        );
+
+        // Log failures to console for debugging
+        if (failed > 0) {
+            console.error('Bulk replay failures:', results.filter((r) => !r.ok));
         }
     };
 
@@ -566,78 +639,118 @@ const OperatorDashboard: React.FC = () => {
                             : `No deliveries found for time window "${TIME_WINDOW_OPTIONS.find(o => o.value === timeWindow)?.label}" and status "${statusFilter}".`}
                     </p>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm text-gray-300">
-                            <thead className="text-xs uppercase text-gray-400 border-b border-slate-600">
-                                <tr>
-                                    <th className="py-2 pr-4">Status</th>
-                                    <th className="py-2 pr-4">Event Type</th>
-                                    <th className="py-2 pr-4">Target</th>
-                                    <th className="py-2 pr-4">Attempts</th>
-                                    <th className="py-2 pr-4">Tenant</th>
-                                    <th className="py-2 pr-4">Created</th>
-                                    <th className="py-2 pr-4">Error</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredHistoricalDeliveries
-                                    .map((d) => {
-                                        const statusBadgeClass =
-                                            d.status === "delivered"
-                                                ? "bg-emerald-500/20 text-emerald-100 border-emerald-700/50"
-                                                : d.status === "failed"
-                                                    ? "bg-red-500/20 text-red-100 border-red-700/50"
-                                                    : d.status === "dead_letter"
-                                                        ? "bg-red-950/60 text-red-200 border-red-800/50"
-                                                        : "bg-slate-600/20 text-slate-100 border-slate-700";
+                    <>
+                        {/* Phase VIII M9: Bulk Action Panel */}
+                        {selectedIds.length > 0 && (
+                            <div className="bg-blue-950/40 border border-blue-800 rounded-lg p-3 mb-3 flex items-center justify-between">
+                                <div className="text-sm text-blue-100">
+                                    <strong>{selectedIds.length}</strong> {selectedIds.length === 1 ? 'delivery' : 'deliveries'} selected
+                                </div>
+                                <button
+                                    onClick={handleBulkReplay}
+                                    disabled={bulkRunning}
+                                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white text-sm px-4 py-2 rounded transition font-medium flex items-center gap-2"
+                                >
+                                    {bulkRunning ? (
+                                        <>⏳ Replaying...</>
+                                    ) : (
+                                        <>🔄 Replay Selected</>
+                                    )}
+                                </button>
+                            </div>
+                        )}
 
-                                        return (
-                                            <tr
-                                                key={d.id}
-                                                className="border-b border-slate-800/50 hover:bg-slate-800/40 cursor-pointer transition"
-                                                onClick={() => handleOpenDelivery(d.id)}
-                                            >
-                                                <td className="py-2 pr-4">
-                                                    <span
-                                                        className={`px-2 py-1 rounded text-xs border ${statusBadgeClass}`}
-                                                    >
-                                                        {d.status}
-                                                    </span>
-                                                </td>
-                                                <td className="py-2 pr-4 text-xs">
-                                                    <div className="font-medium">{d.event_type ?? "—"}</div>
-                                                    {d.rule_name && (
-                                                        <div className="text-gray-500">({d.rule_name})</div>
-                                                    )}
-                                                </td>
-                                                <td className="py-2 pr-4 text-xs">
-                                                    {d.target ? d.target.slice(0, 35) + (d.target.length > 35 ? "…" : "") : "—"}
-                                                </td>
-                                                <td className="py-2 pr-4 text-xs">
-                                                    <div>
-                                                        {d.attempts ?? 0}/{d.max_attempts ?? 5}
-                                                    </div>
-                                                    {d.next_retry_at && (
-                                                        <div className="text-gray-500">
-                                                            Next: {new Date(d.next_retry_at).toLocaleTimeString()}
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm text-gray-300">
+                                <thead className="text-xs uppercase text-gray-400 border-b border-slate-600">
+                                    <tr>
+                                        <th className="py-2 pr-2 w-8">
+                                            <input
+                                                type="checkbox"
+                                                checked={
+                                                    filteredHistoricalDeliveries.length > 0 &&
+                                                    filteredHistoricalDeliveries.every((d) => selectedIds.includes(d.id))
+                                                }
+                                                onChange={toggleSelectAll}
+                                                className="cursor-pointer"
+                                            />
+                                        </th>
+                                        <th className="py-2 pr-4">Status</th>
+                                        <th className="py-2 pr-4">Event Type</th>
+                                        <th className="py-2 pr-4">Target</th>
+                                        <th className="py-2 pr-4">Attempts</th>
+                                        <th className="py-2 pr-4">Tenant</th>
+                                        <th className="py-2 pr-4">Created</th>
+                                        <th className="py-2 pr-4">Error</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredHistoricalDeliveries
+                                        .map((d) => {
+                                            const statusBadgeClass =
+                                                d.status === "delivered"
+                                                    ? "bg-emerald-500/20 text-emerald-100 border-emerald-700/50"
+                                                    : d.status === "failed"
+                                                        ? "bg-red-500/20 text-red-100 border-red-700/50"
+                                                        : d.status === "dead_letter"
+                                                            ? "bg-red-950/60 text-red-200 border-red-800/50"
+                                                            : "bg-slate-600/20 text-slate-100 border-slate-700";
+
+                                            return (
+                                                <tr
+                                                    key={d.id}
+                                                    className="border-b border-slate-800/50 hover:bg-slate-800/40 transition"
+                                                >
+                                                    <td className="py-2 pr-2" onClick={(e) => e.stopPropagation()}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedIds.includes(d.id)}
+                                                            onChange={() => toggleSelection(d.id)}
+                                                            className="cursor-pointer"
+                                                        />
+                                                    </td>
+                                                    <td className="py-2 pr-4 cursor-pointer" onClick={() => handleOpenDelivery(d.id)}>
+                                                        <span
+                                                            className={`px-2 py-1 rounded text-xs border ${statusBadgeClass}`}
+                                                        >
+                                                            {d.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-2 pr-4 text-xs cursor-pointer" onClick={() => handleOpenDelivery(d.id)}>
+                                                        <div className="font-medium">{d.event_type ?? "—"}</div>
+                                                        {d.rule_name && (
+                                                            <div className="text-gray-500">({d.rule_name})</div>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-2 pr-4 text-xs cursor-pointer" onClick={() => handleOpenDelivery(d.id)}>
+                                                        {d.target ? d.target.slice(0, 35) + (d.target.length > 35 ? "…" : "") : "—"}
+                                                    </td>
+                                                    <td className="py-2 pr-4 text-xs cursor-pointer" onClick={() => handleOpenDelivery(d.id)}>
+                                                        <div>
+                                                            {d.attempts ?? 0}/{d.max_attempts ?? 5}
                                                         </div>
-                                                    )}
-                                                </td>
-                                                <td className="py-2 pr-4 text-xs">{d.tenant_id ?? "—"}</td>
-                                                <td className="py-2 pr-4 text-xs">
-                                                    {d.created_at
-                                                        ? new Date(d.created_at).toLocaleString()
-                                                        : "—"}
-                                                </td>
-                                                <td className="py-2 pr-4 text-xs max-w-xs truncate" title={d.last_error ?? ""}>
-                                                    {d.last_error ?? "—"}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                            </tbody>
-                        </table>
-                    </div>
+                                                        {d.next_retry_at && (
+                                                            <div className="text-gray-500">
+                                                                Next: {new Date(d.next_retry_at).toLocaleTimeString()}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-2 pr-4 text-xs cursor-pointer" onClick={() => handleOpenDelivery(d.id)}>{d.tenant_id ?? "—"}</td>
+                                                    <td className="py-2 pr-4 text-xs cursor-pointer" onClick={() => handleOpenDelivery(d.id)}>
+                                                        {d.created_at
+                                                            ? new Date(d.created_at).toLocaleString()
+                                                            : "—"}
+                                                    </td>
+                                                    <td className="py-2 pr-4 text-xs max-w-xs truncate cursor-pointer" onClick={() => handleOpenDelivery(d.id)} title={d.last_error ?? ""}>
+                                                        {d.last_error ?? "—"}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
                 )}
             </div>
 
