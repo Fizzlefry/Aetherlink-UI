@@ -6,6 +6,7 @@ WORKDIR /app
 COPY ./main.py /app/main.py
 COPY ./rbac.py /app/rbac.py
 COPY ./audit.py /app/audit.py
+COPY ./operator_audit.py /app/operator_audit.py
 COPY ./event_store.py /app/event_store.py
 COPY ./alert_store.py /app/alert_store.py
 COPY ./alert_evaluator.py /app/alert_evaluator.py

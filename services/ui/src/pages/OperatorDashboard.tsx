@@ -106,6 +106,10 @@ const OperatorDashboard: React.FC = () => {
     const [bulkRunning, setBulkRunning] = useState<boolean>(false);
     const [bulkResults, setBulkResults] = useState<{ id: string; ok: boolean; error?: string }[] | null>(null);
 
+    // Phase VIII M10: Operator Audit Trail
+    const [auditEntries, setAuditEntries] = useState<any[]>([]);
+    const [loadingAudit, setLoadingAudit] = useState<boolean>(false);
+
     const fetchAll = async (selectedTenant: string) => {
         try {
             setErrorMsg(null);
@@ -217,6 +221,30 @@ const OperatorDashboard: React.FC = () => {
     const handleCloseDelivery = () => {
         setSelectedDeliveryId(null);
         setSelectedDelivery(null);
+    };
+
+    // Phase VIII M10: Fetch operator audit trail
+    const fetchAuditLog = async () => {
+        try {
+            setLoadingAudit(true);
+            const baseUrl = "http://localhost:8010";
+            const res = await fetch(`${baseUrl}/audit/operator?limit=100`, {
+                headers: { "X-User-Roles": "operator" },
+            });
+
+            if (res.ok) {
+                const json = await res.json();
+                setAuditEntries(json.records || []);
+            } else {
+                console.error("Failed to load audit log:", res.status);
+                setAuditEntries([]);
+            }
+        } catch (err) {
+            console.error("Failed to load audit log:", err);
+            setAuditEntries([]);
+        } finally {
+            setLoadingAudit(false);
+        }
     };
 
     // Phase VIII M7: Handle delivery replay
@@ -364,10 +392,12 @@ const OperatorDashboard: React.FC = () => {
         fetchAll(tenant);
         fetchTemplates(tenant);
         fetchDeliveryHistory(tenant);
+        fetchAuditLog(); // Phase VIII M10: Load audit trail
         const id = setInterval(() => {
             fetchAll(tenant);
             fetchTemplates(tenant);
             fetchDeliveryHistory(tenant);
+            fetchAuditLog(); // Phase VIII M10: Refresh audit trail
         }, 30000);
         return () => clearInterval(id);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -916,6 +946,182 @@ const OperatorDashboard: React.FC = () => {
                                     </div>
                                 </>
                             )}
+                        </div>
+                    </table>
+                </div>
+            )}
+
+            {/* Phase VIII M10: Operator Audit Trail */}
+            <div className="bg-slate-900/40 border border-slate-700 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                    <div>
+                        <h2 className="text-lg font-semibold text-white">🔒 Operator Audit Trail</h2>
+                        <p className="text-sm text-gray-400 mt-1">
+                            Every operator action is logged for accountability and compliance.
+                        </p>
+                    </div>
+                    <button
+                        onClick={fetchAuditLog}
+                        disabled={loadingAudit}
+                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 text-white text-xs px-3 py-1.5 rounded transition font-medium"
+                    >
+                        {loadingAudit ? "Loading…" : "🔄 Refresh"}
+                    </button>
+                </div>
+                {loadingAudit ? (
+                    <p className="text-gray-400 text-sm">Loading audit trail…</p>
+                ) : auditEntries.length === 0 ? (
+                    <p className="text-gray-500 text-sm">No audit entries yet. Actions will appear here when operators replay deliveries.</p>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full text-sm">
+                            <thead>
+                                <tr className="text-left text-gray-400 border-b border-slate-700">
+                                    <th className="py-2 pr-4">Timestamp</th>
+                                    <th className="py-2 pr-4">Actor</th>
+                                    <th className="py-2 pr-4">Action</th>
+                                    <th className="py-2 pr-4">Target ID</th>
+                                    <th className="py-2 pr-4">Details</th>
+                                    <th className="py-2 pr-4">Source IP</th>
+                                </tr>
+                            </thead>
+                            <tbody className="text-gray-300">
+                                {auditEntries.map((entry) => (
+                                    <tr key={entry.id} className="border-b border-slate-800/60 hover:bg-slate-800/30">
+                                        <td className="py-2 pr-4 text-xs font-mono">
+                                            {new Date(entry.created_at).toLocaleString()}
+                                        </td>
+                                        <td className="py-2 pr-4">
+                                            <span className="px-2 py-1 rounded bg-blue-950/60 text-blue-200 text-xs border border-blue-800/50">
+                                                {entry.actor}
+                                            </span>
+                                        </td>
+                                        <td className="py-2 pr-4">
+                                            <code className="text-xs bg-slate-800 px-2 py-1 rounded">
+                                                {entry.action}
+                                            </code>
+                                        </td>
+                                        <td className="py-2 pr-4 font-mono text-xs">
+                                            {entry.target_id ? entry.target_id.slice(0, 8) + "..." : "—"}
+                                        </td>
+                                        <td className="py-2 pr-4 text-xs max-w-xs truncate">
+                                            {entry.metadata && Object.keys(entry.metadata).length > 0
+                                                ? JSON.stringify(entry.metadata)
+                                                : "—"}
+                                        </td>
+                                        <td className="py-2 pr-4 text-xs text-gray-500">
+                                            {entry.source_ip || "—"}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+
+            {/* Diagnostics Hint */}
+            <div className="bg-slate-950/60 border border-slate-800 rounded-lg p-4 text-xs text-gray-500 space-y-1">
+                <p>
+                    <strong className="text-gray-300">Data Sources:</strong> Command Center (/events, /alerts/deliveries)
+                </p>
+                <p>
+                    <strong className="text-gray-300">RBAC:</strong> operator or admin roles required
+                </p>
+                <p>
+                    <strong className="text-gray-300">Auto-refresh:</strong> Every 30 seconds
+                </p>
+                <p>
+                    <strong className="text-gray-300">Tenant Filter:</strong> {tenant === "all" ? "Admin view (all tenants)" : tenant}
+                </p>
+            </div>
+
+            {/* Phase VIII M4: Delivery Detail Drawer */}
+            {selectedDeliveryId && (
+                <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm">
+                    <div className="w-full max-w-md h-full bg-slate-950 border-l border-slate-800 flex flex-col shadow-2xl">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/60">
+                            <div>
+                                <h3 className="text-slate-100 font-semibold">Delivery Detail</h3>
+                                <p className="text-slate-500 text-xs font-mono">ID: {selectedDeliveryId}</p>
+                            </div>
+                            <button
+                                onClick={handleCloseDelivery}
+                                className="text-slate-400 hover:text-slate-100 text-sm px-3 py-1 rounded hover:bg-slate-800/40 transition"
+                            >
+                                ✕ Close
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                            {loadingDeliveryDetail ? (
+                                <p className="text-gray-400">Loading details...</p>
+                            ) : selectedDelivery?.error ? (
+                                <p className="text-red-400">{selectedDelivery.error}</p>
+                            ) : selectedDelivery ? (
+                                <>
+                                    {/* Status Badge */}
+                                    <div className="flex items-center gap-3">
+                                        <span
+                                            className={
+                                                selectedDelivery.status === "delivered"
+                                                    ? "px-3 py-1 rounded bg-green-900/40 text-green-100 text-sm border border-green-700/50"
+                                                    : selectedDelivery.status === "pending"
+                                                        ? "px-3 py-1 rounded bg-blue-900/40 text-blue-100 text-sm border border-blue-700/50"
+                                                        : selectedDelivery.status === "retrying"
+                                                            ? "px-3 py-1 rounded bg-yellow-900/40 text-yellow-100 text-sm border border-yellow-700/50"
+                                                            : "px-3 py-1 rounded bg-red-900/40 text-red-100 text-sm border border-red-700/50"
+                                            }
+                                        >
+                                            {selectedDelivery.status}
+                                        </span>
+                                    </div>
+
+                                    {/* Delivery Info Grid */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-slate-800/40 border border-slate-700 rounded-lg p-3">
+                                            <div className="text-xs uppercase text-slate-500 font-semibold mb-1">Tenant</div>
+                                            <div className="text-sm text-white">{selectedDelivery.tenant_id || "N/A"}</div>
+                                        </div>
+                                        <div className="bg-slate-800/40 border border-slate-700 rounded-lg p-3">
+                                            <div className="text-xs uppercase text-slate-500 font-semibold mb-1">Rule</div>
+                                            <div className="text-sm text-white">{selectedDelivery.rule_name || "N/A"}</div>
+                                        </div>
+                                        <div className="bg-slate-800/40 border border-slate-700 rounded-lg p-3 col-span-2">
+                                            <div className="text-xs uppercase text-slate-500 font-semibold mb-1">Target Webhook</div>
+                                            <div className="text-sm text-blue-400 break-all">{selectedDelivery.webhook_url || selectedDelivery.target || "N/A"}</div>
+                                        </div>
+                                    </div>
+
+                                    {/* Error Section */}
+                                    {selectedDelivery.last_error && (
+                                        <div className="bg-rose-950/40 border border-rose-900 rounded-lg p-3">
+                                            <div className="text-xs uppercase text-rose-200 font-semibold mb-2">Last Error</div>
+                                            <pre className="text-xs text-rose-100 whitespace-pre-wrap break-all">
+                                                {selectedDelivery.last_error}
+                                            </pre>
+                                        </div>
+                                    )}
+
+                                    {/* Phase VIII M7: Retry Delivery Button */}
+                                    {selectedDelivery && selectedDelivery.status !== "delivered" && (
+                                        <div className="bg-slate-900/30 border border-slate-800 rounded-lg p-3">
+                                            <button
+                                                onClick={() => handleRetryDelivery(selectedDeliveryId!)}
+                                                disabled={loadingDeliveryDetail}
+                                                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 text-white px-4 py-2 rounded transition font-medium flex items-center justify-center gap-2"
+                                            >
+                                                🔄 Retry Delivery
+                                            </button>
+                                            <p className="text-xs text-slate-400 mt-2 text-center">
+                                                Re-enqueue this delivery for another attempt. Operators only.
+                                            </p>
+                                        </div>
+                                    )}
+                                </>
+                            ) : null}
                         </div>
                     </div>
                 </div>

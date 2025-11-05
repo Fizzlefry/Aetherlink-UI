@@ -10,7 +10,8 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import event_store
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from operator_audit import log_operator_action
 from rbac import require_roles
 
 router = APIRouter(prefix="/alerts/deliveries", tags=["alerts:deliveries:history"])
@@ -279,7 +280,7 @@ def get_delivery_detail(delivery_id: str):
 
 
 @router.post("/{delivery_id}/replay", dependencies=[Depends(require_roles(["operator", "admin"]))])
-def replay_delivery(delivery_id: str):
+def replay_delivery(delivery_id: str, request: Request):
     """
     Phase VIII M7: Replay a failed or dead-lettered delivery.
 
@@ -370,6 +371,22 @@ def replay_delivery(delivery_id: str):
         print(
             f"[delivery_history] 🔄 Replayed delivery {delivery_id} as {new_delivery_id} "
             f"for tenant {new_delivery['tenant_id']}"
+        )
+
+        # Phase VIII M10: Log operator action
+        actor = request.headers.get("X-User-Roles", "unknown")
+        source_ip = request.client.host if request.client else None
+        log_operator_action(
+            actor=actor,
+            action="delivery.replay",
+            target_id=delivery_id,
+            metadata={
+                "new_delivery_id": new_delivery_id,
+                "tenant_id": new_delivery["tenant_id"],
+                "status_before": delivery.get("status"),
+                "webhook_url": new_delivery["webhook_url"],
+            },
+            source_ip=source_ip,
         )
 
         return {

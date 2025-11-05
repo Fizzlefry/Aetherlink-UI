@@ -12,7 +12,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from rbac import require_roles
-from routers import alert_templates, alerts, delivery_history, events
+from routers import alert_templates, alerts, delivery_history, events, operator_audit_router
 from starlette.middleware.base import BaseHTTPMiddleware
 
 
@@ -141,6 +141,8 @@ app.include_router(alerts.router)
 app.include_router(alert_templates.router)
 # Phase VIII M3: Mount delivery history router
 app.include_router(delivery_history.router)
+# Phase VIII M10: Mount operator audit router
+app.include_router(operator_audit_router.router)
 
 # Phase III M6: Security Audit Logging
 app.middleware("http")(audit_middleware)
