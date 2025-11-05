@@ -1099,6 +1099,107 @@ EVENT_ARCHIVE_DIR=/app/data/archive     # Where to store archives
 - **Non-Blocking**: Pruning doesn't impact event ingestion
 - **Observable**: Pruning operations visible as events
 
+---
+
+### v1.19.0 - Phase VII M3: Tenant-Aware Events (Multi-Tenant SaaS)
+**Released:** November 2025  
+**Focus:** Transform Event Control Plane from single-tenant ops tool into multi-tenant SaaS platform
+
+**Problem Solved:**
+Previous Event Control Plane (v1.15.0-v1.18.0) treated all events as global: any operator could see events from all workloads, alert rules applied globally, and there was no tenant data isolation. For SaaS deployments, this creates:
+- **Data Leakage Risk**: Tenant A could see Tenant B's events
+- **Alert Noise**: Alert rules fire across all tenants indiscriminately
+- **Operational Overhead**: Manual filtering required to isolate tenant issues
+
+**Features:**
+
+**1. Tenant Context Middleware** (`TenantContextMiddleware` in `main.py`):
+- Extracts `X-Tenant-ID` from request headers
+- Stores in `request.state.tenant_id` for downstream handlers
+- Applied globally to all endpoints
+- Single source of truth for tenant context
+
+**2. Auto-Injection on Event Publish** (`POST /events/publish`):
+- Checks `request.state.tenant_id` from middleware
+- Injects `tenant_id` into event payload if missing
+- Fallback to `"default"` if no header present
+- Producer code doesn't need to include tenant_id manually
+
+**3. Tenant-Scoped Event Filtering** (`event_store.py`):
+- `list_recent()`, `count_events()`, `get_event_stats()` accept `tenant_id` parameter
+- SQL pattern: `WHERE (tenant_id = ? OR tenant_id IS NULL)`
+- Includes system events (tenant_id=NULL) in all tenant views
+- Example: `GET /events/recent?tenant_id=tenant-1`
+
+**4. Role-Based Access Control** (`routers/events.py`):
+- **Admin/Operator with `tenant_id` param**: Can override to see specific tenant
+- **Admin/Operator without param**: Uses header tenant or sees all
+- **Non-Admin**: Locked to `X-Tenant-ID` from header (future enforcement)
+- Pattern:
+  ```python
+  header_tenant = getattr(request.state, "tenant_id", None)
+  is_admin = any(r in ("admin", "operator") for r in user_roles)
+  effective_tenant = tenant_id if (is_admin and tenant_id) else header_tenant
+  ```
+
+**5. Tenant-Scoped Alert Rules** (`alert_store.py`, `alert_evaluator.py`):
+- Added `tenant_id` column to `alert_rules` table (with migration)
+- `create_rule()` accepts `tenant_id` parameter (from `request.state.tenant_id`)
+- Alert evaluator filters events by `rule.tenant_id` when checking thresholds
+- Rules with `tenant_id=NULL` apply globally (admin rules)
+- Example: Alert for "autoheal.failed >= 3 in 5min for tenant-acme only"
+
+**6. UI Tenant Selector** (`EventStream.tsx`):
+- Added tenant state: `useState<string | null>(null)`
+- Dropdown selector: "All tenants", "tenant-1", "tenant-2", "tenant-acme", "tenant-demo"
+- Appends `&tenant_id=${tenant}` to API calls when selected
+- Re-fetches events when tenant filter changes
+- Future: Dynamic tenant list from API
+
+**Architecture:**
+```
+Client sends X-Tenant-ID: tenant-1
+    ↓
+TenantContextMiddleware extracts header
+    ↓
+request.state.tenant_id = "tenant-1"
+    ↓
+POST /events/publish → Auto-injects tenant_id into event
+GET /events/recent → Filters by effective_tenant (RBAC)
+GET /events/stats → Returns tenant-scoped stats
+POST /alerts/rules → Binds rule to tenant-1
+    ↓
+alert_evaluator → Counts events WHERE tenant_id = "tenant-1"
+    ↓
+ops.alert.raised event has tenant_id = "tenant-1"
+```
+
+**Database Changes:**
+```sql
+-- Migration applied in alert_store.init_db()
+ALTER TABLE alert_rules ADD COLUMN tenant_id TEXT;
+
+-- Event queries now support tenant filtering
+SELECT * FROM events 
+WHERE (tenant_id = 'tenant-1' OR tenant_id IS NULL)
+ORDER BY id DESC LIMIT 50;
+```
+
+**Testing Results:**
+- ✅ Tenant filtering works: `GET /events/recent?tenant_id=tenant-1` returns only tenant-1 events + system events
+- ✅ Stats endpoint tenant-aware: `GET /events/stats?tenant_id=tenant-acme` returns correct counts
+- ✅ Admin view (no filter): Returns all events across tenants
+- ✅ UI tenant selector: Dropdown filter working in EventStream component
+- ✅ Alert rules: Created with tenant_id, evaluator filters events by rule.tenant_id
+
+**Benefits:**
+- **SaaS-Ready**: Proper tenant data isolation for multi-tenant deployments
+- **Scalable**: Each tenant sees only their events (reduces UI noise)
+- **Flexible**: Admin roles can cross tenant boundaries for support
+- **Secure**: Prevents accidental data leakage between tenants
+- **Operational**: Tenant-scoped alerts reduce false positive noise
+- **Future-Proof**: Foundation for per-tenant billing, quotas, RBAC policies
+
 **Docker Changes:**
 - No Dockerfile updates needed (uses existing event_store.py)
 - Environment variables propagated via docker-compose.yml

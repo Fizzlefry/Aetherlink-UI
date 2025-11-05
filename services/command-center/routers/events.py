@@ -108,9 +108,10 @@ async def publish_event(event: dict, request: Request):
     if "event_id" not in event or not event["event_id"]:
         event["event_id"] = str(uuid.uuid4())
 
-    # Default tenant_id
+    # Auto-inject tenant_id from middleware (Phase VII M3)
     if "tenant_id" not in event:
-        event["tenant_id"] = "default"
+        header_tenant = getattr(request.state, "tenant_id", None)
+        event["tenant_id"] = header_tenant if header_tenant else "default"
 
     # Default severity
     if "severity" not in event:
@@ -144,6 +145,7 @@ async def publish_event(event: dict, request: Request):
 
 @router.get("/recent", dependencies=[Depends(require_roles(["operator", "admin"]))])
 async def recent(
+    request: Request,
     limit: int = 50,
     event_type: str | None = None,
     source: str | None = None,
@@ -163,13 +165,27 @@ async def recent(
     - since: Filter by timestamp (ISO format)
 
     Phase VI M5: Added severity and since filtering
+    Phase VII M3: Tenant-aware filtering with role-based access control
     """
+    # Extract tenant from header (set by TenantContextMiddleware)
+    header_tenant = getattr(request.state, "tenant_id", None)
+    
+    # Role-based tenant enforcement:
+    # - Admin/operator with no query param → uses header tenant (or none for all)
+    # - Admin/operator with query param → can override to see specific tenant
+    # - Non-admin → locked to header tenant (but require_roles already blocks non-admin)
+    user_roles = getattr(request.state, "user_roles", [])
+    is_admin = any(r in ("admin", "operator") for r in user_roles)
+    
+    # Effective tenant: use query param if admin provided it, otherwise header
+    effective_tenant = tenant_id if (is_admin and tenant_id) else header_tenant
+    
     try:
         data = event_store.list_recent(
             limit=limit,
             event_type=event_type,
             source=source,
-            tenant_id=tenant_id,
+            tenant_id=effective_tenant,
             severity=severity,
             since=since,
         )
@@ -185,20 +201,36 @@ async def recent(
 
 
 @router.get("/stats", dependencies=[Depends(require_roles(["operator", "admin"]))])
-async def stats():
+async def stats(
+    request: Request,
+    tenant_id: str | None = None,
+):
     """
     Get event statistics for operational overview.
 
     Phase VI M5: Returns total events, last 24h count, and breakdown by severity.
-    Useful for quick "at a glance" ops dashboards.
+    Phase VII M3: Added tenant_id filtering for multi-tenant stats.
+
+    Query parameters:
+    - tenant_id: Filter stats by tenant ID (optional)
 
     Returns:
         - total: Total event count
         - last_24h: Events in last 24 hours
         - by_severity: Breakdown by severity level (info, warning, error, critical)
     """
+    # Extract tenant from header (set by TenantContextMiddleware)
+    header_tenant = getattr(request.state, "tenant_id", None)
+    
+    # Role-based tenant enforcement
+    user_roles = getattr(request.state, "user_roles", [])
+    is_admin = any(r in ("admin", "operator") for r in user_roles)
+    
+    # Effective tenant: use query param if admin provided it, otherwise header
+    effective_tenant = tenant_id if (is_admin and tenant_id) else header_tenant
+    
     try:
-        stats_data = event_store.get_event_stats()
+        stats_data = event_store.get_event_stats(tenant_id=effective_tenant)
     except Exception as e:
         print(f"[events] ⚠️  Failed to fetch stats: {e}")
         stats_data = {"total": 0, "last_24h": 0, "by_severity": {}}

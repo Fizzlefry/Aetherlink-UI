@@ -44,24 +44,28 @@ async def evaluate_rules_once() -> Dict[str, Any]:
         since = since - timedelta(seconds=window_seconds)
         since_iso = since.isoformat()
         
+        # Phase VII M3: Pass rule's tenant_id to filter events by tenant
+        rule_tenant_id = rule.get("tenant_id")
+        
         # Count matching events in window
         count = event_store.count_events(
             event_type=rule["event_type"],
             source=rule["source"],
             severity=rule["severity"],
             since=since_iso,
+            tenant_id=rule_tenant_id,
         )
         
         # Check if threshold exceeded
         if count >= rule["threshold"]:
-            # Emit alert event
+            # Emit alert event (inherit tenant_id from rule)
             alert_event = {
                 "event_id": str(uuid.uuid4()),
                 "event_type": "ops.alert.raised",
                 "source": "aether-command-center",
                 "severity": "critical",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "tenant_id": "system",
+                "tenant_id": rule_tenant_id if rule_tenant_id else "system",
                 "payload": {
                     "rule_name": rule["name"],
                     "rule_id": rule["id"],

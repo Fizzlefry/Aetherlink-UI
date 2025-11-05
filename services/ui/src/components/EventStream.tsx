@@ -21,11 +21,13 @@ export const EventStream: React.FC = () => {
     const [connected, setConnected] = useState(false);
     const [filter, setFilter] = useState<string>("all");
     const [severityFilter, setSeverityFilter] = useState<string>("all");
+    const [tenant, setTenant] = useState<string | null>(null);
 
     useEffect(() => {
-        // Fetch recent events on mount with optional severity filter
+        // Phase VII M3: Fetch recent events with optional tenant and severity filters
         const severityParam = severityFilter !== "all" ? `&severity=${severityFilter}` : "";
-        fetch(`http://localhost:8010/events/recent?limit=20${severityParam}`, {
+        const tenantParam = tenant ? `&tenant_id=${tenant}` : "";
+        fetch(`http://localhost:8010/events/recent?limit=20${severityParam}${tenantParam}`, {
             headers: { "X-User-Roles": "operator" },
         })
             .then((res) => res.json())
@@ -62,7 +64,7 @@ export const EventStream: React.FC = () => {
         return () => {
             evtSrc.close();
         };
-    }, [severityFilter]); // Re-fetch when severity filter changes
+    }, [severityFilter, tenant]); // Phase VII M3: Re-fetch when tenant or severity filter changes
 
     const getSeverityColor = (severity?: string) => {
         switch (severity) {
@@ -193,6 +195,22 @@ export const EventStream: React.FC = () => {
                 >
                     Critical
                 </button>
+            </div>
+
+            {/* Phase VII M3: Tenant Filter Row */}
+            <div className="flex items-center gap-2 mb-3 text-xs">
+                <span className="text-gray-600 font-medium">Tenant:</span>
+                <select
+                    value={tenant ?? ""}
+                    onChange={(e) => setTenant(e.target.value || null)}
+                    className="px-3 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:border-gray-400 focus:outline-none focus:border-blue-500"
+                >
+                    <option value="">All tenants</option>
+                    <option value="tenant-1">tenant-1</option>
+                    <option value="tenant-2">tenant-2</option>
+                    <option value="tenant-acme">tenant-acme</option>
+                    <option value="tenant-demo">tenant-demo</option>
+                </select>
             </div>
 
             <div className="max-h-96 overflow-y-auto space-y-2 border-t pt-3">

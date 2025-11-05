@@ -1,5 +1,6 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 from datetime import datetime, timezone
@@ -14,7 +15,28 @@ import alert_evaluator
 from routers import events, alerts
 import asyncio
 
+
+# Phase VII M3: Tenant Context Middleware
+class TenantContextMiddleware(BaseHTTPMiddleware):
+    """
+    Extract X-Tenant-ID from request headers and stash in request.state.
+    
+    Phase VII M3: Enables tenant-aware event filtering and alert scoping.
+    Downstream handlers can access request.state.tenant_id.
+    """
+    async def dispatch(self, request: Request, call_next):
+        # Extract tenant ID from header if present
+        tenant_id = request.headers.get("X-Tenant-ID")
+        # Stash on request.state for downstream handlers
+        request.state.tenant_id = tenant_id
+        response = await call_next(request)
+        return response
+
+
 app = FastAPI(title="AetherLink Command Center", version="0.1.0")
+
+# Phase VII M3: Add tenant context middleware
+app.add_middleware(TenantContextMiddleware)
 
 # Phase VI: Initialize event store and alert store on startup
 @app.on_event("startup")

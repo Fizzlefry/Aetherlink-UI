@@ -135,8 +135,9 @@ def list_recent(
         query += " AND source = ?"
         params.append(source)
 
+    # Phase VII M3: Tenant filtering - include NULL tenant_id (system events)
     if tenant_id:
-        query += " AND tenant_id = ?"
+        query += " AND (tenant_id = ? OR tenant_id IS NULL)"
         params.append(tenant_id)
 
     # Phase VI M5: Severity filtering
@@ -204,8 +205,9 @@ def count_events(
         query += " AND source = ?"
         params.append(source)
 
+    # Phase VII M3: Tenant filtering - include NULL tenant_id (system events)
     if tenant_id:
-        query += " AND tenant_id = ?"
+        query += " AND (tenant_id = ? OR tenant_id IS NULL)"
         params.append(tenant_id)
 
     if severity:
@@ -223,35 +225,52 @@ def count_events(
     return result["cnt"] if result else 0
 
 
-def get_event_stats() -> dict[str, Any]:
+def get_event_stats(tenant_id: str | None = None) -> dict[str, Any]:
     """
     Get event statistics for operational overview.
 
     Phase VI M5: Returns total events, last 24h count, and breakdown by severity.
+    Phase VII M3: Added tenant_id filtering for multi-tenant stats.
+
+    Args:
+        tenant_id: Filter stats by tenant ID (optional)
 
     Returns:
         Dictionary with stats including total, last_24h, and by_severity
     """
     conn = get_conn()
 
+    # Build WHERE clause for tenant filtering (includes NULL tenant_id for system events)
+    tenant_filter = ""
+    params = []
+    if tenant_id:
+        tenant_filter = " WHERE (tenant_id = ? OR tenant_id IS NULL)"
+        params = [tenant_id]
+
     # Total events
-    total_result = conn.execute("SELECT COUNT(*) as cnt FROM events").fetchone()
+    total_query = f"SELECT COUNT(*) as cnt FROM events{tenant_filter}"
+    total_result = conn.execute(total_query, params).fetchone()
     total = total_result["cnt"] if total_result else 0
 
     # Events by severity
-    severity_cur = conn.execute("""
+    severity_query = f"""
         SELECT severity, COUNT(*) as cnt
         FROM events
+        {tenant_filter}
         GROUP BY severity
-    """)
+    """
+    severity_cur = conn.execute(severity_query, params)
     by_severity = {row["severity"]: row["cnt"] for row in severity_cur.fetchall()}
 
     # Last 24 hours
-    last_24h_result = conn.execute("""
+    last_24h_where = " AND timestamp >= datetime('now', '-1 day')" if tenant_id else " WHERE timestamp >= datetime('now', '-1 day')"
+    last_24h_query = f"""
         SELECT COUNT(*) as cnt
         FROM events
-        WHERE timestamp >= datetime('now', '-1 day')
-    """).fetchone()
+        {tenant_filter}{last_24h_where if not tenant_id else " AND timestamp >= datetime('now', '-1 day')"}
+    """
+    last_24h_params = params if tenant_id else []
+    last_24h_result = conn.execute(last_24h_query, last_24h_params).fetchone()
     last_24h = last_24h_result["cnt"] if last_24h_result else 0
 
     conn.close()

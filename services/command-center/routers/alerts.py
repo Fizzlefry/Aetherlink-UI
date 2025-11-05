@@ -4,7 +4,7 @@ Alert Rules API Router
 Phase VI M6: CRUD endpoints for alert threshold rules.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from typing import Optional
 import sys
@@ -55,11 +55,12 @@ class AlertRuleResponse(BaseModel):
 
 
 @router.post("/rules", dependencies=[Depends(require_roles(["operator", "admin"]))])
-async def create_rule(rule: AlertRuleCreate):
+async def create_rule(request: Request, rule: AlertRuleCreate):
     """
     Create a new alert threshold rule.
 
     Phase VI M6: Define conditions that trigger ops.alert.raised events.
+    Phase VII M3: Auto-inject tenant_id from request header for tenant-scoped alerts.
 
     Example:
     {
@@ -75,6 +76,9 @@ async def create_rule(rule: AlertRuleCreate):
 
     Requires: operator or admin role
     """
+    # Phase VII M3: Auto-inject tenant_id from middleware
+    tenant_id = getattr(request.state, "tenant_id", None)
+    
     try:
         rule_id = alert_store.create_rule(
             name=rule.name,
@@ -84,6 +88,7 @@ async def create_rule(rule: AlertRuleCreate):
             window_seconds=rule.window_seconds,
             threshold=rule.threshold,
             enabled=rule.enabled,
+            tenant_id=tenant_id,
         )
 
         created_rule = alert_store.get_rule(rule_id)

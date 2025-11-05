@@ -27,6 +27,8 @@ def init_db():
     
     Creates tables for alert rules if they don't exist.
     Called on Command Center startup.
+    
+    Phase VII M3: Added tenant_id column for multi-tenant alert scoping.
     """
     conn = get_conn()
     conn.execute(
@@ -40,11 +42,23 @@ def init_db():
             window_seconds INTEGER NOT NULL,
             threshold INTEGER NOT NULL,
             enabled INTEGER NOT NULL DEFAULT 1,
+            tenant_id TEXT,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )
     """
     )
+    
+    # Phase VII M3: Migration - add tenant_id column if not exists
+    try:
+        conn.execute("ALTER TABLE alert_rules ADD COLUMN tenant_id TEXT")
+        conn.commit()
+        print("[alert_store] ✅ Added tenant_id column to alert_rules")
+    except sqlite3.OperationalError as e:
+        # Column already exists, ignore
+        if "duplicate column" not in str(e).lower():
+            print(f"[alert_store] ⚠️  Migration warning: {e}")
+    
     conn.commit()
     conn.close()
     print("[alert_store] ✅ Alert rules database initialized")
@@ -58,9 +72,12 @@ def create_rule(
     event_type: Optional[str] = None,
     source: Optional[str] = None,
     enabled: bool = True,
+    tenant_id: Optional[str] = None,
 ) -> int:
     """
     Create a new alert rule.
+    
+    Phase VII M3: Added tenant_id for multi-tenant alert scoping.
     
     Args:
         name: Human-readable rule name
@@ -70,6 +87,7 @@ def create_rule(
         event_type: Filter by event type (optional)
         source: Filter by source service (optional)
         enabled: Whether rule is active
+        tenant_id: Bind rule to tenant (optional, NULL = global/admin rule)
     
     Returns:
         Rule ID
@@ -80,8 +98,8 @@ def create_rule(
     cur = conn.execute(
         """
         INSERT INTO alert_rules 
-        (name, severity, event_type, source, window_seconds, threshold, enabled, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (name, severity, event_type, source, window_seconds, threshold, enabled, tenant_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             name,
@@ -91,6 +109,7 @@ def create_rule(
             window_seconds,
             threshold,
             1 if enabled else 0,
+            tenant_id,
             now,
             now,
         ),
