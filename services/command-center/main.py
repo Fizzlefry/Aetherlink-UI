@@ -9,20 +9,32 @@ import uuid
 from rbac import require_roles
 from audit import audit_middleware, get_audit_stats
 import event_store
-from routers import events
+import alert_store
+import alert_evaluator
+from routers import events, alerts
+import asyncio
 
 app = FastAPI(title="AetherLink Command Center", version="0.1.0")
 
-# Phase VI: Initialize event store on startup
+# Phase VI: Initialize event store and alert store on startup
 @app.on_event("startup")
-def startup_event():
-    """Initialize event control plane."""
+async def startup_event():
+    """Initialize event control plane and alert system."""
     print("[command-center] 🚀 Starting Command Center")
     event_store.init_db()
     print("[command-center] ✅ Event Control Plane ready")
+    
+    # Phase VI M6: Initialize alert store and start evaluator
+    alert_store.init_db()
+    print("[command-center] ✅ Alert Rules database ready")
+    
+    # Start alert evaluator background task
+    asyncio.create_task(alert_evaluator.alert_evaluator_loop())
+    print("[command-center] 🚨 Alert Evaluator started")
 
-# Phase VI: Mount events router
+# Phase VI: Mount event and alert routers
 app.include_router(events.router)
+app.include_router(alerts.router)
 
 # Phase III M6: Security Audit Logging
 app.middleware("http")(audit_middleware)

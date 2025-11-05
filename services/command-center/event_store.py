@@ -183,8 +183,14 @@ def count_events(
     event_type: str | None = None,
     source: str | None = None,
     tenant_id: str | None = None,
+    severity: str | None = None,
+    since: str | None = None,
 ) -> int:
-    """Count total events with optional filters."""
+    """
+    Count total events with optional filters.
+    
+    Phase VI M6: Added severity and since for alert evaluation.
+    """
     conn = get_conn()
 
     query = "SELECT COUNT(*) as cnt FROM events WHERE 1=1"
@@ -201,6 +207,14 @@ def count_events(
     if tenant_id:
         query += " AND tenant_id = ?"
         params.append(tenant_id)
+
+    if severity:
+        query += " AND severity = ?"
+        params.append(severity.lower())
+
+    if since:
+        query += " AND timestamp >= ?"
+        params.append(since)
 
     cur = conn.execute(query, params)
     result = cur.fetchone()
