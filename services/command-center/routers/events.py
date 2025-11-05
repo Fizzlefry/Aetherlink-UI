@@ -4,22 +4,22 @@ Event Control Plane API endpoints.
 Phase VI M1: Event publish + schema
 Phase VI M2: Event storage + streaming
 """
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import StreamingResponse
-from datetime import datetime, timezone
+
 import asyncio
 import json
-import uuid
-import sys
 import os
-from typing import Optional
+import sys
+import uuid
+from datetime import UTC, datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from event_store import save_event, list_recent
+from event_store import get_event_stats, list_recent, save_event
 from rbac import require_roles
-
 
 router = APIRouter(prefix="/events", tags=["events"])
 
@@ -65,9 +65,7 @@ async def list_schemas():
     }
 
 
-@router.get(
-    "/schema/{event_type}", dependencies=[Depends(require_roles(["operator", "admin"]))]
-)
+@router.get("/schema/{event_type}", dependencies=[Depends(require_roles(["operator", "admin"]))])
 async def get_schema(event_type: str):
     """Get schema for specific event type."""
     schema = EVENT_SCHEMAS.get(event_type)
@@ -100,13 +98,11 @@ async def publish_event(event: dict, request: Request):
     # Validate required fields
     for field in schema.get("required", []):
         if field not in event:
-            raise HTTPException(
-                status_code=400, detail=f"Missing required field: {field}"
-            )
+            raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
 
     # Normalize timestamp
     if "timestamp" not in event or not event["timestamp"]:
-        event["timestamp"] = datetime.now(timezone.utc).isoformat()
+        event["timestamp"] = datetime.now(UTC).isoformat()
 
     # Generate event_id if not provided
     if "event_id" not in event or not event["event_id"]:
@@ -123,7 +119,7 @@ async def publish_event(event: dict, request: Request):
     # Attach metadata for audit
     client_host = request.client.host if request.client else "unknown"
     event["_meta"] = {
-        "received_at": datetime.now(timezone.utc).isoformat(),
+        "received_at": datetime.now(UTC).isoformat(),
         "client_ip": client_host,
     }
 
@@ -149,9 +145,11 @@ async def publish_event(event: dict, request: Request):
 @router.get("/recent", dependencies=[Depends(require_roles(["operator", "admin"]))])
 async def recent(
     limit: int = 50,
-    event_type: Optional[str] = None,
-    source: Optional[str] = None,
-    tenant_id: Optional[str] = None,
+    event_type: str | None = None,
+    source: str | None = None,
+    tenant_id: str | None = None,
+    severity: str | None = None,
+    since: str | None = None,
 ):
     """
     Retrieve recent events from storage.
@@ -161,10 +159,19 @@ async def recent(
     - event_type: Filter by event type
     - source: Filter by source service
     - tenant_id: Filter by tenant ID
+    - severity: Filter by severity level (info, warning, error, critical)
+    - since: Filter by timestamp (ISO format)
+
+    Phase VI M5: Added severity and since filtering
     """
     try:
         data = list_recent(
-            limit=limit, event_type=event_type, source=source, tenant_id=tenant_id
+            limit=limit,
+            event_type=event_type,
+            source=source,
+            tenant_id=tenant_id,
+            severity=severity,
+            since=since,
         )
     except Exception as e:
         print(f"[events] ⚠️  Failed to fetch events: {e}")
@@ -174,6 +181,31 @@ async def recent(
         "status": "ok",
         "count": len(data),
         "events": data,
+    }
+
+
+@router.get("/stats", dependencies=[Depends(require_roles(["operator", "admin"]))])
+async def stats():
+    """
+    Get event statistics for operational overview.
+
+    Phase VI M5: Returns total events, last 24h count, and breakdown by severity.
+    Useful for quick "at a glance" ops dashboards.
+
+    Returns:
+        - total: Total event count
+        - last_24h: Events in last 24 hours
+        - by_severity: Breakdown by severity level (info, warning, error, critical)
+    """
+    try:
+        stats_data = get_event_stats()
+    except Exception as e:
+        print(f"[events] ⚠️  Failed to fetch stats: {e}")
+        stats_data = {"total": 0, "last_24h": 0, "by_severity": {}}
+
+    return {
+        "status": "ok",
+        **stats_data,
     }
 
 

@@ -20,10 +20,12 @@ export const EventStream: React.FC = () => {
     const [events, setEvents] = useState<AetherEvent[]>([]);
     const [connected, setConnected] = useState(false);
     const [filter, setFilter] = useState<string>("all");
+    const [severityFilter, setSeverityFilter] = useState<string>("all");
 
     useEffect(() => {
-        // Fetch recent events on mount
-        fetch("http://localhost:8010/events/recent?limit=20", {
+        // Fetch recent events on mount with optional severity filter
+        const severityParam = severityFilter !== "all" ? `&severity=${severityFilter}` : "";
+        fetch(`http://localhost:8010/events/recent?limit=20${severityParam}`, {
             headers: { "X-User-Roles": "operator" },
         })
             .then((res) => res.json())
@@ -60,7 +62,7 @@ export const EventStream: React.FC = () => {
         return () => {
             evtSrc.close();
         };
-    }, []);
+    }, [severityFilter]); // Re-fetch when severity filter changes
 
     const getSeverityColor = (severity?: string) => {
         switch (severity) {
@@ -107,8 +109,8 @@ export const EventStream: React.FC = () => {
                     <button
                         onClick={() => setFilter("all")}
                         className={`text-xs px-3 py-1 rounded ${filter === "all"
-                                ? "bg-blue-600 text-white"
-                                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                             }`}
                     >
                         All ({events.length})
@@ -116,8 +118,8 @@ export const EventStream: React.FC = () => {
                     <button
                         onClick={() => setFilter("autoheal")}
                         className={`text-xs px-3 py-1 rounded ${filter === "autoheal"
-                                ? "bg-purple-600 text-white"
-                                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            ? "bg-purple-600 text-white"
+                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                             }`}
                     >
                         Auto-Heal
@@ -125,8 +127,8 @@ export const EventStream: React.FC = () => {
                     <button
                         onClick={() => setFilter("ai")}
                         className={`text-xs px-3 py-1 rounded ${filter === "ai"
-                                ? "bg-indigo-600 text-white"
-                                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            ? "bg-indigo-600 text-white"
+                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                             }`}
                     >
                         AI
@@ -134,13 +136,63 @@ export const EventStream: React.FC = () => {
                     <button
                         onClick={() => setFilter("service")}
                         className={`text-xs px-3 py-1 rounded ${filter === "service"
-                                ? "bg-green-600 text-white"
-                                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            ? "bg-green-600 text-white"
+                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                             }`}
                     >
                         Services
                     </button>
                 </div>
+            </div>
+
+            {/* Phase VI M5: Severity Filter Row */}
+            <div className="flex items-center gap-2 mb-3 text-xs">
+                <span className="text-gray-600 font-medium">Severity:</span>
+                <button
+                    onClick={() => setSeverityFilter("all")}
+                    className={`px-3 py-1 rounded ${severityFilter === "all"
+                        ? "bg-gray-700 text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                >
+                    All
+                </button>
+                <button
+                    onClick={() => setSeverityFilter("info")}
+                    className={`px-3 py-1 rounded ${severityFilter === "info"
+                        ? "bg-blue-600 text-white"
+                        : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                        }`}
+                >
+                    Info
+                </button>
+                <button
+                    onClick={() => setSeverityFilter("warning")}
+                    className={`px-3 py-1 rounded ${severityFilter === "warning"
+                        ? "bg-yellow-600 text-white"
+                        : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                        }`}
+                >
+                    Warnings
+                </button>
+                <button
+                    onClick={() => setSeverityFilter("error")}
+                    className={`px-3 py-1 rounded ${severityFilter === "error"
+                        ? "bg-orange-600 text-white"
+                        : "bg-orange-100 text-orange-700 hover:bg-orange-200"
+                        }`}
+                >
+                    Errors
+                </button>
+                <button
+                    onClick={() => setSeverityFilter("critical")}
+                    className={`px-3 py-1 rounded ${severityFilter === "critical"
+                        ? "bg-red-600 text-white"
+                        : "bg-red-100 text-red-700 hover:bg-red-200"
+                        }`}
+                >
+                    Critical
+                </button>
             </div>
 
             <div className="max-h-96 overflow-y-auto space-y-2 border-t pt-3">
