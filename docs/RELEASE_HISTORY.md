@@ -1110,6 +1110,124 @@ Service → POST /events/publish
 - Event pipeline (Phase VI M1+M2) ✅
 - Live operational visibility ✅
 
+### v1.16.0 - Phase VI Complete: Event Control Plane + Alerting
+**Released:** November 2025  
+**Focus:** Service instrumentation, severity analytics, and alert thresholds
+
+**Problem Solved:**
+Event control plane existed but services didn't emit events automatically. No way to filter by severity or trigger alerts on patterns. Operators had to manually check for problems.
+
+**Features:**
+
+**1. Service Instrumentation (M4)**
+- Auto-Heal emits events on every action:
+  - `autoheal.attempted` - Before restart (severity: warning)
+  - `autoheal.succeeded` - After successful restart (severity: info)
+  - `autoheal.failed` - After failed restart (severity: error)
+- AI Orchestrator emits events on provider behavior:
+  - `ai.provider.used` - Successful provider call (severity: info)
+  - `ai.fallback.used` - Fallback succeeds after failures (severity: warning)
+  - `ai.fallback.failed` - All providers fail (severity: error)
+- Command Center emits registry events:
+  - `service.registered` - Service joins (severity: info)
+  - `service.unregistered` - Service removed (severity: warning)
+- All services use non-blocking event publishing (silent failures)
+
+**2. Severity Filtering & Analytics (M5)**
+- Enhanced `GET /events/recent` with new parameters:
+  - `severity=info|warning|error|critical` - Filter by severity level
+  - `since=<ISO timestamp>` - Time-range filtering
+  - Chainable with existing filters (event_type, source, tenant_id)
+- New `GET /events/stats` endpoint:
+  - Total event count
+  - Last 24h event count  
+  - Breakdown by severity level
+  - Operational dashboard data
+- UI severity filter buttons (All, Info, Warnings, Errors, Critical)
+- Color-coded event display in Command Center
+
+**3. Alert Threshold System (M6)**
+- Alert rule engine (`services/command-center/alert_store.py`):
+  - Create rules with threshold conditions
+  - Rule schema: name, severity, event_type, source, window_seconds, threshold, enabled
+  - SQLite storage alongside events
+- Alert evaluator (`services/command-center/alert_evaluator.py`):
+  - Background task runs every 15 seconds
+  - Evaluates enabled rules against event store
+  - Counts matching events within time windows
+  - Emits `ops.alert.raised` events when thresholds exceeded
+- Alert Rules API (`/alerts/rules`):
+  - `POST /alerts/rules` - Create alert rule (RBAC: operator/admin)
+  - `GET /alerts/rules` - List all rules
+  - `GET /alerts/rules/{id}` - Get specific rule
+  - `DELETE /alerts/rules/{id}` - Remove rule
+  - `PATCH /alerts/rules/{id}/enabled` - Enable/disable rule
+  - `POST /alerts/evaluate` - Manual evaluation trigger (for testing/CI)
+- Alerts-as-events pattern:
+  - `ops.alert.raised` is a normal event (severity: critical)
+  - Stored in event database
+  - Visible in `/events/recent`
+  - Streams via SSE
+  - Filterable by severity
+
+**Architecture Evolution:**
+```
+Before M4: Manual event publishing via curl
+After M4:  Services auto-emit on every operational action
+
+Before M5: View all events only
+After M5:  Filter by severity, analyze trends, operational stats
+
+Before M6: React to problems manually
+After M6:  System proactively alerts on threshold violations
+```
+
+**Example Alert Rule:**
+```json
+{
+  "name": "autoheal-failures-spike",
+  "severity": "error",
+  "event_type": "autoheal.failed",
+  "window_seconds": 300,
+  "threshold": 3,
+  "enabled": true
+}
+```
+**Meaning:** Alert if 3+ container restart failures occur in 5 minutes
+
+**Benefits:**
+- **Automatic Instrumentation**: No manual event publishing needed
+- **Actionable Filtering**: Triage events by importance (severity)
+- **Operational Analytics**: Quick insights (total, 24h, by severity)
+- **Proactive Alerting**: System tells you when it's bad
+- **Rule-Based**: Define once, evaluate automatically
+- **Testable**: Manual evaluation endpoint for CI
+- **Non-Breaking**: Alert failures don't impact services
+
+**Testing:**
+- Manual testing via PowerShell
+- Created alert rule for autoheal failures
+- Published test events
+- Verified alert triggered and `ops.alert.raised` emitted
+- Tested severity filtering (warning, error, critical)
+- Validated stats endpoint
+
+**Docker Changes:**
+- Updated Command Center Dockerfile to include:
+  - `alert_store.py` - Alert rule storage
+  - `alert_evaluator.py` - Background evaluator
+  - `routers/alerts.py` - Alert API endpoints
+
+**Result:**
+Command Center is now the **operational nervous system**:
+- Service registry (Phase V) ✅
+- Event pipeline with instrumentation (Phase VI M1-M4) ✅
+- Severity analytics (Phase VI M5) ✅
+- Alert thresholds (Phase VI M6) ✅
+- Proactive operational awareness ✅
+
+**Phase VI Complete:** Event control plane transforms from passive logging to active alerting. The platform now observes itself, analyzes patterns, and notifies operators when thresholds are exceeded.
+
 ---
 
 ## Release Tag Timeline
@@ -1123,11 +1241,11 @@ v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ─�
 ## Release Tag Timeline
 
 ```
-v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0 ──► v1.10.0 ──► v1.11.0 ──► v1.12.0 ──► v1.13.0 ──► v1.14.0 ──► v1.15.0
-  │          │          │          │          │          │          │          │          │          │          │          │          │          │          │          │
-Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III Phase III Phase III Phase IV  Phase V  Phase V  Phase VI
-Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr  AI Orch v2 Security Production Service  Registry   Event
-            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment  Fallback   Audit   Packaging Registry  Loop    Control
+v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0 ──► v1.10.0 ──► v1.11.0 ──► v1.12.0 ──► v1.13.0 ──► v1.14.0 ──► v1.15.0 ──► v1.16.0
+  │          │          │          │          │          │          │          │          │          │          │          │          │          │          │          │          │
+Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III Phase III Phase III Phase IV  Phase V  Phase V  Phase VI Phase VI
+Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr  AI Orch v2 Security Production Service  Registry   Event   Event+Alert
+            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment  Fallback   Audit   Packaging Registry  Loop    Control  Complete
 ```
 
 ---
