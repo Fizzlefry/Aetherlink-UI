@@ -247,6 +247,35 @@ const OperatorDashboard: React.FC = () => {
         }
     };
 
+    // Phase IX M1: Triage render helpers
+    const renderTriageLabel = (label?: string) => {
+        switch (label) {
+            case 'transient_endpoint_down':
+                return 'Transient';
+            case 'permanent_4xx':
+                return 'Permanent 4xx';
+            case 'rate_limited':
+                return 'Rate Limited';
+            case 'unknown':
+                return 'Unknown';
+            default:
+                return '—';
+        }
+    };
+
+    const triageClass = (label?: string) => {
+        switch (label) {
+            case 'transient_endpoint_down':
+                return 'bg-green-100 text-green-800';
+            case 'permanent_4xx':
+                return 'bg-red-100 text-red-800';
+            case 'rate_limited':
+                return 'bg-amber-100 text-amber-800';
+            default:
+                return 'bg-slate-100 text-slate-800';
+        }
+    };
+
     // Phase VIII M7: Handle delivery replay
     const handleRetryDelivery = async (deliveryId: string) => {
         try {
@@ -338,6 +367,49 @@ const OperatorDashboard: React.FC = () => {
         }
     };
 
+    // Phase IX M2: Smart Replay handler
+    const handleSmartReplay = async (deliveries: any[]) => {
+        if (!deliveries || deliveries.length === 0) return;
+        if (!window.confirm(`Replay ${deliveries.length} recommended deliveries?`)) {
+            return;
+        }
+
+        setBulkRunning(true);
+        const results: { id: string; ok: boolean; error?: string }[] = [];
+
+        for (const d of deliveries) {
+            try {
+                const baseUrl = "http://localhost:8010";
+                const res = await fetch(`${baseUrl}/alerts/deliveries/${d.id}/replay`, {
+                    method: "POST",
+                    headers: { "X-User-Roles": "operator" },
+                });
+
+                if (res.ok) {
+                    results.push({ id: d.id, ok: true });
+                } else {
+                    const error = await res.json();
+                    results.push({ id: d.id, ok: false, error: error.detail || "Unknown error" });
+                }
+            } catch (err: any) {
+                console.error('Smart replay failed for', d.id, err);
+                results.push({ id: d.id, ok: false, error: String(err) });
+            }
+        }
+
+        await fetchDeliveryHistory(tenant);
+        setBulkRunning(false);
+
+        const succeeded = results.filter((r) => r.ok).length;
+        const failed = results.length - succeeded;
+        alert(
+            `✅ Smart Replay Complete!\n\n` +
+            `Total Recommended: ${results.length}\n` +
+            `Succeeded: ${succeeded}\n` +
+            `Failed: ${failed}${failed > 0 ? '\n\nCheck console for details.' : ''}`
+        );
+    };
+
     // Phase VIII M8: Filter deliveries by time window and status
     const filteredHistoricalDeliveries = useMemo(() => {
         const since = getSinceDate(timeWindow);
@@ -356,6 +428,16 @@ const OperatorDashboard: React.FC = () => {
                 return d.status === statusFilter;
             });
     }, [historicalDeliveries, timeWindow, statusFilter]);
+
+    // Phase IX M2: deliveries that are safe to replay (built on triage)
+    const safeToReplay = useMemo(
+        () =>
+            filteredHistoricalDeliveries.filter((d: any) =>
+                d.triage_label === 'transient_endpoint_down' ||
+                d.triage_label === 'rate_limited'
+            ),
+        [filteredHistoricalDeliveries]
+    );
 
     // Handle materializing template into real alert rule
     const handleMaterialize = async (tpl: AlertTemplate) => {
@@ -625,6 +707,27 @@ const OperatorDashboard: React.FC = () => {
 
             {/* Phase VIII M3: Delivery History Timeline */}
             <div className="bg-slate-900/40 border border-slate-700 rounded-lg p-4">
+                {/* Phase IX M2: Smart Replay Advisor */}
+                {safeToReplay.length > 0 && (
+                    <div className="mb-4 p-3 rounded border border-green-200 bg-green-50 flex items-center gap-3">
+                        <div className="flex-1">
+                            <div className="font-medium text-green-900">
+                                ✅ {safeToReplay.length} deliveries safe to replay
+                            </div>
+                            <div className="text-sm text-green-800">
+                                Selected by triage: transient endpoint down or rate limited.
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => handleSmartReplay(safeToReplay)}
+                            disabled={bulkRunning}
+                            className="px-3 py-1 rounded bg-green-600 text-white text-sm hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        >
+                            {bulkRunning ? 'Running...' : 'Replay All Recommended'}
+                        </button>
+                    </div>
+                )}
+
                 <div className="flex items-center justify-between mb-3">
                     <h2 className="text-lg font-semibold text-white">📜 Recent Delivery History</h2>
                     <div className="flex items-center gap-3">
@@ -706,6 +809,7 @@ const OperatorDashboard: React.FC = () => {
                                             />
                                         </th>
                                         <th className="py-2 pr-4">Status</th>
+                                        <th className="py-2 pr-4">Triage</th>
                                         <th className="py-2 pr-4">Event Type</th>
                                         <th className="py-2 pr-4">Target</th>
                                         <th className="py-2 pr-4">Attempts</th>
@@ -745,6 +849,23 @@ const OperatorDashboard: React.FC = () => {
                                                         >
                                                             {d.status}
                                                         </span>
+                                                    </td>
+                                                    <td
+                                                        title={(d as any).triage_reason || ''}
+                                                        className="py-2 pr-4 cursor-pointer"
+                                                        onClick={() => handleOpenDelivery(d.id)}
+                                                    >
+                                                        {(d as any).triage_label ? (
+                                                            <span
+                                                                className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${triageClass(
+                                                                    (d as any).triage_label
+                                                                )}`}
+                                                            >
+                                                                {renderTriageLabel((d as any).triage_label)}
+                                                            </span>
+                                                        ) : (
+                                                            '—'
+                                                        )}
                                                     </td>
                                                     <td className="py-2 pr-4 text-xs cursor-pointer" onClick={() => handleOpenDelivery(d.id)}>
                                                         <div className="font-medium">{d.event_type ?? "—"}</div>
@@ -947,7 +1068,7 @@ const OperatorDashboard: React.FC = () => {
                                 </>
                             )}
                         </div>
-                    </table>
+                    </div>
                 </div>
             )}
 

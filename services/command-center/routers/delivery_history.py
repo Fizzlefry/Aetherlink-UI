@@ -10,6 +10,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import event_store
+from auto_triage import classify_delivery  # Phase IX M1: Auto-Triage Engine
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from operator_audit import log_operator_action
 from rbac import require_roles
@@ -210,7 +211,20 @@ def list_delivery_history(tenant_id: str | None = None, limit: int = Query(50, g
         # Apply limit
         result = all_deliveries[:limit]
 
-        return {"status": "ok", "count": len(result), "deliveries": result}
+        # Phase IX M1: Enrich with triage classification
+        enriched = []
+        for delivery in result:
+            triage = classify_delivery(delivery)
+            enriched_delivery = {
+                **delivery,
+                "triage_label": triage.label,
+                "triage_score": triage.score,
+                "triage_reason": triage.reason,
+                "triage_recommended_action": triage.recommended_action,
+            }
+            enriched.append(enriched_delivery)
+
+        return {"status": "ok", "count": len(enriched), "deliveries": enriched}
 
     except Exception as e:
         print(f"[delivery_history] ❌ Error fetching history: {e}")
@@ -221,7 +235,21 @@ def list_delivery_history(tenant_id: str | None = None, limit: int = Query(50, g
         if tenant_id:
             items = [i for i in items if i.get("tenant_id") == tenant_id]
 
-        return {"status": "ok", "count": len(items[:limit]), "deliveries": items[:limit]}
+        # Phase IX M1: Enrich fallback data with triage
+        fallback_enriched = []
+        for delivery in items[:limit]:
+            triage = classify_delivery(delivery)
+            fallback_enriched.append(
+                {
+                    **delivery,
+                    "triage_label": triage.label,
+                    "triage_score": triage.score,
+                    "triage_reason": triage.reason,
+                    "triage_recommended_action": triage.recommended_action,
+                }
+            )
+
+        return {"status": "ok", "count": len(fallback_enriched), "deliveries": fallback_enriched}
 
 
 @router.get("/{delivery_id}", dependencies=[Depends(require_roles(["operator", "admin"]))])
@@ -357,7 +385,8 @@ def replay_delivery(delivery_id: str, request: Request):
         # Validate required fields
         if not new_delivery.get("alert_event_id") or not new_delivery.get("webhook_url"):
             raise HTTPException(
-                status_code=400, detail="Delivery missing required fields (alert_event_id or webhook_url)"
+                status_code=400,
+                detail="Delivery missing required fields (alert_event_id or webhook_url)",
             )
 
         # Re-enqueue into Phase VII delivery queue
