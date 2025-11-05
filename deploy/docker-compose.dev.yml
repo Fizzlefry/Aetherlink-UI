@@ -94,6 +94,8 @@ services:
       - ../config/.env.docker
     environment:
       - EVENT_DB_PATH=/app/data/events.db
+      # Phase VII M1: Alert webhook notifications (test with local server)
+      - ALERT_WEBHOOKS=http://host.docker.internal:9999/webhook
     volumes:
       - command-center-data:/app/data
     ports:

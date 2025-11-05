@@ -19,6 +19,9 @@ services:
     restart: unless-stopped
     env_file:
       - ../config/.env.prod
+    environment:
+      # Phase VII M1: Alert webhook notifications
+      - ALERT_WEBHOOKS=${ALERT_WEBHOOKS}
     ports:
       - "8010:8010"
     healthcheck:

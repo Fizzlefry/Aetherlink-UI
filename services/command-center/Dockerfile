@@ -9,6 +9,7 @@ COPY ./audit.py /app/audit.py
 COPY ./event_store.py /app/event_store.py
 COPY ./alert_store.py /app/alert_store.py
 COPY ./alert_evaluator.py /app/alert_evaluator.py
+COPY ./notification_dispatcher.py /app/notification_dispatcher.py
 COPY ./routers /app/routers
 
 # Install dependencies

@@ -2,6 +2,7 @@
 Alert Rule Evaluator
 
 Phase VI M6: Evaluates alert rules against event store and emits ops.alert.raised events.
+Phase VII M1: Integrated with notification_dispatcher for webhook delivery.
 """
 
 import asyncio
@@ -11,6 +12,7 @@ import uuid
 
 import alert_store
 import event_store
+import notification_dispatcher
 
 
 async def evaluate_rules_once() -> Dict[str, Any]:
@@ -80,6 +82,15 @@ async def evaluate_rules_once() -> Dict[str, Any]:
             
             # Save alert event
             event_store.save_event(alert_event)
+            
+            # Phase VII M1: Dispatch alert to webhooks (non-blocking)
+            try:
+                dispatch_result = await notification_dispatcher.dispatch_alert(alert_event)
+                if dispatch_result.get("delivered", 0) > 0:
+                    print(f"[alert_evaluator] 🔔 Alert '{rule['name']}' delivered to {dispatch_result['delivered']} webhook(s)")
+            except Exception as e:
+                # Non-fatal: alert is already saved, webhook delivery is best-effort
+                print(f"[alert_evaluator] ⚠️  Webhook dispatch failed for '{rule['name']}': {e}")
             
             triggered.append({
                 "rule_id": rule["id"],
