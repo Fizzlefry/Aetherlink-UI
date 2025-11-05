@@ -1019,6 +1019,91 @@ Protocol layer is now CONSUMED, not just documented:
 - Fix COMMAND_CENTER_URL port config (8000 → 8010)
 - Migrate from deprecated `@app.on_event("startup")` to lifespan event handlers
 
+### v1.17.0 - Phase VII M1: Alert Notifications
+**Released:** November 2025  
+**Focus:** Webhook-based alert delivery for real-time team notifications
+
+**Problem Solved:**
+Alert thresholds (v1.16.0) created `ops.alert.raised` events, but they stayed in the database. Operators had to manually check for alerts. No real-time notifications to Slack, Teams, or other chat platforms.
+
+**Features:**
+
+**1. Webhook Notification Dispatcher** (`notification_dispatcher.py`):
+- Delivers `ops.alert.raised` events to configured webhooks in real time
+- Supports Slack incoming webhooks (formatted messages)
+- Compatible with Teams, Discord, and generic HTTP endpoints
+- Non-blocking delivery (failures don't stop alerting)
+- Configurable timeout (5 seconds default)
+- Delivery tracking (success/failure counts)
+
+**2. Slack-Friendly Formatting**:
+- Human-readable alert messages with emoji indicators
+- Rule name, severity, threshold, and matched count
+- Filter details (event type, source, severity)
+- Timestamp for correlation
+- Works with Discord/Teams (similar JSON format)
+
+**3. Environment-Based Configuration**:
+- New env var: `ALERT_WEBHOOKS` (comma-separated URLs)
+- Example Slack: `https://hooks.slack.com/services/T000/B000/XXX`
+- Example Teams: `https://outlook.office.com/webhook/XXX`
+- Example Discord: `https://discord.com/api/webhooks/XXX`
+- Leave empty to disable notifications (graceful no-op)
+
+**4. Integration with Alert Evaluator**:
+- Webhook dispatch happens immediately after threshold breach
+- Both background evaluator (15s interval) and manual `/alerts/evaluate` trigger delivery
+- Non-fatal on webhook failure (logged and tracked)
+- Alert event always saved first (delivery is best-effort)
+
+**5. Production Configuration**:
+- Updated `docker-compose.prod.yml` with `ALERT_WEBHOOKS` environment variable
+- Updated `.env.prod.template` with webhook documentation and examples
+- Updated `docker-compose.dev.yml` for development testing
+
+**Architecture:**
+```
+alert_evaluator detects threshold breach
+    ↓
+ops.alert.raised event stored in database
+    ↓
+notification_dispatcher.dispatch_alert() called
+    ↓
+HTTP POST to configured webhooks (Slack/Teams/Discord)
+    ↓
+Ops team receives instant notification in chat ✅
+```
+
+**Example Webhook Payload (Slack):**
+```json
+{
+  "text": ":rotating_light: *AetherLink Alert Triggered*\n\n*Rule:* `autoheal-failures-spike`\n*Severity:* `CRITICAL`\n*Source:* `aether-command-center`\n*Threshold:* 3/2 events in 300s\n\n*Filters:*\n  • Event Type: `autoheal.failed`\n  • Source: `aether-auto-heal`\n  • Severity: `error`\n\n*Timestamp:* 2025-11-05T00:58:25Z"
+}
+```
+
+**Testing:**
+- Created test webhook server (`test_webhook_server.py`) for development
+- Published test events to trigger alert thresholds
+- Verified webhook delivery with local HTTP endpoint
+- Confirmed non-blocking behavior (failures logged, not fatal)
+- Tested with 7+ webhook deliveries successfully
+
+**Benefits:**
+- **Real-Time Awareness**: Team gets notified instantly when alerts fire
+- **Multi-Platform**: Works with Slack, Teams, Discord, custom webhooks
+- **Non-Breaking**: Webhook failures don't impact alert creation
+- **Zero Database**: No separate notification storage needed
+- **Configurable**: Enable/disable per environment
+- **Observable**: Delivery tracked in Command Center logs
+
+**Result:**
+The Event Control Plane now completes the full observability loop:
+1. Services emit operational events (Phase VI M4)
+2. Alert rules detect patterns (Phase VI M6)
+3. Webhooks notify your team instantly (Phase VII M1) ✅
+
+Your ops team no longer needs to poll dashboards - the platform tells them when something's wrong. 🚨
+
 ### v1.15.0 - Phase VI M1+M2: Event Control Plane
 **Released:** November 2025  
 **Focus:** Unified event pipeline with persistent storage and live streaming
@@ -1241,11 +1326,11 @@ v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ─�
 ## Release Tag Timeline
 
 ```
-v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0 ──► v1.10.0 ──► v1.11.0 ──► v1.12.0 ──► v1.13.0 ──► v1.14.0 ──► v1.15.0 ──► v1.16.0
-  │          │          │          │          │          │          │          │          │          │          │          │          │          │          │          │          │
-Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III Phase III Phase III Phase IV  Phase V  Phase V  Phase VI Phase VI
-Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr  AI Orch v2 Security Production Service  Registry   Event   Event+Alert
-            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment  Fallback   Audit   Packaging Registry  Loop    Control  Complete
+v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0 ──► v1.10.0 ──► v1.11.0 ──► v1.12.0 ──► v1.13.0 ──► v1.14.0 ──► v1.15.0 ──► v1.16.0 ──► v1.17.0
+  │          │          │          │          │          │          │          │          │          │          │          │          │          │          │          │          │          │
+Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III Phase III Phase III Phase IV  Phase V  Phase V  Phase VI Phase VI Phase VII
+Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr  AI Orch v2 Security Production Service  Registry   Event   Event+Alert  Webhook
+            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment  Fallback   Audit   Packaging Registry  Loop    Control  Complete  Notifications
 ```
 
 ---
