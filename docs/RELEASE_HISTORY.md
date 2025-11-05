@@ -1019,6 +1019,99 @@ Protocol layer is now CONSUMED, not just documented:
 - Fix COMMAND_CENTER_URL port config (8000 → 8010)
 - Migrate from deprecated `@app.on_event("startup")` to lifespan event handlers
 
+### v1.18.0 - Phase VII M2: Event Retention & Archival
+**Released:** November 2025  
+**Focus:** Automated event pruning to keep database lean and performant
+
+**Problem Solved:**
+Event Control Plane (v1.15.0-v1.17.0) created a "chatty" system: Auto-Heal, AI Orchestrator, Command Center, and alerts all emit events continuously. Without retention, the SQLite database would grow indefinitely, degrading performance and consuming disk space.
+
+**Features:**
+
+**1. Automated Event Pruning** (`event_store.prune_old_events()`):
+- Deletes events older than configurable retention window
+- Default: 30 days (via `EVENT_RETENTION_DAYS`)
+- Runs automatically via background worker
+- Manual trigger available via API endpoint
+
+**2. Background Retention Worker** (`retention_worker()` in `main.py`):
+- Runs every `EVENT_RETENTION_CRON_SECONDS` (default: 3600s / 1 hour)
+- Non-blocking async task (like alert evaluator)
+- Starts automatically on Command Center startup
+- Emits `ops.events.pruned` event for observability
+
+**3. Optional Archival to NDJSON**:
+- Archive events before deletion when `EVENT_ARCHIVE_ENABLED=true`
+- NDJSON format (newline-delimited JSON) for easy S3/MinIO upload
+- Stored in `EVENT_ARCHIVE_DIR` (default: `/app/data/archive`)
+- Filename pattern: `events-YYYY-MM-DD.ndjson`
+- Graceful degradation: continues pruning even if archival fails
+
+**4. Ops-Visible Endpoints**:
+- `GET /events/retention` - View current retention configuration
+- `POST /events/prune` - Manually trigger pruning (operator/admin only)
+- Returns: cutoff timestamp, pruned count, archived count, strategy
+
+**5. Observability Events**:
+- `ops.events.pruned` emitted after each prune operation
+- Severity: `info`
+- Payload: pruned_count, cutoff, retention_days, archived, strategy
+- Visible in EventStream UI
+- Can trigger alerts if pruning fails in future
+
+**Architecture:**
+```
+retention_worker (background task)
+    ↓
+Every EVENT_RETENTION_CRON_SECONDS
+    ↓
+event_store.prune_old_events()
+    ↓
+[Optional] Archive to NDJSON
+    ↓
+DELETE events older than retention window
+    ↓
+Emit ops.events.pruned event
+    ↓
+Ops sees pruning in EventStream UI ✅
+```
+
+**Configuration** (added to `.env.prod.template`, `.env.docker`):
+```bash
+EVENT_RETENTION_DAYS=30                 # How long to keep events
+EVENT_RETENTION_CRON_SECONDS=3600       # How often to prune (1 hour)
+EVENT_ARCHIVE_ENABLED=false             # Enable archival before deletion
+EVENT_ARCHIVE_DIR=/app/data/archive     # Where to store archives
+```
+
+**Testing:**
+- Manual prune via `POST /events/prune` returns summary
+- Retention settings visible via `GET /events/retention`
+- `ops.events.pruned` events created and queryable
+- Confirmed 0 events pruned (all events recent in dev)
+- Background worker starts automatically (logged)
+
+**Benefits:**
+- **Database Performance**: Keeps SQLite fast as event volume grows
+- **Disk Space Management**: Prevents unbounded growth
+- **Compliance Ready**: Archival enables audit trails for regulated industries
+- **Configurable**: Adjust retention per environment
+- **Non-Blocking**: Pruning doesn't impact event ingestion
+- **Observable**: Pruning operations visible as events
+
+**Docker Changes:**
+- No Dockerfile updates needed (uses existing event_store.py)
+- Environment variables propagated via docker-compose.yml
+
+**Result:**
+The Event Control Plane now "ages gracefully":
+1. Services emit events continuously (Phase VI M4)
+2. Alert rules detect patterns (Phase VI M6)
+3. Webhooks notify teams instantly (Phase VII M1)
+4. **Old events auto-prune to keep database lean** (Phase VII M2) ✅
+
+Your event database stays small and performant, even with high-frequency emissions. The system can now run indefinitely without manual cleanup. 🗑️
+
 ### v1.17.0 - Phase VII M1: Alert Notifications
 **Released:** November 2025  
 **Focus:** Webhook-based alert delivery for real-time team notifications
@@ -1326,11 +1419,11 @@ v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ─�
 ## Release Tag Timeline
 
 ```
-v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0 ──► v1.10.0 ──► v1.11.0 ──► v1.12.0 ──► v1.13.0 ──► v1.14.0 ──► v1.15.0 ──► v1.16.0 ──► v1.17.0
-  │          │          │          │          │          │          │          │          │          │          │          │          │          │          │          │          │          │
-Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III Phase III Phase III Phase IV  Phase V  Phase V  Phase VI Phase VI Phase VII
-Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr  AI Orch v2 Security Production Service  Registry   Event   Event+Alert  Webhook
-            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment  Fallback   Audit   Packaging Registry  Loop    Control  Complete  Notifications
+v1.0.0 ──► v1.1.0 ──► v1.2.0 ──► v1.3.0 ──► v1.4.0 ──► v1.5.0 ──► v1.6.0 ──► v1.7.0 ──► v1.8.0 ──► v1.9.0 ──► v1.10.0 ──► v1.11.0 ──► v1.12.0 ──► v1.13.0 ──► v1.14.0 ──► v1.15.0 ──► v1.16.0 ──► v1.17.0 ──► v1.18.0
+  │          │          │          │          │          │          │          │          │          │          │          │          │          │          │          │          │          │          │
+Phase I   Phase I   Phase II   Phase II   Phase II   Phase II  Phase III Phase III Phase III Phase III Phase III Phase III Phase IV  Phase V  Phase V  Phase VI Phase VI Phase VII Phase VII
+Backend     UI      Command     AI       RBAC     Auto-Heal   CI/CD    Centralized UI Health Command Ctr  AI Orch v2 Security Production Service  Registry   Event   Event+Alert  Webhook   Event
+            Auth    Center   Orchestrator          Self-Heal   Pipeline    Config   Endpoint  Enrichment  Fallback   Audit   Packaging Registry  Loop    Control  Complete  Notifications Retention
 ```
 
 ---
