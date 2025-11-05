@@ -188,6 +188,29 @@ const OperatorDashboard: React.FC = () => {
         setSelectedDelivery(null);
     };
 
+    // Phase VIII M7: Handle delivery replay
+    const handleRetryDelivery = async (deliveryId: string) => {
+        try {
+            const baseUrl = "http://localhost:8010";
+            const res = await fetch(`${baseUrl}/alerts/deliveries/${deliveryId}/replay`, {
+                method: "POST",
+                headers: { "X-User-Roles": "operator" },
+            });
+
+            if (res.ok) {
+                const json = await res.json();
+                alert(`✅ Delivery re-enqueued successfully!\nNew ID: ${json.new_id}\nOriginal ID: ${json.original_id}`);
+                fetchDeliveryHistory(tenant); // Refresh history
+                handleCloseDelivery(); // Close drawer
+            } else {
+                const error = await res.json();
+                alert(`❌ Replay failed: ${error.detail || "Unknown error"}`);
+            }
+        } catch (err: any) {
+            alert(`❌ Replay failed: ${err.message || "Network error"}`);
+        }
+    };
+
     // Handle materializing template into real alert rule
     const handleMaterialize = async (tpl: AlertTemplate) => {
         try {
@@ -684,6 +707,22 @@ const OperatorDashboard: React.FC = () => {
                                             <pre className="text-xs text-rose-100 whitespace-pre-wrap break-all">
                                                 {selectedDelivery.last_error}
                                             </pre>
+                                        </div>
+                                    )}
+
+                                    {/* Phase VIII M7: Retry Delivery Button */}
+                                    {selectedDelivery && selectedDelivery.status !== "delivered" && (
+                                        <div className="bg-slate-900/30 border border-slate-800 rounded-lg p-3">
+                                            <button
+                                                onClick={() => handleRetryDelivery(selectedDeliveryId!)}
+                                                disabled={loadingDeliveryDetail}
+                                                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 text-white px-4 py-2 rounded transition font-medium flex items-center justify-center gap-2"
+                                            >
+                                                🔄 Retry Delivery
+                                            </button>
+                                            <p className="text-xs text-slate-400 mt-2 text-center">
+                                                Re-enqueue this delivery for another attempt. Operators only.
+                                            </p>
                                         </div>
                                     )}
 

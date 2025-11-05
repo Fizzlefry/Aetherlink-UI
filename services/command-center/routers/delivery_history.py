@@ -276,3 +276,111 @@ def get_delivery_detail(delivery_id: str):
         print(f"[delivery_history] ❌ Error fetching delivery detail: {e}")
 
     raise HTTPException(status_code=404, detail=f"Delivery {delivery_id} not found")
+
+
+@router.post("/{delivery_id}/replay", dependencies=[Depends(require_roles(["operator", "admin"]))])
+def replay_delivery(delivery_id: str):
+    """
+    Phase VIII M7: Replay a failed or dead-lettered delivery.
+
+    Re-enqueues the delivery into the Phase VII delivery pipeline for another attempt.
+    Useful for:
+    - Retrying dead-lettered deliveries after fixing the root cause
+    - Testing webhook configurations
+    - Manual intervention for high-priority alerts
+
+    Returns:
+        JSON with new delivery ID and status
+
+    Example:
+        POST /alerts/deliveries/abc-123/replay
+        Response: {"status": "replayed", "new_id": "xyz-789", "original_id": "abc-123"}
+    """
+    # First, try to find the delivery
+    delivery = None
+
+    # Check sample history
+    for item in DELIVERY_HISTORY:
+        if item["id"] == delivery_id:
+            delivery = item
+            break
+
+    # Check live queue if not in history
+    if not delivery:
+        try:
+            queue_entries = event_store.get_delivery_queue(limit=100)
+            for entry in queue_entries:
+                if str(entry["id"]) == delivery_id:
+                    delivery = entry
+                    break
+        except Exception as e:
+            print(f"[delivery_history] ❌ Error fetching delivery for replay: {e}")
+
+    if not delivery:
+        raise HTTPException(status_code=404, detail=f"Delivery {delivery_id} not found")
+
+    # Re-enqueue the delivery
+    try:
+        # Generate new delivery ID
+        new_delivery_id = str(uuid.uuid4())
+
+        # Create new delivery entry based on original
+        new_delivery = {
+            "id": new_delivery_id,
+            "original_id": delivery_id,
+            "alert_event_id": delivery.get("alert_event_id"),
+            "tenant_id": delivery.get("tenant_id"),
+            "rule_id": delivery.get("rule_id"),
+            "rule_name": delivery.get("rule_name"),
+            "event_type": delivery.get("event_type"),
+            "webhook_url": delivery.get("target") or delivery.get("webhook_url"),
+            "attempt_count": 0,  # Reset attempts
+            "max_attempts": 5,
+            "last_error": None,
+            "next_attempt_at": datetime.now(UTC).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
+        }
+
+        # Build alert payload for re-enqueueing
+        alert_payload = {
+            "alert_id": new_delivery["alert_event_id"],
+            "rule_id": new_delivery["rule_id"],
+            "rule_name": new_delivery["rule_name"],
+            "event_type": new_delivery["event_type"],
+            "tenant_id": new_delivery["tenant_id"],
+            "timestamp": datetime.now(UTC).isoformat(),
+            "replayed_from": delivery_id,
+        }
+
+        # Validate required fields
+        if not new_delivery.get("alert_event_id") or not new_delivery.get("webhook_url"):
+            raise HTTPException(
+                status_code=400, detail="Delivery missing required fields (alert_event_id or webhook_url)"
+            )
+
+        # Re-enqueue into Phase VII delivery queue
+        event_store.enqueue_alert_delivery(
+            alert_event_id=str(new_delivery["alert_event_id"]),
+            alert_payload=alert_payload,
+            webhook_url=str(new_delivery["webhook_url"]),
+            max_attempts=5,
+        )
+
+        print(
+            f"[delivery_history] 🔄 Replayed delivery {delivery_id} as {new_delivery_id} "
+            f"for tenant {new_delivery['tenant_id']}"
+        )
+
+        return {
+            "status": "replayed",
+            "message": "Delivery re-enqueued successfully",
+            "new_id": new_delivery_id,
+            "original_id": delivery_id,
+            "tenant_id": new_delivery["tenant_id"],
+            "target": new_delivery["webhook_url"],
+        }
+
+    except Exception as e:
+        print(f"[delivery_history] ❌ Error replaying delivery {delivery_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to replay delivery: {str(e)}")
