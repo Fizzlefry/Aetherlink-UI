@@ -67,6 +67,9 @@ const OperatorDashboard: React.FC = () => {
     const [historicalDeliveries, setHistoricalDeliveries] = useState<Delivery[]>([]);
     const [tenant, setTenant] = useState<string>("all");
     const [statusFilter, setStatusFilter] = useState<string>("all");
+    const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(null);
+    const [selectedDelivery, setSelectedDelivery] = useState<any>(null);
+    const [loadingDeliveryDetail, setLoadingDeliveryDetail] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(true);
     const [loadingTemplates, setLoadingTemplates] = useState<boolean>(false);
     const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
@@ -155,6 +158,34 @@ const OperatorDashboard: React.FC = () => {
         } finally {
             setLoadingHistory(false);
         }
+    };
+
+    // Phase VIII M4: Open delivery detail drawer
+    const handleOpenDelivery = async (id: string) => {
+        setSelectedDeliveryId(id);
+        setLoadingDeliveryDetail(true);
+        try {
+            const baseUrl = "http://localhost:8010";
+            const res = await fetch(`${baseUrl}/alerts/deliveries/${id}`, {
+                headers: { "X-User-Roles": "operator" },
+            });
+            if (res.ok) {
+                const json = await res.json();
+                setSelectedDelivery(json);
+            } else {
+                setSelectedDelivery({ error: "Failed to load delivery details." });
+            }
+        } catch (err) {
+            console.error("Failed to load delivery:", err);
+            setSelectedDelivery({ error: "Failed to load delivery details." });
+        } finally {
+            setLoadingDeliveryDetail(false);
+        }
+    };
+
+    const handleCloseDelivery = () => {
+        setSelectedDeliveryId(null);
+        setSelectedDelivery(null);
     };
 
     // Handle materializing template into real alert rule
@@ -482,7 +513,11 @@ const OperatorDashboard: React.FC = () => {
                                                         : "bg-slate-600/20 text-slate-100 border-slate-700";
 
                                         return (
-                                            <tr key={d.id} className="border-b border-slate-800/50 hover:bg-slate-800/20">
+                                            <tr
+                                                key={d.id}
+                                                className="border-b border-slate-800/50 hover:bg-slate-800/40 cursor-pointer transition"
+                                                onClick={() => handleOpenDelivery(d.id)}
+                                            >
                                                 <td className="py-2 pr-4">
                                                     <span
                                                         className={`px-2 py-1 rounded text-xs border ${statusBadgeClass}`}
@@ -544,6 +579,139 @@ const OperatorDashboard: React.FC = () => {
                     </p>
                 </div>
             </div>
+
+            {/* Phase VIII M4: Delivery Detail Drawer */}
+            {selectedDeliveryId && (
+                <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm">
+                    <div className="w-full max-w-md h-full bg-slate-950 border-l border-slate-800 flex flex-col shadow-2xl">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/60">
+                            <div>
+                                <h3 className="text-slate-100 font-semibold">Delivery Detail</h3>
+                                <p className="text-slate-500 text-xs font-mono">ID: {selectedDeliveryId}</p>
+                            </div>
+                            <button
+                                onClick={handleCloseDelivery}
+                                className="text-slate-400 hover:text-slate-100 text-sm px-3 py-1 rounded hover:bg-slate-800/40 transition"
+                            >
+                                ✕ Close
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                            {loadingDeliveryDetail ? (
+                                <p className="text-slate-400 text-sm">Loading delivery…</p>
+                            ) : !selectedDelivery ? (
+                                <p className="text-slate-500 text-sm">No data found.</p>
+                            ) : selectedDelivery.error ? (
+                                <p className="text-rose-300 text-sm">{selectedDelivery.error}</p>
+                            ) : (
+                                <>
+                                    {/* Status Section */}
+                                    <div className="bg-slate-900/40 border border-slate-800 rounded-lg p-3 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs uppercase text-slate-500 font-semibold">Status</span>
+                                            <span
+                                                className={
+                                                    selectedDelivery.status === "delivered"
+                                                        ? "px-2 py-1 rounded bg-emerald-500/20 text-emerald-100 text-xs border border-emerald-700/50"
+                                                        : selectedDelivery.status === "failed"
+                                                            ? "px-2 py-1 rounded bg-red-500/20 text-red-100 text-xs border border-red-700/50"
+                                                            : selectedDelivery.status === "dead_letter"
+                                                                ? "px-2 py-1 rounded bg-rose-700/40 text-rose-100 text-xs border border-rose-800"
+                                                                : "px-2 py-1 rounded bg-slate-700/40 text-slate-100 text-xs border border-slate-700"
+                                                }
+                                            >
+                                                {selectedDelivery.status}
+                                            </span>
+                                        </div>
+                                        <div className="text-sm text-slate-200">
+                                            <span className="text-slate-500">Attempts:</span>{" "}
+                                            {selectedDelivery.attempts ?? 0}/{selectedDelivery.max_attempts ?? 5}
+                                        </div>
+                                        {selectedDelivery.next_retry_at && (
+                                            <div className="text-xs text-slate-400">
+                                                Next retry: {new Date(selectedDelivery.next_retry_at).toLocaleString()}
+                                            </div>
+                                        )}
+                                        {selectedDelivery.created_at && (
+                                            <div className="text-xs text-slate-400">
+                                                Created: {new Date(selectedDelivery.created_at).toLocaleString()}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Target & Tenant Section */}
+                                    <div className="bg-slate-900/40 border border-slate-800 rounded-lg p-3 space-y-2">
+                                        <div>
+                                            <div className="text-xs uppercase text-slate-500 font-semibold">Target</div>
+                                            <div className="text-sm text-slate-200 break-all mt-1">
+                                                {selectedDelivery.target ?? "—"}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs uppercase text-slate-500 font-semibold">Tenant</div>
+                                            <div className="text-sm text-slate-200 mt-1">
+                                                {selectedDelivery.tenant_id ?? "—"}
+                                            </div>
+                                        </div>
+                                        {selectedDelivery.rule_id && (
+                                            <div>
+                                                <div className="text-xs uppercase text-slate-500 font-semibold">Rule</div>
+                                                <div className="text-sm text-slate-200 mt-1">
+                                                    #{selectedDelivery.rule_id}
+                                                    {selectedDelivery.rule_name && (
+                                                        <span className="text-slate-400"> - {selectedDelivery.rule_name}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {selectedDelivery.event_type && (
+                                            <div>
+                                                <div className="text-xs uppercase text-slate-500 font-semibold">Event Type</div>
+                                                <div className="text-sm text-slate-200 mt-1 font-mono">
+                                                    {selectedDelivery.event_type}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Error Section */}
+                                    {selectedDelivery.last_error && (
+                                        <div className="bg-rose-950/40 border border-rose-900 rounded-lg p-3">
+                                            <div className="text-xs uppercase text-rose-200 font-semibold mb-2">Last Error</div>
+                                            <pre className="text-xs text-rose-100 whitespace-pre-wrap break-all">
+                                                {selectedDelivery.last_error}
+                                            </pre>
+                                        </div>
+                                    )}
+
+                                    {/* Raw JSON Section */}
+                                    <div className="bg-slate-900/40 border border-slate-800 rounded-lg p-3 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-xs uppercase text-slate-500 font-semibold">Raw Delivery Data</div>
+                                            <button
+                                                onClick={() => {
+                                                    navigator.clipboard?.writeText(
+                                                        JSON.stringify(selectedDelivery, null, 2)
+                                                    );
+                                                }}
+                                                className="text-xs text-blue-400 hover:text-blue-300 px-2 py-1 rounded hover:bg-slate-800/40 transition"
+                                            >
+                                                📋 Copy JSON
+                                            </button>
+                                        </div>
+                                        <pre className="text-xs text-slate-300 whitespace-pre-wrap break-all max-h-64 overflow-y-auto bg-slate-950/60 p-2 rounded border border-slate-800">
+                                            {JSON.stringify(selectedDelivery, null, 2)}
+                                        </pre>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
