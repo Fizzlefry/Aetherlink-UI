@@ -1020,7 +1020,7 @@ Protocol layer is now CONSUMED, not just documented:
 - Migrate from deprecated `@app.on_event("startup")` to lifespan event handlers
 
 ### v1.18.0 - Phase VII M2: Event Retention & Archival
-**Released:** November 2025  
+**Released:** November 2025
 **Focus:** Automated event pruning to keep database lean and performant
 
 **Problem Solved:**
@@ -1102,7 +1102,7 @@ EVENT_ARCHIVE_DIR=/app/data/archive     # Where to store archives
 ---
 
 ### v1.19.0 - Phase VII M3: Tenant-Aware Events (Multi-Tenant SaaS)
-**Released:** November 2025  
+**Released:** November 2025
 **Focus:** Transform Event Control Plane from single-tenant ops tool into multi-tenant SaaS platform
 
 **Problem Solved:**
@@ -1180,7 +1180,7 @@ ops.alert.raised event has tenant_id = "tenant-1"
 ALTER TABLE alert_rules ADD COLUMN tenant_id TEXT;
 
 -- Event queries now support tenant filtering
-SELECT * FROM events 
+SELECT * FROM events
 WHERE (tenant_id = 'tenant-1' OR tenant_id IS NULL)
 ORDER BY id DESC LIMIT 50;
 ```
@@ -1214,7 +1214,7 @@ The Event Control Plane now "ages gracefully":
 Your event database stays small and performant, even with high-frequency emissions. The system can now run indefinitely without manual cleanup. 🗑️
 
 ### v1.17.0 - Phase VII M1: Alert Notifications
-**Released:** November 2025  
+**Released:** November 2025
 **Focus:** Webhook-based alert delivery for real-time team notifications
 
 **Problem Solved:**
@@ -1299,7 +1299,7 @@ The Event Control Plane now completes the full observability loop:
 Your ops team no longer needs to poll dashboards - the platform tells them when something's wrong. 🚨
 
 ### v1.15.0 - Phase VI M1+M2: Event Control Plane
-**Released:** November 2025  
+**Released:** November 2025
 **Focus:** Unified event pipeline with persistent storage and live streaming
 
 **Problem Solved:**
@@ -1390,7 +1390,7 @@ Service → POST /events/publish
 - Live operational visibility ✅
 
 ### v1.16.0 - Phase VI Complete: Event Control Plane + Alerting
-**Released:** November 2025  
+**Released:** November 2025
 **Focus:** Service instrumentation, severity analytics, and alert thresholds
 
 **Problem Solved:**
@@ -1419,7 +1419,7 @@ Event control plane existed but services didn't emit events automatically. No wa
   - Chainable with existing filters (event_type, source, tenant_id)
 - New `GET /events/stats` endpoint:
   - Total event count
-  - Last 24h event count  
+  - Last 24h event count
   - Breakdown by severity level
   - Operational dashboard data
 - UI severity filter buttons (All, Info, Warnings, Errors, Critical)
