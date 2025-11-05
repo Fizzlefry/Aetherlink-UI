@@ -1338,6 +1338,57 @@ The Event Control Plane now "ages gracefully":
 
 Your event database stays small and performant, even with high-frequency emissions. The system can now run indefinitely without manual cleanup. 🗑️
 
+### v1.21.0 – Phase VII M5: Reliable Alert Delivery
+
+**Date:** 2025-11-04
+**Focus:** Make alert notifications as reliable as the event pipeline
+
+#### What Changed
+- **SQLite-backed alert delivery queue**
+  - New tables:
+    - `alert_delivery_queue` – pending deliveries, attempt counts, next-at time
+    - `alert_delivery_history` – dedup window per (rule_name, tenant_id)
+  - Each `ops.alert.raised` now produces **queue entries** instead of firing webhooks inline
+- **Background delivery dispatcher**
+  - Runs alongside the alert evaluator
+  - Every 30s:
+    - fetches due deliveries (`next_attempt_at <= now`)
+    - attempts POST to the target webhook
+    - on success → deletes from queue
+    - on failure → schedules retry with exponential backoff
+- **Exponential backoff (capped)**
+  - 30s → 1m → 2m → 4m → 8m → … capped at 30m
+  - Prevents hammering a broken Slack/Teams endpoint
+- **Dedup window**
+  - Prevents alert spam for the same (rule, tenant) within ~5 minutes
+  - Configurable via `ALERT_DEDUP_WINDOW_SECONDS`
+  - Checked **before** enqueue; updated **after** enqueue
+- **Dead-letter pattern**
+  - After max attempts (default 5), the system emits:
+    - `ops.alert.delivery.failed`
+  - Includes: `alert_event_id`, `webhook_url`, `attempts`, `last_error`
+  - Visible in Event Stream → ops can see broken webhooks
+- **Operator endpoints**
+  - `GET /alerts/deliveries` – view queue contents (pending, error, next-at)
+  - `GET /alerts/deliveries/stats` – totals, pending, near-failure counts
+
+#### Why
+Alerting was working (v1.17.0), but it was **best effort** — if Slack was down right then, you lost the notification. This release makes alert delivery:
+1. **Durable** – queued in SQLite
+2. **Retryable** – background dispatcher with backoff
+3. **Non-spammy** – dedup per rule + tenant
+4. **Observable** – delivery stats + dead-letter events
+
+#### Config
+- `ALERT_WEBHOOKS=http://...` – unchanged
+- `ALERT_DEDUP_WINDOW_SECONDS=300` – optional
+- Dispatcher interval is baked into the Command Center startup loop
+
+#### Notes
+- Backward compatible with v1.17.0 (webhooks): existing setups continue to work
+- Plays nicely with v1.18.0 (retention) and v1.20.0 (per-tenant retention)
+- Emits its **own** ops events, so the event plane remains the single source of truth
+
 ### v1.17.0 - Phase VII M1: Alert Notifications
 **Released:** November 2025
 **Focus:** Webhook-based alert delivery for real-time team notifications

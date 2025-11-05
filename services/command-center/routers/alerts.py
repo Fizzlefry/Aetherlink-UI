@@ -171,7 +171,7 @@ async def update_rule_enabled(rule_id: int, enabled: bool):
 
 
 @router.post("/evaluate", dependencies=[Depends(require_roles(["operator", "admin"]))])
-async def evaluate_now():
+async def evaluate_rules(request: Request):
     """
     Manually trigger alert rule evaluation.
 
@@ -185,4 +185,76 @@ async def evaluate_now():
         return result
     except Exception as e:
         print(f"[alerts] ❌ Failed to evaluate rules: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Phase VII M5: Delivery Queue Visibility Endpoints
+
+
+@router.get("/deliveries/stats", dependencies=[Depends(require_roles(["operator", "admin"]))])
+def get_delivery_stats():
+    """
+    Get alert delivery queue health statistics.
+
+    Phase VII M5: Returns metrics for operator visibility:
+    - total_queued: Total deliveries in queue
+    - pending_now: Deliveries ready for immediate attempt
+    - near_failure: Deliveries close to max attempts
+    - dedup_window_seconds: Current dedup window setting
+
+    Requires: operator or admin role
+
+    Example response:
+    {
+      "total_queued": 12,
+      "pending_now": 3,
+      "near_failure": 1,
+      "dedup_window_seconds": 300
+    }
+    """
+    try:
+        import event_store
+
+        stats = event_store.get_delivery_stats()
+        return stats
+    except Exception as e:
+        print(f"[alerts] ❌ Failed to get delivery stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/deliveries", dependencies=[Depends(require_roles(["operator", "admin"]))])
+def list_delivery_queue(limit: int = 100):
+    """
+    List all queued alert deliveries.
+
+    Phase VII M5: Returns queue entries for troubleshooting and monitoring.
+    Shows delivery attempts, errors, and retry schedules.
+
+    Query params:
+    - limit: Max entries to return (default 100)
+
+    Requires: operator or admin role
+
+    Example response:
+    [
+      {
+        "id": 42,
+        "alert_event_id": "abc-123",
+        "webhook_url": "https://hooks.slack.com/services/...",
+        "attempt_count": 2,
+        "max_attempts": 5,
+        "next_attempt_at": "2024-01-15T10:30:00Z",
+        "last_error": "HTTP 503: Service Unavailable",
+        "created_at": "2024-01-15T10:00:00Z",
+        "updated_at": "2024-01-15T10:15:00Z"
+      }
+    ]
+    """
+    try:
+        import event_store
+
+        queue = event_store.get_delivery_queue(limit=limit)
+        return {"status": "ok", "count": len(queue), "deliveries": queue}
+    except Exception as e:
+        print(f"[alerts] ❌ Failed to list delivery queue: {e}")
         raise HTTPException(status_code=500, detail=str(e))

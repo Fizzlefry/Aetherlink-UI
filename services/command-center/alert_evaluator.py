@@ -3,6 +3,7 @@ Alert Rule Evaluator
 
 Phase VI M6: Evaluates alert rules against event store and emits ops.alert.raised events.
 Phase VII M1: Integrated with notification_dispatcher for webhook delivery.
+Phase VII M5: Reliable alert delivery via queue-based dispatcher with retries.
 """
 
 import asyncio
@@ -12,6 +13,7 @@ from typing import Any
 
 import alert_store
 import event_store
+import httpx
 import notification_dispatcher
 
 
@@ -88,16 +90,32 @@ async def evaluate_rules_once() -> dict[str, Any]:
             # Save alert event
             event_store.save_event(alert_event)
 
-            # Phase VII M1: Dispatch alert to webhooks (non-blocking)
-            try:
-                dispatch_result = await notification_dispatcher.dispatch_alert(alert_event)
-                if dispatch_result.get("delivered", 0) > 0:
+            # Phase VII M5: Enqueue alert for reliable delivery instead of immediate dispatch
+            # Check dedup window first: only enqueue if not sent recently
+            if event_store.check_dedup_window(rule["name"], rule_tenant_id or "system"):
+                # Get configured webhooks
+                webhook_urls = notification_dispatcher.get_configured_webhooks()
+
+                if len(webhook_urls) > 0:
+                    # Enqueue for each webhook URL
+                    for webhook_url in webhook_urls:
+                        event_store.enqueue_alert_delivery(
+                            alert_event_id=alert_event["event_id"],
+                            alert_payload=alert_event,
+                            webhook_url=webhook_url,
+                            max_attempts=5,
+                        )
+
+                    # Update dedup history (prevents re-enqueueing same alert within window)
+                    event_store.update_dedup_history(rule["name"], rule_tenant_id or "system")
+
                     print(
-                        f"[alert_evaluator] 🔔 Alert '{rule['name']}' delivered to {dispatch_result['delivered']} webhook(s)"
+                        f"[alert_evaluator] � Alert '{rule['name']}' enqueued for delivery to {len(webhook_urls)} webhook(s)"
                     )
-            except Exception as e:
-                # Non-fatal: alert is already saved, webhook delivery is best-effort
-                print(f"[alert_evaluator] ⚠️  Webhook dispatch failed for '{rule['name']}': {e}")
+                else:
+                    print(f"[alert_evaluator] ⚠️  No webhooks configured for alert '{rule['name']}'")
+            else:
+                print(f"[alert_evaluator] 🔕 Alert '{rule['name']}' skipped (dedup window active)")
 
             triggered.append(
                 {
@@ -137,3 +155,186 @@ async def alert_evaluator_loop():
 
         # Wait 15 seconds before next evaluation
         await asyncio.sleep(15)
+
+
+async def delivery_dispatcher_loop():
+    """
+    Background task that processes queued alert deliveries.
+
+    Phase VII M5: Pulls pending deliveries from the queue and attempts webhook POST.
+    Implements retry logic with exponential backoff and dead letter handling.
+
+    Architecture:
+    - Every 30 seconds, fetch up to 50 pending deliveries
+    - Attempt POST to webhook_url with 10-second timeout
+    - On success: entry removed from queue
+    - On failure: exponential backoff with capped retry (30s, 2m, 5m, cap at 30m)
+    - After max_attempts (default 5): emit ops.alert.delivery.failed and remove from queue
+    """
+    print("[delivery_dispatcher] 📮 Starting delivery dispatcher loop")
+
+    # Wait 10 seconds before first check (allow system startup)
+    await asyncio.sleep(10)
+
+    # Create persistent HTTP client with connection pooling
+    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+        while True:
+            try:
+                # Fetch deliveries where next_attempt_at <= now
+                deliveries = event_store.get_pending_deliveries(limit=50)
+
+                if len(deliveries) > 0:
+                    print(
+                        f"[delivery_dispatcher] 📤 Processing {len(deliveries)} pending delivery(ies)"
+                    )
+
+                for delivery in deliveries:
+                    delivery_id = delivery["id"]
+                    webhook_url = delivery["webhook_url"]
+                    alert_payload = delivery["alert_payload"]
+                    attempt_count = delivery["attempt_count"]
+                    max_attempts = delivery["max_attempts"]
+
+                    try:
+                        # Attempt webhook POST
+                        response = await client.post(
+                            webhook_url,
+                            json=alert_payload,
+                            headers={"Content-Type": "application/json"},
+                        )
+
+                        # Success: 2xx status code
+                        if 200 <= response.status_code < 300:
+                            event_store.update_delivery_attempt(
+                                delivery_id, success=True, error_message=None
+                            )
+                            print(
+                                f"[delivery_dispatcher] ✅ Delivered alert to {webhook_url} (status {response.status_code})"
+                            )
+                        else:
+                            # HTTP error (4xx, 5xx)
+                            error_msg = f"HTTP {response.status_code}: {response.text[:200]}"
+                            event_store.update_delivery_attempt(
+                                delivery_id, success=False, error_message=error_msg
+                            )
+
+                            # Check if max attempts reached (after update)
+                            new_attempt_count = attempt_count + 1
+                            if new_attempt_count >= max_attempts:
+                                # Emit dead letter event
+                                dead_letter_event = {
+                                    "event_id": str(uuid.uuid4()),
+                                    "event_type": "ops.alert.delivery.failed",
+                                    "source": "aether-command-center",
+                                    "severity": "error",
+                                    "timestamp": datetime.now(UTC).isoformat(),
+                                    "tenant_id": alert_payload.get("tenant_id", "system"),
+                                    "payload": {
+                                        "alert_event_id": delivery["alert_event_id"],
+                                        "webhook_url": webhook_url,
+                                        "attempts": new_attempt_count,
+                                        "last_error": error_msg,
+                                        "alert_rule_name": alert_payload.get("payload", {}).get(
+                                            "rule_name", "unknown"
+                                        ),
+                                    },
+                                    "_meta": {
+                                        "received_at": datetime.now(UTC).isoformat(),
+                                        "client_ip": "127.0.0.1",
+                                    },
+                                }
+                                event_store.save_event(dead_letter_event)
+                                print(
+                                    f"[delivery_dispatcher] ☠️  Dead letter: Alert delivery failed after {new_attempt_count} attempts to {webhook_url}"
+                                )
+                            else:
+                                print(
+                                    f"[delivery_dispatcher] 🔄 Retry scheduled for {webhook_url} (attempt {new_attempt_count}/{max_attempts})"
+                                )
+
+                    except httpx.TimeoutException:
+                        # Timeout
+                        error_msg = "Request timeout (>10s)"
+                        event_store.update_delivery_attempt(
+                            delivery_id, success=False, error_message=error_msg
+                        )
+
+                        new_attempt_count = attempt_count + 1
+                        if new_attempt_count >= max_attempts:
+                            # Emit dead letter event
+                            dead_letter_event = {
+                                "event_id": str(uuid.uuid4()),
+                                "event_type": "ops.alert.delivery.failed",
+                                "source": "aether-command-center",
+                                "severity": "error",
+                                "timestamp": datetime.now(UTC).isoformat(),
+                                "tenant_id": alert_payload.get("tenant_id", "system"),
+                                "payload": {
+                                    "alert_event_id": delivery["alert_event_id"],
+                                    "webhook_url": webhook_url,
+                                    "attempts": new_attempt_count,
+                                    "last_error": error_msg,
+                                    "alert_rule_name": alert_payload.get("payload", {}).get(
+                                        "rule_name", "unknown"
+                                    ),
+                                },
+                                "_meta": {
+                                    "received_at": datetime.now(UTC).isoformat(),
+                                    "client_ip": "127.0.0.1",
+                                },
+                            }
+                            event_store.save_event(dead_letter_event)
+                            print(
+                                f"[delivery_dispatcher] ☠️  Dead letter: Alert delivery timed out after {new_attempt_count} attempts to {webhook_url}"
+                            )
+                        else:
+                            print(
+                                f"[delivery_dispatcher] ⏱️  Timeout for {webhook_url}, retry scheduled"
+                            )
+
+                    except Exception as e:
+                        # Network error, connection refused, etc.
+                        error_msg = f"{type(e).__name__}: {str(e)}"
+                        event_store.update_delivery_attempt(
+                            delivery_id, success=False, error_message=error_msg
+                        )
+
+                        new_attempt_count = attempt_count + 1
+                        if new_attempt_count >= max_attempts:
+                            # Emit dead letter event
+                            dead_letter_event = {
+                                "event_id": str(uuid.uuid4()),
+                                "event_type": "ops.alert.delivery.failed",
+                                "source": "aether-command-center",
+                                "severity": "error",
+                                "timestamp": datetime.now(UTC).isoformat(),
+                                "tenant_id": alert_payload.get("tenant_id", "system"),
+                                "payload": {
+                                    "alert_event_id": delivery["alert_event_id"],
+                                    "webhook_url": webhook_url,
+                                    "attempts": new_attempt_count,
+                                    "last_error": error_msg,
+                                    "alert_rule_name": alert_payload.get("payload", {}).get(
+                                        "rule_name", "unknown"
+                                    ),
+                                },
+                                "_meta": {
+                                    "received_at": datetime.now(UTC).isoformat(),
+                                    "client_ip": "127.0.0.1",
+                                },
+                            }
+                            event_store.save_event(dead_letter_event)
+                            print(
+                                f"[delivery_dispatcher] ☠️  Dead letter: Alert delivery failed after {new_attempt_count} attempts to {webhook_url} - {error_msg}"
+                            )
+                        else:
+                            print(
+                                f"[delivery_dispatcher] ⚠️  Error for {webhook_url}: {error_msg}, retry scheduled"
+                            )
+
+            except Exception as e:
+                # Catch-all for dispatcher loop errors
+                print(f"[delivery_dispatcher] ❌ Dispatcher loop error: {e}")
+
+            # Wait 30 seconds before next batch
+            await asyncio.sleep(30)

@@ -56,6 +56,10 @@ async def startup_event():
     asyncio.create_task(alert_evaluator.alert_evaluator_loop())
     print("[command-center] 🚨 Alert Evaluator started")
 
+    # Phase VII M5: Start delivery dispatcher background task
+    asyncio.create_task(alert_evaluator.delivery_dispatcher_loop())
+    print("[command-center] 📮 Delivery Dispatcher started")
+
     # Phase VII M2: Start retention worker background task
     asyncio.create_task(retention_worker())
     print("[command-center] 🗑️  Retention Worker started")
@@ -83,7 +87,9 @@ async def retention_worker():
             total_pruned = sum(r["pruned_count"] for r in results)
 
             if total_pruned > 0:
-                print(f"[retention_worker] ✅ Pruned {total_pruned} events across {len(results)} scopes")
+                print(
+                    f"[retention_worker] ✅ Pruned {total_pruned} events across {len(results)} scopes"
+                )
 
                 # Emit ops.events.pruned event for each scope (system + tenants)
                 for result in results:
@@ -94,7 +100,9 @@ async def retention_worker():
                             "source": "aether-command-center",
                             "severity": "info",
                             "timestamp": datetime.now(UTC).isoformat(),
-                            "tenant_id": result["scope"] if result["scope"] != "system" else "system",
+                            "tenant_id": result["scope"]
+                            if result["scope"] != "system"
+                            else "system",
                             "payload": {
                                 "scope": result["scope"],
                                 "pruned_count": result["pruned_count"],

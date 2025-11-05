@@ -60,6 +60,42 @@ def init_db():
         """
     )
 
+    # Phase VII M5: Reliable alert delivery queue
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS alert_delivery_queue (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            alert_event_id TEXT NOT NULL,
+            alert_payload TEXT NOT NULL,
+            webhook_url TEXT NOT NULL,
+            attempt_count INTEGER NOT NULL DEFAULT 0,
+            max_attempts INTEGER NOT NULL DEFAULT 5,
+            next_attempt_at TEXT NOT NULL,
+            last_error TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_delivery_next_attempt ON alert_delivery_queue(next_attempt_at)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_delivery_alert_event ON alert_delivery_queue(alert_event_id)"
+    )
+
+    # Phase VII M5: Alert delivery deduplication
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS alert_delivery_history (
+            rule_name TEXT NOT NULL,
+            tenant_id TEXT NOT NULL,
+            last_sent_at TEXT NOT NULL,
+            PRIMARY KEY (rule_name, tenant_id)
+        )
+        """
+    )
+
     conn.commit()
     conn.close()
     print("[event_store] ✅ Database initialized")
@@ -421,7 +457,9 @@ def prune_old_events_with_per_tenant() -> list[dict[str, Any]]:
             }
         )
 
-        print(f"[event_store] 🗑️  Pruned {global_pruned} system events (retention: {RETENTION_DAYS}d)")
+        print(
+            f"[event_store] 🗑️  Pruned {global_pruned} system events (retention: {RETENTION_DAYS}d)"
+        )
 
         # 2) Get all distinct tenant_ids from events (excluding NULL/system)
         tenant_rows = conn.execute(
@@ -562,3 +600,315 @@ def get_retention_settings() -> dict[str, Any]:
         "archive_enabled": ARCHIVE_ENABLED,
         "archive_dir": ARCHIVE_DIR,
     }
+
+
+# ============================================================================
+# Phase VII M5: Reliable Alert Delivery Queue
+# ============================================================================
+
+DEDUP_WINDOW_SECONDS = int(os.getenv("ALERT_DEDUP_WINDOW_SECONDS", "300"))  # 5 minutes default
+
+
+def check_dedup_window(rule_name: str, tenant_id: str) -> bool:
+    """
+    Check if alert should be deduplicated (already sent recently).
+
+    Phase VII M5: Prevents alert spam by checking if the same alert
+    (rule + tenant) was sent within the dedup window.
+
+    Args:
+        rule_name: Alert rule name
+        tenant_id: Tenant identifier
+
+    Returns:
+        True if alert should be sent (not a duplicate), False if should skip
+    """
+    conn = get_conn()
+    try:
+        cur = conn.execute(
+            "SELECT last_sent_at FROM alert_delivery_history WHERE rule_name = ? AND tenant_id = ?",
+            (rule_name, tenant_id),
+        )
+        row = cur.fetchone()
+
+        if not row:
+            return True  # Never sent before, allow
+
+        last_sent = datetime.fromisoformat(row["last_sent_at"])
+        now = datetime.now(UTC)
+        elapsed = (now - last_sent).total_seconds()
+
+        return elapsed >= DEDUP_WINDOW_SECONDS
+
+    finally:
+        conn.close()
+
+
+def update_dedup_history(rule_name: str, tenant_id: str):
+    """
+    Update dedup history after sending an alert.
+
+    Args:
+        rule_name: Alert rule name
+        tenant_id: Tenant identifier
+    """
+    conn = get_conn()
+    now = datetime.now(UTC).isoformat()
+
+    try:
+        conn.execute(
+            """
+            INSERT INTO alert_delivery_history (rule_name, tenant_id, last_sent_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(rule_name, tenant_id) DO UPDATE SET
+                last_sent_at = excluded.last_sent_at
+            """,
+            (rule_name, tenant_id, now),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def enqueue_alert_delivery(
+    alert_event_id: str, alert_payload: dict[str, Any], webhook_url: str, max_attempts: int = 5
+) -> int:
+    """
+    Enqueue an alert for delivery to a webhook.
+
+    Phase VII M5: Adds alert to delivery queue for reliable, retryable delivery.
+
+    Args:
+        alert_event_id: ID of the alert event
+        alert_payload: Full alert event payload (for webhook POST)
+        webhook_url: Destination webhook URL
+        max_attempts: Maximum delivery attempts before giving up
+
+    Returns:
+        Queue entry ID
+    """
+    conn = get_conn()
+    now = datetime.now(UTC).isoformat()
+
+    try:
+        cur = conn.execute(
+            """
+            INSERT INTO alert_delivery_queue (
+                alert_event_id, alert_payload, webhook_url,
+                attempt_count, max_attempts, next_attempt_at,
+                created_at, updated_at
+            )
+            VALUES (?, ?, ?, 0, ?, ?, ?, ?)
+            """,
+            (
+                alert_event_id,
+                json.dumps(alert_payload),
+                webhook_url,
+                max_attempts,
+                now,  # next_attempt_at = now (immediate delivery)
+                now,
+                now,
+            ),
+        )
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
+
+
+def get_pending_deliveries(limit: int = 50) -> list[dict[str, Any]]:
+    """
+    Get pending deliveries that are ready for attempt.
+
+    Phase VII M5: Returns deliveries where next_attempt_at <= now
+    and attempt_count < max_attempts.
+
+    Args:
+        limit: Maximum number of deliveries to return
+
+    Returns:
+        List of delivery queue entries
+    """
+    conn = get_conn()
+    now = datetime.now(UTC).isoformat()
+
+    try:
+        cur = conn.execute(
+            """
+            SELECT id, alert_event_id, alert_payload, webhook_url,
+                   attempt_count, max_attempts, next_attempt_at,
+                   last_error, created_at, updated_at
+            FROM alert_delivery_queue
+            WHERE next_attempt_at <= ? AND attempt_count < max_attempts
+            ORDER BY next_attempt_at ASC
+            LIMIT ?
+            """,
+            (now, limit),
+        )
+        rows = cur.fetchall()
+
+        return [
+            {
+                "id": row["id"],
+                "alert_event_id": row["alert_event_id"],
+                "alert_payload": json.loads(row["alert_payload"]),
+                "webhook_url": row["webhook_url"],
+                "attempt_count": row["attempt_count"],
+                "max_attempts": row["max_attempts"],
+                "next_attempt_at": row["next_attempt_at"],
+                "last_error": row["last_error"],
+                "created_at": row["created_at"],
+                "updated_at": row["updated_at"],
+            }
+            for row in rows
+        ]
+    finally:
+        conn.close()
+
+
+def update_delivery_attempt(delivery_id: int, success: bool, error_message: str | None = None):
+    """
+    Update delivery queue entry after an attempt.
+
+    Phase VII M5: Increments attempt_count, schedules next retry with backoff,
+    or marks complete if successful.
+
+    Args:
+        delivery_id: Queue entry ID
+        success: Whether delivery succeeded
+        error_message: Error message if delivery failed
+    """
+    conn = get_conn()
+    now = datetime.now(UTC)
+
+    try:
+        if success:
+            # Remove from queue on success
+            conn.execute("DELETE FROM alert_delivery_queue WHERE id = ?", (delivery_id,))
+        else:
+            # Get current attempt count
+            cur = conn.execute(
+                "SELECT attempt_count, max_attempts FROM alert_delivery_queue WHERE id = ?",
+                (delivery_id,),
+            )
+            row = cur.fetchone()
+
+            if not row:
+                return
+
+            new_attempt_count = row["attempt_count"] + 1
+            max_attempts = row["max_attempts"]
+
+            if new_attempt_count >= max_attempts:
+                # Max attempts reached, delete from queue (will emit failure event separately)
+                conn.execute("DELETE FROM alert_delivery_queue WHERE id = ?", (delivery_id,))
+            else:
+                # Calculate backoff: 30s, 2m, 5m, 15m, 30m
+                backoff_seconds = min(30 * (2**new_attempt_count), 1800)  # Cap at 30 minutes
+                next_attempt = now + timedelta(seconds=backoff_seconds)
+
+                conn.execute(
+                    """
+                    UPDATE alert_delivery_queue
+                    SET attempt_count = ?,
+                        next_attempt_at = ?,
+                        last_error = ?,
+                        updated_at = ?
+                    WHERE id = ?
+                    """,
+                    (
+                        new_attempt_count,
+                        next_attempt.isoformat(),
+                        error_message,
+                        now.isoformat(),
+                        delivery_id,
+                    ),
+                )
+
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_delivery_stats() -> dict[str, Any]:
+    """
+    Get delivery queue statistics for ops visibility.
+
+    Phase VII M5: Returns counts of pending, failed, and total deliveries.
+
+    Returns:
+        Statistics dictionary
+    """
+    conn = get_conn()
+    now = datetime.now(UTC).isoformat()
+
+    try:
+        # Total queued
+        total_result = conn.execute("SELECT COUNT(*) as cnt FROM alert_delivery_queue").fetchone()
+        total = total_result["cnt"] if total_result else 0
+
+        # Pending (ready for retry)
+        pending_result = conn.execute(
+            "SELECT COUNT(*) as cnt FROM alert_delivery_queue WHERE next_attempt_at <= ?", (now,)
+        ).fetchone()
+        pending = pending_result["cnt"] if pending_result else 0
+
+        # Near max attempts (attempt_count >= max_attempts - 1)
+        failing_result = conn.execute(
+            "SELECT COUNT(*) as cnt FROM alert_delivery_queue WHERE attempt_count >= max_attempts - 1"
+        ).fetchone()
+        failing = failing_result["cnt"] if failing_result else 0
+
+        return {
+            "total_queued": total,
+            "pending_now": pending,
+            "near_failure": failing,
+            "dedup_window_seconds": DEDUP_WINDOW_SECONDS,
+        }
+
+    finally:
+        conn.close()
+
+
+def get_delivery_queue(limit: int = 100) -> list[dict[str, Any]]:
+    """
+    Get all delivery queue entries for ops visibility.
+
+    Args:
+        limit: Maximum number of entries to return
+
+    Returns:
+        List of delivery queue entries
+    """
+    conn = get_conn()
+
+    try:
+        cur = conn.execute(
+            """
+            SELECT id, alert_event_id, webhook_url, attempt_count,
+                   max_attempts, next_attempt_at, last_error,
+                   created_at, updated_at
+            FROM alert_delivery_queue
+            ORDER BY next_attempt_at ASC
+            LIMIT ?
+            """,
+            (limit,),
+        )
+        rows = cur.fetchall()
+
+        return [
+            {
+                "id": row["id"],
+                "alert_event_id": row["alert_event_id"],
+                "webhook_url": row["webhook_url"],
+                "attempt_count": row["attempt_count"],
+                "max_attempts": row["max_attempts"],
+                "next_attempt_at": row["next_attempt_at"],
+                "last_error": row["last_error"],
+                "created_at": row["created_at"],
+                "updated_at": row["updated_at"],
+            }
+            for row in rows
+        ]
+    finally:
+        conn.close()
