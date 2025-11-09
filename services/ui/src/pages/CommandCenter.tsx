@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { ICON_COMMAND_CENTER } from "../icons";
 import { EventStream } from "../components/EventStream";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { MediaStatsBadge } from "../components/MediaStatsBadge";
+import { RecentRemediations } from "../components/RecentRemediations";
+import { OperatorInsights } from "../components/OperatorInsights";
 
 type ServiceStatus = {
     status: string;
@@ -158,7 +161,7 @@ const CommandCenter: React.FC = () => {
             {/* Header */}
             <div style={{ marginBottom: "2rem" }}>
                 <h1 style={{ fontSize: "2rem", fontWeight: "bold", marginBottom: "0.5rem", color: "#111827" }}>
-                    🎛️ AetherLink Command Center
+                    {ICON_COMMAND_CENTER} AetherLink Command Center
                 </h1>
                 <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" }}>
                     <label style={{ fontSize: "0.875rem", fontWeight: "500", color: "#374151" }}>
@@ -521,6 +524,12 @@ const CommandCenter: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* Recent Remediations */}
+            <RecentRemediations userRoles={userRoles} />
+
+            {/* Operator Insights */}
+            <OperatorInsights userRoles={userRoles} />
 
             {/* Footer Info */}
             <div style={{ marginTop: "3rem", padding: "1.5rem", background: "white", borderRadius: "12px", border: "1px solid #e5e7eb" }}>
