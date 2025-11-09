@@ -1,397 +1,375 @@
-# AetherLink — Local Dev
+# AetherLink ⚡
 
-[![Monitoring Smoke Test](https://github.com/YOUR_ORG_OR_USER/AetherLink/actions/workflows/monitoring-smoke.yml/badge.svg)](https://github.com/YOUR_ORG_OR_USER/AetherLink/actions/workflows/monitoring-smoke.yml)
+[![CI/CD](https://github.com/YOUR_ORG_OR_USER/AetherLink/actions/workflows/command-center-ci.yml/badge.svg)](https://github.com/YOUR_ORG_OR_USER/AetherLink/actions/workflows/command-center-ci.yml)
+[![Monitoring](https://github.com/YOUR_ORG_OR_USER/AetherLink/actions/workflows/monitoring-smoke.yml/badge.svg)](https://github.com/YOUR_ORG_OR_USER/AetherLink/actions/workflows/monitoring-smoke.yml)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://hub.docker.com)
+[![Kubernetes](https://img.shields.io/badge/kubernetes-ready-blue.svg)](https://kubernetes.io)
 
-This repo contains the AetherLink prototype. The `pods/customer-ops` directory is a FastAPI-based microservice.
+**Enterprise-grade Command Center for AI-driven operations, observability, and automation.**
 
-Quick start (recommended)
+AetherLink provides a unified platform for managing AI agents, monitoring system health, and orchestrating automated responses across distributed infrastructure. Built with FastAPI, React, and production-ready deployment patterns.
 
-1. Create and activate the virtualenv (if you don't have `.venv`):
+## 🚀 Quick Start (5 minutes)
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-2. Install dev dependencies (we exclude `psycopg2-binary` locally on Windows; use Docker for full stack):
-
-```powershell
-pip install -r tools/requirements_no_psycopg2.txt
-pip install pytest
-```
-
-3. Start services with Docker Compose (Postgres, Redis, Minio):
-
-```powershell
+### Option 1: Docker Compose (Development)
+```bash
+# Clone and start services
+git clone https://github.com/YOUR_ORG_OR_USER/AetherLink.git
+cd AetherLink
 docker compose -f deploy/docker-compose.dev.yml up -d
+
+# Access Command Center
+open http://localhost:8010
 ```
 
-4. Run tests:
+### Option 2: Kubernetes + Helm (Production)
+```bash
+# Add Helm repo and install
+helm install command-center ./helm/command-center \
+  --set image.tag=latest \
+  --set ingress.enabled=true
 
-```powershell
-.\.venv\Scripts\python.exe -m pytest
+# Get service URL
+kubectl get svc command-center
 ```
 
-### Quickstart (Windows, PowerShell)
-
+### Option 3: Local Development
 ```powershell
-# from repo root
+# Setup environment
 .\dev_setup.ps1 -Watch
-# quick health check
+
+# Health check
 .\makefile.ps1 health
-# stop everything
-.\dev_stop.ps1
-# reset DB
-.\dev_reset_db.ps1
-# live logs
-.\dev_logs.ps1
+
+# Access UI
+open http://localhost:5173
 ```
 
-Notes
-- For DB integration tests or running the API that connects to Postgres, run the Docker Compose file above. The Postgres service credentials are configured in `deploy/docker-compose.dev.yml`.
-- To install `psycopg2-binary` locally on Windows you will need PostgreSQL dev tools (pg_config) available; using Docker avoids that requirement.
+### Option 4: Vertical Apps Suite (Docker)
+```bash
+# Start all vertical apps + UI dashboard
+docker compose up -d
 
-Getting started (developer)
+# Services available at:
+# - PeakPro CRM: http://localhost:8021
+# - RoofWonder: http://localhost:8022
+# - PolicyPal AI: http://localhost:8023
+# - Media Service: http://localhost:9109
+# - UI Dashboard: http://localhost:5174
+```
 
-Prerequisites
+**Environment Configuration:**
+- Shared config in `env/` directory
+- Service-specific database paths
+- Unified APP_KEY across all services
+- Ready for multi-tenant API keys (next step)
+
+## 📋 Table of Contents
+
+- [Overview](#-overview)
+- [Architecture](#-architecture)
+- [Features](#-features)
+- [Documentation Hub](#-documentation-hub)
+- [API Reference](#-api-reference)
+- [Deployment](#-deployment)
+- [Development](#-development)
+- [Monitoring & Observability](#-monitoring--observability)
+- [Testing](#-testing)
+- [Contributing](#-contributing)
+
+## 🎯 Overview
+
+AetherLink Command Center is a comprehensive operations platform that provides:
+
+- **Real-time Monitoring**: Live dashboards with Server-Sent Events
+- **RBAC Security**: Role-based access control (Admin, Operator, Manager)
+- **Event Streaming**: Real-time event processing and alerting
+- **Auto-Healing**: Automated incident response and remediation
+- **Multi-tenant Support**: Isolated operations per tenant
+- **Production Deployment**: Docker, Kubernetes, and Helm-ready
+
+### Key Components
+
+- **Command Center API** (`services/command-center/`): FastAPI backend with observability
+- **Operator Dashboard** (`services/ui/`): React frontend with real-time updates
+- **Event Store**: SQLite-based event persistence with retention
+- **Monitoring Stack**: Prometheus + Grafana dashboards
+- **CI/CD Pipeline**: GitHub Actions with automated testing
+
+## 🏗️ Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Operator UI   │    │ Command Center  │    │   Event Store   │
+│    (React)      │◄──►│    (FastAPI)    │◄──►│    (SQLite)     │
+│                 │    │                 │    │                 │
+│ - Dashboards    │    │ - REST API      │    │ - 7-day retention│
+│ - Real-time SSE │    │ - RBAC Auth     │    │ - Per-tenant    │
+│ - Filter/Persist│    │ - Metrics       │    │ - Auto-cleanup  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 ▼
+                    ┌─────────────────┐
+                    │   Monitoring    │
+                    │ (Prometheus +   │
+                    │    Grafana)     │
+                    └─────────────────┘
+```
+
+## ✨ Features
+
+### Core Capabilities
+- **🔐 RBAC Security**: Admin/Operator/Manager roles with header-based auth
+- **📊 Real-time Dashboards**: Live operator interfaces with persistent filters
+- **⚡ Event Streaming**: Server-Sent Events for instant updates
+- **🔄 Auto-Healing**: Automated incident response workflows
+- **🏢 Multi-tenant**: Isolated operations and data per tenant
+- **📈 Observability**: Prometheus metrics and Grafana dashboards
+
+### Production Ready
+- **🐳 Containerized**: Multi-stage Docker builds with health checks
+- **☸️ Kubernetes**: Helm charts with resource limits and probes
+- **🔄 CI/CD**: GitHub Actions with automated testing
+- **🧪 End-to-End Tests**: API + UI testing with pytest + Playwright
+- **📝 Structured Logging**: JSON logs for log aggregation
+- **🏥 Health Checks**: Kubernetes-ready health endpoints
+
+## 📚 Documentation Hub
+
+### 📖 Core Documentation
+- **[Command Center Ops Runbook](docs/COMMAND_CENTER_OPS_RUNBOOK.md)** - Complete operations guide
+- **[Quick Start Guide](docs/COMMAND_CENTER_QUICKSTART.md)** - 5-minute setup checklist
+- **[API Developer Guide](docs/COMMAND_CENTER_API_GUIDE.md)** - Endpoint reference and examples
+
+### 🔧 Service Documentation
+- **[Command Center API](services/command-center/README.md)** - Backend service details
+- **[Operator Dashboard](services/ui/README.md)** - Frontend application guide
+- **[Monitoring & Observability](observability/README.md)** - Metrics and dashboards
+
+### 🚀 Deployment Guides
+- **[Docker Deployment](deploy/README.md)** - Container setup and configuration
+- **[Kubernetes + Helm](helm/command-center/README.md)** - Production deployment
+- **[CI/CD Pipeline](.github/workflows/command-center-ci.yml)** - Build and release automation
+
+### 📈 Development Phases
+- **[Phase XIII: Persistent State - Complete](docs/PHASE_XIII_COMPLETE_SUMMARY.md)** - Command Center v1.0 (Local Edition)
+- **[Phase XIV: Operational Actions & Hardening](docs/PHASE_XIV_ROADMAP.md)** - Next phase roadmap
+
+## 🔌 API Reference
+
+### Core Endpoints
+```bash
+# Health & Discovery
+GET  /healthz          # Kubernetes health check
+GET  /meta             # Feature discovery
+GET  /metrics          # Prometheus metrics
+
+# Alert Management
+GET  /alerts/deliveries/history  # Delivery history with filters
+POST /alerts/deliveries/{id}/replay  # Replay failed deliveries
+
+# Auto-Healing
+GET  /autoheal/rules   # View healing rules
+POST /autoheal/clear_endpoint_cooldown  # Clear cooldowns
+
+# Real-time Events
+GET  /events/stream    # Server-Sent Events
+GET  /events/audit     # 7-day audit history
+```
+
+### Authentication
+All endpoints require RBAC headers:
+```
+X-User-Roles: admin,operator
+```
+
+## 🚀 Deployment
+
+### Production Deployment Options
+
+#### Docker Compose (Simple)
+```bash
+docker compose -f deploy/docker-compose.prod.yml up -d
+```
+
+#### Kubernetes + Helm (Recommended)
+```bash
+# Install Command Center
+helm install command-center ./helm/command-center \
+  --set image.tag=v1.0.0 \
+  --set ingress.enabled=true \
+  --set ingress.host=command-center.yourdomain.com
+
+# Install Monitoring Stack
+helm install monitoring ./helm/monitoring
+```
+
+#### Cloud Platforms
+- **AWS EKS**: Use provided Helm charts with ALB ingress
+- **Google GKE**: Compatible with GKE ingress and Cloud Monitoring
+- **Azure AKS**: Works with AGIC and Azure Monitor
+
+### Configuration
+```yaml
+# values.yaml
+image:
+  tag: "latest"
+ingress:
+  enabled: true
+  host: command-center.yourdomain.com
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+```
+
+## 💻 Development
+
+### Prerequisites
 - Docker / Docker Compose
-- Python 3.11
-- (optional) Node.js / npm if you want to enable pyright pre-commit hooks
+- Python 3.11+
+- Node.js 18+ (for UI development)
+- kubectl + Helm (for K8s development)
 
-Start the full dev stack
-
-```powershell
-docker compose -f deploy/docker-compose.dev.yml up -d --build
-```
-
-Stop and remove the dev stack
+### Local Development Setup
 
 ```powershell
-docker compose -f deploy/docker-compose.dev.yml down -v
+# Clone repository
+git clone https://github.com/YOUR_ORG_OR_USER/AetherLink.git
+cd AetherLink
+
+# Start full development stack
+.\dev_setup.ps1 -Watch
+
+# Run tests
+.\.venv\Scripts\python.exe -m pytest
+
+# Access services
+# Command Center API: http://localhost:8010
+# Operator Dashboard: http://localhost:5173
+# Grafana: http://localhost:3000
+# Prometheus: http://localhost:9090
 ```
 
-Health check
-
-After the `api` service starts the health endpoint will be available on http://localhost:8000/health and should return JSON:
-
-```json
-{"ok": true}
-```
-
-Prometheus & Grafana
-
-- Prometheus UI: http://localhost:9090
-- Grafana UI: http://localhost:3000
-
-Prometheus is configured to scrape the API's `/metrics` endpoint. The API exposes `/metrics` via an observability helper (see `pods/customer-ops/api/observability.py`).
-
-Running tests locally
-
-1. Create and activate virtualenv and install dev deps:
+### Development Scripts
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r tools/requirements_no_psycopg2.txt
-pip install pytest
+# Health checks
+.\makefile.ps1 health
+
+# Database operations
+.\dev_migrate.ps1 -Seed    # Apply migrations + seed data
+.\dev_reset_db.ps1         # Reset database
+
+# Logs and monitoring
+.\dev_logs.ps1             # Live service logs
+.\dev_stop.ps1             # Stop all services
 ```
 
-2. Start the dev stack (see above).
-
-3. Run pytest (integration tests expect the dev stack to be running):
+### Code Quality
 
 ```powershell
-pytest -q
-```
-
-### Migrations & Seed
-```powershell
-# create a new revision
-.\dev_migrate.ps1 -RevMsg "add initial tables"
-
-# apply latest migrations
-.\dev_migrate.ps1
-
-# apply migrations + run idempotent seeds
-.\dev_migrate.ps1 -Seed
-```
-
-### Verify models vs DB
-```powershell
-# fails if Alembic would autogenerate a migration
-.\dev_check_schema.ps1
-```
-
-### Dev Quality (pre-commit)
-
-```powershell
-# one-time setup
-python -m pip install -r requirements-dev.txt
-pre-commit install
-pre-commit run --all-files   # verify everything passes
-
-# CI-style local check
+# Pre-commit checks
 pre-commit run --all-files
 
-# Typecheck only
+# Type checking
 mypy .
 
-# Ruff (lint+format) only
+# Linting & formatting
 ruff check .
 ruff format .
 ```
 
----
-
-## 6) (Optional) GitHub Actions step
-
-If you want the same checks in CI, add a job step after Python setup (and after starting Docker services for Alembic drift):
-
-```yaml
-- name: Install dev deps
-  run: python -m pip install -r requirements-dev.txt
-
-- name: Pre-commit (repo-wide)
-  run: pre-commit run --all-files
-```
-
----
-
-## Notes / gotchas
-
-- **Alembic config**: Make sure `alembic.ini` points `script_location` correctly (e.g. `alembic`) and your `alembic/env.py` reads `DATABASE_URL = os.environ["DATABASE_URL"]`.
-- **Imports** in `scripts/seed.py` should match your real modules. Use lazy imports (inside functions) if you’ve got import cycles.
-- **Idempotency**: Always *upsert* in seeds. No blind inserts.
-
-### Tests
-```powershell
-.\test.ps1               # pytest + coverage (HTML in htmlcov/)
-.\test.ps1 -k "customer" # subset
-
-Database snapshots
-.\pg_backup.ps1                  # writes ./backups/aetherlink_YYYYmmdd_HHMMSS.dump (keeps last 10)
-.\pg_restore.ps1 -File .\backups\aetherlink_YYYYmmdd_HHMMSS.dump
-
-(You can also run these from VS Code tasks or via the PowerShell Makefile: .\makefile.ps1 backup, .\makefile.ps1 restore -Msg .\backups\file.dump.)
-```
-
-### One-shot E2E verify
-```powershell
-# backup → restore-latest → health check
-.\verify_e2e.ps1
-
-# via Makefile
-.\makefile.ps1 verify
-
-# via VS Code
-# Tasks: Run Task → "AetherLink: Verify E2E (backup→restore→health)"
-```
-
-### Stop / Restart
-```powershell
-# stop API/Worker + stop containers
-.\dev_stop.ps1
-
-# also remove containers (non-destructive to volumes)
-.\dev_stop.ps1 -Prune
-
-# stop then start
-.\dev_restart.ps1
-```
-
-### Hot-reload API keys
-```powershell
-# Add or change API keys in environment, then reload without restarting
-$env:API_KEY_NEWCLIENT = "SECRET456"
-$headers = @{ "x-api-key" = $env:API_KEY_EXPERTCO }
-Invoke-RestMethod -Method Post http://localhost:8000/ops/reload-auth -Headers $headers
-
-# Test the new key
-.\test_hot_reload_auth.ps1
-```
-
-### Observability
-Every response includes an `x-request-id` header for correlation. You can supply your own or let the API generate one:
-```powershell
-# Auto-generated request ID
-Invoke-WebRequest http://localhost:8000/health -UseBasicParsing | Select-Object -ExpandProperty Headers
-
-# Supply your own for end-to-end tracing
-Invoke-RestMethod http://localhost:8000/health -Headers @{ "x-request-id" = "my-trace-123" }
-```
-
-Rate-limited endpoints (`/ops/*`) return JSON 429 responses with the request ID. Tune limits via environment (e.g., `RATE_LIMIT_FAQ=10/minute`).
-
-For Prometheus metrics, Grafana panels, and alert examples, see [METRICS_GUIDE.md](METRICS_GUIDE.md).
-
-### Nightly DB Backups (Windows Scheduled Task)
-```powershell
-# install or update nightly backup (2:30 AM, keep last 10)
-.\schedule_nightly_backup.ps1
-
-# customize time and retention
-.\schedule_nightly_backup.ps1 -Time "01:15" -Keep 20
-
-# remove the scheduled task
-.\unschedule_nightly_backup.ps1
-
-# run a backup immediately
-.\pg_backup.ps1
-```
-
-Notes
-- The task runs under your current user with elevated privileges and sets the working directory to your repo before invoking `pg_backup.ps1`.
-- Backup logs land in `backups\\scheduled_*.log`; dumps are timestamped by `pg_backup.ps1`.
-- If your machine is asleep at the scheduled time, StartWhenAvailable will run the task shortly after wake.
-### Coverage
-```powershell
-.\coverage.ps1              # opens htmlcov\index.html (runs tests first if needed)
-```
-
-### Nightly backup + sync
-```powershell
-# backup task @ 02:30 (already set up)
-.\schedule_nightly_backup.ps1
-
-# sync task @ 02:45 → OneDrive (or any folder)
-.\schedule_post_backup_sync.ps1 -Dest "C:\\Users\\You\\OneDrive\\AetherLink\\backups"
-
-# remove sync task
-.\unschedule_post_backup_sync.ps1
-```
-
-### Restore latest backup
-```powershell
-.\pg_restore_latest.ps1
-
-# Sync latest backup to OneDrive (or any folder)
-.\post_backup_sync.ps1 -Dest "C:\\Users\\You\\OneDrive\\AetherLink\\backups" -Keep 20
-```
-
----
-
 ## 📊 Monitoring & Observability
 
-### Quick Start
-```powershell
-# Navigate to monitoring directory
-cd monitoring
+### Metrics Dashboard
+Access Grafana at `http://localhost:3000` (admin/admin) to view:
+- API request rates and latency
+- Event processing throughput
+- Error rates and system health
+- Auto-healing success rates
 
-# Start monitoring stack (Prometheus, Grafana, Alertmanager)
-docker compose up -d
+### Key Metrics
+- `command_center_uptime_seconds`: Service uptime
+- `command_center_health`: Service health status (1=healthy, 0=unhealthy)
+- `command_center_api_requests_total`: API request counts by endpoint
+- `command_center_events_total`: Events processed by type
 
-# Open Grafana dashboard
-make open-crm-kpis
+### Logging
+All services emit structured JSON logs to stdout, compatible with:
+- ELK Stack (Elasticsearch, Logstash, Kibana)
+- Loki + Grafana
+- CloudWatch Logs
+- Datadog
 
-# Check system health
-make health
+## 🧪 Testing
 
-# Run comprehensive validation
-make smoke-test
-```
+### Test Coverage
+- **API Tests**: pytest-based backend validation (9 test functions)
+- **UI Tests**: Playwright-based frontend testing (10 test scenarios)
+- **Integration Tests**: End-to-end service validation
+- **Health Checks**: Automated monitoring validation
 
-### Monitoring Stack Components
-
-- **Prometheus** (http://localhost:9090): Metrics collection & alerting
-- **Grafana** (http://localhost:3000): Dashboards & visualization
-  - Default login: admin/admin
-  - Dashboard: PeakPro CRM - KPIs
-- **Alertmanager** (http://localhost:9093): Alert routing & Slack notifications
-
-### Sprint 5 Finance Monitoring
-
-**4 Production-Ready Dashboards:**
-- 📊 Invoices Created (24h)
-- 💰 Invoices Paid (24h)
-- 💵 Revenue (7 days)
-- 📈 Payment Rate (30d)
-
-**Performance:** Sub-second load times via 8 recording rules (10-100x faster than raw queries)
-
-**Proactive Alerts:**
-- `LowInvoicePaymentRate`: < 50% payment rate for 24h
-- `RevenueZeroStreak`: Zero revenue for 48h (critical)
-- `InvoiceGenerationStalled`: Zero invoices for 24h
-- `CrmApiDown`: Scrape target down for 5m
-
-### Common Commands
-
-```powershell
-# From monitoring/ directory
-make open-crm-kpis      # Open Grafana CRM dashboard
-make open-alerts        # Open Prometheus alerts page
-make check-metrics      # Show current finance metrics
-make smoke-test         # Full monitoring stack validation
-make health             # Quick health check
-make reload-prom        # Restart Prometheus & Alertmanager
-make logs-crm           # View CRM API logs
-make restart-all        # Restart all monitoring services
-```
-
-### Continuous Integration
-
-The monitoring stack includes automated smoke tests that run on every push:
-
-- ✅ Validates Prometheus rule groups & recording rules
-- ✅ Checks Grafana datasource connectivity
-- ✅ Verifies Alertmanager configuration
-- ✅ Tests CRM API metrics exposure
-- ✅ Optional: Sends synthetic Slack alert
-
-**Manual smoke test:**
-```powershell
-.\scripts\test_monitoring_stack.ps1
-
-# With Slack test alert
-$env:SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
-.\scripts\test_monitoring_stack.ps1 -FireSlack
-```
-
-### Documentation
-
-- **Quick Reference**: [docs/QUICK_REFERENCE_FINANCE_MONITORING.md](docs/QUICK_REFERENCE_FINANCE_MONITORING.md)
-- **Alert Runbook**: [docs/runbooks/ALERTS_CRM_FINANCE.md](docs/runbooks/ALERTS_CRM_FINANCE.md) (300+ lines)
-- **Production Summary**: [docs/SPRINT5_PRODUCTION_HARDENING_SUMMARY.md](docs/SPRINT5_PRODUCTION_HARDENING_SUMMARY.md)
-
-### Slack Integration
-
-Configure Slack notifications:
+### Running Tests
 
 ```bash
-# Set webhook URL
-export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+# API Tests
+cd services/command-center
+python -m pytest tests/ -v
 
-# Restart Alertmanager
-cd monitoring
-docker compose restart alertmanager
+# UI Tests
+cd services/ui
+npm run test
 
-# Test with synthetic alert
-.\scripts\test_monitoring_stack.ps1 -FireSlack
+# Full Test Suite (CI)
+# Runs automatically on push/PR via GitHub Actions
 ```
 
-**Alert Channels:**
-- `#crm-alerts`: CRM-specific alerts (2h repeat interval)
-- `#ops-alerts`: General system alerts (4h repeat interval)
+### Test Categories
+- Health checks and service discovery
+- RBAC authentication and authorization
+- Real-time event streaming
+- Data persistence and filtering
+- UI interactions and state management
+- Cross-browser compatibility
 
-### Troubleshooting
+## 🤝 Contributing
 
-**Dashboard panels empty?**
-```powershell
-make check-metrics      # Verify metrics are being collected
-make logs-crm           # Check CRM API logs
-make smoke-test         # Run full validation
+### Development Workflow
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make changes and add tests
+4. Run full test suite (`make test`)
+5. Submit a pull request
+
+### Code Standards
+- **Python**: Black formatting, mypy type checking, ruff linting
+- **TypeScript**: ESLint, Prettier formatting
+- **Documentation**: Clear, concise, and up-to-date
+- **Testing**: 80%+ coverage, integration tests for new features
+
+### Commit Convention
+```
+feat: add new dashboard filter
+fix: resolve SSE connection issue
+docs: update API reference
+test: add RBAC validation tests
 ```
 
-**Alerts not firing?**
-```powershell
-make open-alerts        # Check alert status in Prometheus
-make logs-alert         # Check Alertmanager logs
-make reload-prom        # Reload Prometheus config
-```
+## 📄 License
 
-**Need help?**
-- Review runbook: `docs/runbooks/ALERTS_CRM_FINANCE.md`
-- Check logs: `make logs-prom`, `make logs-alert`, `make logs-crm`
-- Restart services: `make restart-all`
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙋 Support
+
+- **Documentation**: See [Documentation Hub](#-documentation-hub) above
+- **Issues**: [GitHub Issues](https://github.com/YOUR_ORG_OR_USER/AetherLink/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/YOUR_ORG_OR_USER/AetherLink/discussions)
 
 ---
+
