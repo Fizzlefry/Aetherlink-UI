@@ -17,14 +17,27 @@ type RemediationHistory = {
 
 type RecentRemediationsProps = {
     userRoles: string;
+    selectedTenant?: string;
+    onSelectTenant?: (tenant: string) => void;
 };
 
-export const RecentRemediations: React.FC<RecentRemediationsProps> = ({ userRoles }) => {
+export const RecentRemediations: React.FC<RecentRemediationsProps> = ({
+    userRoles,
+    selectedTenant: externalTenant,
+    onSelectTenant,
+}) => {
     const [data, setData] = useState<RemediationHistory | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [selectedTenant, setSelectedTenant] = useState<string>("all");
+    const [selectedTenant, setSelectedTenant] = useState<string>(externalTenant ?? "all");
     const [selectedStatus, setSelectedStatus] = useState<string>("all");
+
+    // Sync with external tenant prop
+    useEffect(() => {
+        if (externalTenant && externalTenant !== selectedTenant) {
+            setSelectedTenant(externalTenant);
+        }
+    }, [externalTenant]);
 
     const fetchHistory = async () => {
         try {
@@ -90,14 +103,24 @@ export const RecentRemediations: React.FC<RecentRemediationsProps> = ({ userRole
 
     return (
         <div style={{ marginTop: "3rem" }}>
-            {/* Section Header */}
-            <div style={{ marginBottom: "1.5rem" }}>
-                <h2 style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#111827", marginBottom: "0.5rem" }}>
-                    🔄 Recent Remediations
-                </h2>
-                <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>
-                    Autonomous recovery actions taken by the system
-                </p>
+            <div
+                style={{
+                    marginBottom: "1.5rem",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "1rem",
+                    alignItems: "center",
+                }}
+            >
+                <div>
+                    <h2 style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#111827", marginBottom: "0.25rem" }}>
+                        🔄 Recent Remediations
+                    </h2>
+                    <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+                        Autonomous recovery actions taken by the system
+                    </p>
+                </div>
+                {/* filters / refresh controls still render in the events section */}
             </div>
 
             {/* Stats Grid */}
@@ -140,7 +163,13 @@ export const RecentRemediations: React.FC<RecentRemediationsProps> = ({ userRole
                         {/* Tenant filter */}
                         <select
                             value={selectedTenant}
-                            onChange={(e) => setSelectedTenant(e.target.value)}
+                            onChange={(e) => {
+                                const newTenant = e.target.value;
+                                setSelectedTenant(newTenant);
+                                if (onSelectTenant) {
+                                    onSelectTenant(newTenant);
+                                }
+                            }}
                             style={{
                                 border: "1px solid #d1d5db",
                                 borderRadius: "6px",
@@ -263,8 +292,8 @@ export const RecentRemediations: React.FC<RecentRemediationsProps> = ({ userRole
                 ) : (
                     <div style={{ padding: "2rem", textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: "8px" }}>
                         <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>✨</div>
-                        <div style={{ fontWeight: "500", marginBottom: "0.25rem" }}>No Remediations Yet</div>
-                        <div style={{ fontSize: "0.875rem" }}>System is stable - no autonomous actions needed</div>
+                        <div style={{ fontWeight: "500", marginBottom: "0.25rem" }}>No remediations yet</div>
+                        <div style={{ fontSize: "0.875rem" }}>Try selecting another tenant or clear filters.</div>
                     </div>
                 )}
             </div>

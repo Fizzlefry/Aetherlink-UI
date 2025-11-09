@@ -35,13 +35,26 @@ type InsightPayload = {
 
 type OperatorInsightsProps = {
   userRoles: string;
+  selectedTenant?: string;
+  onSelectTenant?: (tenant: string) => void;
 };
 
-export const OperatorInsights: React.FC<OperatorInsightsProps> = ({ userRoles }) => {
+export const OperatorInsights: React.FC<OperatorInsightsProps> = ({
+  userRoles,
+  selectedTenant: externalTenant,
+  onSelectTenant,
+}) => {
   const [data, setData] = useState<InsightPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedTenant, setSelectedTenant] = useState<string>("all");
+  const [selectedTenant, setSelectedTenant] = useState<string>(externalTenant ?? "all");
+
+  // Sync with external tenant prop
+  useEffect(() => {
+    if (externalTenant && externalTenant !== selectedTenant) {
+      setSelectedTenant(externalTenant);
+    }
+  }, [externalTenant]);
 
   const fetchInsights = async () => {
     try {
@@ -165,28 +178,29 @@ export const OperatorInsights: React.FC<OperatorInsightsProps> = ({ userRoles })
         style={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
           marginBottom: "1rem",
-          gap: "1rem",
-          flexWrap: "wrap",
+          alignItems: "center",
         }}
       >
         <div>
           <h2 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#111827" }}>
-            📈 Operator Insights
+            📊 Operator Insights
           </h2>
           <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>
-            Aggregated view of autonomous remediations (1h / 24h)
-          </p>
-          <p style={{ fontSize: "0.7rem", color: "#9ca3af", marginTop: "0.25rem" }}>
-            Generated at: {new Date(data.generated_at).toLocaleString()}
+            Aggregated remediation trends and top offenders
           </p>
         </div>
 
         <div>
           <select
             value={selectedTenant}
-            onChange={(e) => setSelectedTenant(e.target.value)}
+            onChange={(e) => {
+              const newTenant = e.target.value;
+              setSelectedTenant(newTenant);
+              if (onSelectTenant) {
+                onSelectTenant(newTenant);
+              }
+            }}
             style={{
               border: "1px solid #d1d5db",
               borderRadius: "6px",
@@ -328,15 +342,38 @@ export const OperatorInsights: React.FC<OperatorInsightsProps> = ({ userRoles })
             padding: "1rem 1.25rem",
           }}
         >
-          <h3 style={{ fontSize: "0.875rem", fontWeight: 600, color: "#111827", marginBottom: "0.5rem" }}>
-            Top Tenants (24h)
-          </h3>
+          <p style={{ fontWeight: 600, marginBottom: "0.75rem", color: "#374151" }}>
+            Top tenants (24h)
+          </p>
           {filteredTenants.length === 0 ? (
             <p style={{ fontSize: "0.75rem", color: "#9ca3af" }}>No tenant data</p>
           ) : (
             <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.35rem" }}>
               {filteredTenants.map(([tenant, count]) => (
-                <li key={tenant} style={{ display: "flex", justifyContent: "space-between" }}>
+                <li
+                  key={tenant}
+                  onClick={() => {
+                    if (onSelectTenant) {
+                      onSelectTenant(tenant);
+                    }
+                  }}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    cursor: onSelectTenant ? "pointer" : "default",
+                    padding: "0.25rem 0.5rem",
+                    borderRadius: "4px",
+                    transition: "background 0.15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (onSelectTenant) {
+                      e.currentTarget.style.background = "#f3f4f6";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                  }}
+                >
                   <span style={{ fontSize: "0.75rem", color: "#374151" }}>{tenant}</span>
                   <span style={{ fontSize: "0.75rem", color: "#111827", fontWeight: 600 }}>{count}</span>
                 </li>
