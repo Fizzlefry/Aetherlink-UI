@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 
 from crm.auth_routes import router as auth_router
@@ -7,7 +8,7 @@ from crm.routers.proposals import router as proposals_router
 from crm.routes import router
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
-from prometheus_client import CONTENT_TYPE_LATEST, Histogram, generate_latest
+from prometheus_client import CONTENT_TYPE_LATEST, Gauge, Histogram, generate_latest
 
 # Configure logging
 logging.basicConfig(
@@ -20,6 +21,18 @@ logger = logging.getLogger(__name__)
 request_latency_seconds = Histogram(
     "crm_request_latency_seconds", "Request latency in seconds", ["route", "method"]
 )
+
+# AetherLink monitoring gauge
+SERVICE_NAME = os.getenv("SERVICE_NAME", "peakpro-crm")
+SERVICE_ENV = os.getenv("AETHER_ENV", "local")
+
+aether_service_up = Gauge(
+    "aether_service_up",
+    "Service reachability flag for AetherLink monitoring",
+    ["service", "env"]
+)
+
+print(f"[DEBUG] AetherLink gauge created: SERVICE_NAME={SERVICE_NAME}, SERVICE_ENV={SERVICE_ENV}")
 
 app = FastAPI(
     title="PeakPro CRM", description="Minimal CRM for testing monitoring stack", version="1.0.0"
@@ -72,6 +85,11 @@ app.include_router(qbo_sync_router)
 async def startup():
     """Startup event handler."""
     logger.info("Starting PeakPro CRM API")
+    logger.info(f"AetherLink monitoring: SERVICE_NAME={SERVICE_NAME}, SERVICE_ENV={SERVICE_ENV}")
+
+    # Mark service as up for AetherLink monitoring
+    aether_service_up.labels(service=SERVICE_NAME, env=SERVICE_ENV).set(1)
+    logger.info("AetherLink monitoring: Set aether_service_up gauge")
 
     # Sprint 5: Start background invoice status poller
     import asyncio

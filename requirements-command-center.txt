@@ -1,0 +1,20 @@
+﻿# AetherLink Command Center Requirements
+# Pinned versions for production stability
+
+# Core FastAPI stack
+fastapi==0.114.0
+uvicorn[standard]==0.24.0
+pydantic==2.12.4
+pydantic-core==2.41.5
+pydantic-settings==2.5.2
+
+# HTTP client for AccuLynx integration
+httpx==0.25.2
+
+# Additional utilities
+fastapi-limiter==0.1.6
+
+# Development/monitoring (optional for production)
+# pytest>=7.0.0
+# black>=22.0.0
+# ruff>=0.1.0

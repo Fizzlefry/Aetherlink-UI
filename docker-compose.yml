@@ -1,0 +1,76 @@
+services:
+  # Vertical Apps
+  peakpro-crm:
+    build: ./services/peakpro-crm
+    ports:
+      - "8021:8021"
+    environment:
+      - APP_KEY=local-dev-key
+      - PEAKPRO_DB_PATH=./peakpro.db
+      - PORT=8021
+      - MEDIA_API=http://media-service:9109
+    volumes:
+      - ./services/peakpro-crm/peakpro.db:/app/peakpro.db
+    depends_on:
+      - media-service
+    restart: unless-stopped
+
+  roofwonder:
+    build: ./services/roofwonder
+    ports:
+      - "8022:8022"
+    environment:
+      - APP_KEY=local-dev-key
+      - ROOFWONDER_DB_PATH=./roofwonder.db
+      - PORT=8022
+      - MEDIA_API=http://media-service:9109
+    volumes:
+      - ./services/roofwonder/roofwonder.db:/app/roofwonder.db
+    depends_on:
+      - media-service
+    restart: unless-stopped
+
+  policypal-ai:
+    build: ./services/policypal-ai
+    ports:
+      - "8023:8023"
+    environment:
+      - APP_KEY=local-dev-key
+      - POLICYPAL_DB_PATH=./policypal.db
+      - PORT=8023
+    volumes:
+      - ./services/policypal-ai/policypal.db:/app/policypal.db
+    restart: unless-stopped
+
+  # Media Service
+  media-service:
+    build: ./services/media-service
+    ports:
+      - "9109:9109"
+    environment:
+      - PORT=9109
+      - MEDIA_ROOT=./media
+      - MEDIA_BASE_URL=http://localhost:9109
+      - MEDIA_STORAGE=local
+      - MEDIA_DB_PATH=./media.db
+    volumes:
+      - ./services/media-service/media:/app/media
+      - ./services/media-service/media.db:/app/media.db
+    restart: unless-stopped
+
+  # UI Dashboard
+  ui:
+    build: ./services/ui
+    ports:
+      - "5174:5173"
+    environment:
+      - VITE_PEAKPRO_API=http://localhost:8021
+      - VITE_ROOFWONDER_API=http://localhost:8022
+      - VITE_POLICYPAL_API=http://localhost:8023
+      - VITE_MEDIA_API=http://localhost:9109
+    depends_on:
+      - peakpro-crm
+      - roofwonder
+      - policypal-ai
+      - media-service
+    restart: unless-stopped

@@ -58,9 +58,27 @@ def init_db():
         if "duplicate column" not in str(e).lower():
             print(f"[alert_store] ⚠️  Migration warning: {e}")
 
+    # Phase XVIII: Add alerts table for persistence
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS alerts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fingerprint TEXT NOT NULL UNIQUE,
+            env TEXT NOT NULL,
+            service TEXT,
+            severity TEXT,
+            alertname TEXT,
+            received_at TEXT NOT NULL,
+            payload TEXT NOT NULL,
+            tenant TEXT,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+
     conn.commit()
     conn.close()
-    print("[alert_store] ✅ Alert rules database initialized")
+    print("[alert_store] ✅ Alert rules and alerts database initialized")
 
 
 def create_rule(
@@ -115,6 +133,7 @@ def create_rule(
     )
 
     rule_id = cur.lastrowid
+    assert rule_id is not None, "Failed to get rule ID after insert"
     conn.commit()
     conn.close()
 
@@ -244,3 +263,144 @@ def update_rule_enabled(rule_id: int, enabled: bool) -> bool:
     conn.close()
 
     return updated
+
+
+def enqueue_autoheal_task(service: str, env: str, alertname: str, payload: dict[str, Any]) -> None:
+    """
+    Enqueue an auto-heal task for critical alerts from vertical services.
+    
+    Phase XVII M1: Auto-heal hook implementation.
+    
+    Args:
+        service: Service name (roofwonder, peakpro, policypal)
+        env: Environment (dev, staging, prod)
+        alertname: Alert name from Prometheus
+        payload: Alert annotations/payload
+    """
+    # For now, just log the task - in production this would enqueue to a task queue
+    # like Celery, RQ, or a simple SQLite queue table
+    print(f"[auto-heal] 🚑 Enqueuing heal task for {service} in {env}: {alertname}")
+    print(f"[auto-heal] 📋 Payload: {payload}")
+    
+    # TODO: Implement actual task queue integration
+    # - Create autoheal_tasks table in SQLite
+    # - Add task status tracking (pending, running, completed, failed)
+    # - Integrate with worker processes for actual remediation
+    # - Add retry logic and failure handling
+
+
+def save_alert(alert: dict[str, Any]) -> None:
+    """
+    Persist an alert to SQLite for durability across restarts.
+    
+    Phase XVIII: Alert persistence.
+    
+    Args:
+        alert: Normalized alert dict with fingerprint, env, service, severity, etc.
+    """
+    conn = get_conn()
+    now = datetime.now(UTC).isoformat()
+    
+    # Extract key fields from the alert record
+    fingerprint = alert.get("fingerprint")
+    env = alert.get("env", "unknown")
+    service = alert.get("service") or (alert.get("labels") or {}).get("service")
+    severity = alert.get("severity")
+    alertname = alert.get("alertname") or (alert.get("labels") or {}).get("alertname")
+    tenant = alert.get("tenant") or (alert.get("labels") or {}).get("tenant")
+    
+    # Convert payload to JSON string
+    import json
+    payload_json = json.dumps(alert)
+    
+    try:
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO alerts
+            (fingerprint, env, service, severity, alertname, received_at, payload, tenant, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                fingerprint,
+                env,
+                service,
+                severity,
+                alertname,
+                alert.get("received_at", now),
+                payload_json,
+                tenant,
+                now,
+            ),
+        )
+        conn.commit()
+        print(f"[alert_store] 💾 Persisted alert {fingerprint} to database")
+    except Exception as e:
+        print(f"[alert_store] ❌ Failed to persist alert {fingerprint}: {e}")
+    finally:
+        conn.close()
+
+
+def get_persisted_alerts(limit: int = 100, env: str | None = None, service: str | None = None, tenant: str | None = None) -> list[dict[str, Any]]:
+    """
+    Retrieve persisted alerts from SQLite.
+    
+    Phase XVIII: Alert persistence.
+    
+    Args:
+        limit: Maximum number of alerts to return
+        env: Filter by environment
+        service: Filter by service
+        tenant: Filter by tenant
+        
+    Returns:
+        List of alert dictionaries
+    """
+    conn = get_conn()
+    
+    query = """
+        SELECT fingerprint, env, service, severity, alertname, received_at, payload, tenant, created_at
+        FROM alerts
+        WHERE 1=1
+    """
+    params = []
+    
+    if env:
+        query += " AND env = ?"
+        params.append(env)
+    
+    if service:
+        query += " AND service = ?"
+        params.append(service)
+        
+    if tenant:
+        query += " AND tenant = ?"
+        params.append(tenant)
+    
+    query += " ORDER BY received_at DESC LIMIT ?"
+    params.append(limit)
+    
+    cur = conn.execute(query, params)
+    rows = cur.fetchall()
+    conn.close()
+    
+    import json
+    alerts = []
+    for row in rows:
+        try:
+            alert = json.loads(row["payload"])
+            # Ensure we have the database fields
+            alert.update({
+                "fingerprint": row["fingerprint"],
+                "env": row["env"],
+                "service": row["service"],
+                "severity": row["severity"],
+                "alertname": row["alertname"],
+                "received_at": row["received_at"],
+                "tenant": row["tenant"],
+                "created_at": row["created_at"],
+            })
+            alerts.append(alert)
+        except json.JSONDecodeError:
+            print(f"[alert_store] ⚠️  Failed to decode alert payload for {row['fingerprint']}")
+    
+    return alerts

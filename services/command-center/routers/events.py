@@ -10,7 +10,7 @@ import json
 import os
 import sys
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -48,6 +48,14 @@ EVENT_SCHEMAS = {
     "ai.fallback.used": {
         "required": ["event_type", "source", "timestamp", "payload"],
         "description": "Emitted by AI Orchestrator when it uses a fallback provider",
+    },
+    "delivery.replayed": {
+        "required": ["event_type", "source", "timestamp", "payload"],
+        "description": "Emitted when an operator replays a delivery",
+    },
+    "autoheal.cooldown.cleared": {
+        "required": ["event_type", "source", "timestamp", "payload"],
+        "description": "Emitted when an auto-heal cooldown period expires",
     },
 }
 
@@ -143,6 +151,92 @@ async def publish_event(event: dict, request: Request):
     }
 
 
+@router.get("/stream", dependencies=[Depends(require_roles(["operator", "admin"]))])
+async def event_stream():
+    """
+    Server-Sent Events stream for real-time event updates.
+    
+    Phase VI M2: Live event streaming for dashboards and monitoring.
+    """
+    async def event_generator():
+        # Create queue for this client
+        queue = asyncio.Queue()
+        subscribers.append(queue)
+        
+        try:
+            # Send initial connection message
+            yield f"data: {json.dumps({'type': 'connected', 'timestamp': datetime.now(UTC).isoformat()})}\n\n"
+            
+            while True:
+                try:
+                    # Wait for event with timeout
+                    event = await asyncio.wait_for(queue.get(), timeout=30.0)
+                    yield f"data: {json.dumps(event)}\n\n"
+                except asyncio.TimeoutError:
+                    # Send heartbeat
+                    yield f"data: {json.dumps({'type': 'heartbeat', 'timestamp': datetime.now(UTC).isoformat()})}\n\n"
+        except Exception as e:
+            print(f"[events] SSE error: {e}")
+        finally:
+            # Remove from subscribers
+            if queue in subscribers:
+                subscribers.remove(queue)
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Cache-Control",
+        }
+    )
+
+
+@router.get("/stream", dependencies=[Depends(require_roles(["operator", "admin"]))])
+async def event_stream():
+    """
+    Server-Sent Events stream for real-time event updates.
+    
+    Phase VI M2: Live event streaming for dashboards and monitoring.
+    """
+    async def event_generator():
+        # Create queue for this client
+        queue = asyncio.Queue()
+        subscribers.append(queue)
+        
+        try:
+            # Send initial connection message
+            yield f"data: {json.dumps({'type': 'connected', 'timestamp': datetime.now(UTC).isoformat()})}\n\n"
+            
+            while True:
+                try:
+                    # Wait for event with timeout
+                    event = await asyncio.wait_for(queue.get(), timeout=30.0)
+                    yield f"data: {json.dumps(event)}\n\n"
+                except asyncio.TimeoutError:
+                    # Send heartbeat
+                    yield f"data: {json.dumps({'type': 'heartbeat', 'timestamp': datetime.now(UTC).isoformat()})}\n\n"
+        except Exception as e:
+            print(f"[events] SSE error: {e}")
+        finally:
+            # Remove from subscribers
+            if queue in subscribers:
+                subscribers.remove(queue)
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Cache-Control",
+        }
+    )
+
+
 @router.get("/recent", dependencies=[Depends(require_roles(["operator", "admin"]))])
 async def recent(
     request: Request,
@@ -196,6 +290,63 @@ async def recent(
     return {
         "status": "ok",
         "count": len(data),
+        "events": data,
+    }
+
+
+@router.get("/audit", dependencies=[Depends(require_roles(["operator", "admin"]))])
+async def audit_timeline(
+    request: Request,
+    days: int = 7,
+    event_type: str | None = None,
+    source: str | None = None,
+    tenant_id: str | None = None,
+    severity: str | None = None,
+    limit: int = 1000,
+):
+    """
+    Retrieve historical event audit timeline.
+
+    Query parameters:
+    - days: Number of days to look back (default 7)
+    - event_type: Filter by event type (optional)
+    - source: Filter by source service (optional)
+    - tenant_id: Filter by tenant ID (optional)
+    - severity: Filter by severity level (optional)
+    - limit: Maximum number of events (default 1000)
+
+    Returns events sorted by timestamp (newest first) for audit trails.
+    """
+    # Extract tenant from header (set by TenantContextMiddleware)
+    header_tenant = getattr(request.state, "tenant_id", None)
+
+    # Role-based tenant enforcement (same as /recent)
+    user_roles = getattr(request.state, "user_roles", [])
+    is_admin = any(r in ("admin", "operator") for r in user_roles)
+    effective_tenant = tenant_id if (is_admin and tenant_id) else header_tenant
+
+    # Calculate since timestamp
+    since_dt = datetime.now(UTC) - timedelta(days=days)
+    since = since_dt.isoformat()
+
+    try:
+        data = event_store.list_recent(
+            limit=limit,
+            event_type=event_type,
+            source=source,
+            tenant_id=effective_tenant,
+            severity=severity,
+            since=since,
+        )
+    except Exception as e:
+        print(f"[events] ⚠️  Failed to fetch audit events: {e}")
+        data = []
+
+    return {
+        "status": "ok",
+        "count": len(data),
+        "days": days,
+        "since": since,
         "events": data,
     }
 

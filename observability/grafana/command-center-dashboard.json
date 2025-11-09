@@ -1,0 +1,305 @@
+{
+    "title": "AetherLink Command Center",
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "version": 1,
+    "panels": [
+        {
+            "type": "stat",
+            "title": "Service Health",
+            "id": 1,
+            "datasource": {
+                "type": "prometheus",
+                "uid": "PROMETHEUS_DS"
+            },
+            "targets": [
+                {
+                    "expr": "command_center_health",
+                    "refId": "A"
+                }
+            ],
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "colorMode": "value",
+                "textMode": "auto",
+                "graphMode": "area"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": null
+                            },
+                            {
+                                "color": "green",
+                                "value": 1
+                            }
+                        ]
+                    },
+                    "unit": "none"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 0,
+                "y": 0
+            }
+        },
+        {
+            "type": "stat",
+            "title": "Uptime (hours)",
+            "id": 2,
+            "datasource": {
+                "type": "prometheus",
+                "uid": "PROMETHEUS_DS"
+            },
+            "targets": [
+                {
+                    "expr": "command_center_uptime_seconds / 3600",
+                    "refId": "A"
+                }
+            ],
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "horizontal"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "h",
+                    "decimals": 2
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 4,
+                "y": 0
+            }
+        },
+        {
+            "type": "stat",
+            "title": "Total Events",
+            "id": 3,
+            "datasource": {
+                "type": "prometheus",
+                "uid": "PROMETHEUS_DS"
+            },
+            "targets": [
+                {
+                    "expr": "sum(command_center_events_total)",
+                    "refId": "A"
+                }
+            ],
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                }
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "none",
+                    "decimals": 0
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 8,
+                "y": 0
+            }
+        },
+        {
+            "type": "stat",
+            "title": "API Requests (5m)",
+            "id": 4,
+            "datasource": {
+                "type": "prometheus",
+                "uid": "PROMETHEUS_DS"
+            },
+            "targets": [
+                {
+                    "expr": "sum(rate(command_center_api_requests_total[5m]))",
+                    "refId": "A"
+                }
+            ],
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                }
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "reqps",
+                    "decimals": 2
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 12,
+                "y": 0
+            }
+        },
+        {
+            "type": "graph",
+            "title": "Uptime Trend",
+            "id": 5,
+            "datasource": {
+                "type": "prometheus",
+                "uid": "PROMETHEUS_DS"
+            },
+            "targets": [
+                {
+                    "expr": "command_center_uptime_seconds",
+                    "legendFormat": "uptime",
+                    "refId": "A"
+                }
+            ],
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 4
+            },
+            "lines": true
+        },
+        {
+            "type": "graph",
+            "title": "Events by Type",
+            "id": 6,
+            "datasource": {
+                "type": "prometheus",
+                "uid": "PROMETHEUS_DS"
+            },
+            "targets": [
+                {
+                    "expr": "sum(rate(command_center_events_total[5m])) by (event_type)",
+                    "legendFormat": "{{event_type}}",
+                    "refId": "A"
+                }
+            ],
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 4
+            },
+            "lines": true,
+            "stack": true
+        },
+        {
+            "type": "table",
+            "title": "API Response Codes",
+            "id": 7,
+            "datasource": {
+                "type": "prometheus",
+                "uid": "PROMETHEUS_DS"
+            },
+            "targets": [
+                {
+                    "expr": "sum(rate(command_center_api_requests_total[5m])) by (status)",
+                    "legendFormat": "{{status}}",
+                    "refId": "A"
+                }
+            ],
+            "options": {
+                "showHeader": true
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "align": "auto",
+                        "displayMode": "auto"
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 12
+            }
+        },
+        {
+            "type": "stat",
+            "title": "Prometheus Scrape OK",
+            "id": 8,
+            "datasource": {
+                "type": "prometheus",
+                "uid": "PROMETHEUS_DS"
+            },
+            "targets": [
+                {
+                    "expr": "up{job=\"command-center\"}",
+                    "refId": "A"
+                }
+            ],
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                }
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": null
+                            },
+                            {
+                                "color": "green",
+                                "value": 1
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 8,
+                "y": 12
+            }
+        }
+    ],
+    "templating": {
+        "list": [
+            {
+                "type": "query",
+                "name": "instance",
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "PROMETHEUS_DS"
+                },
+                "query": "label_values(up{job=\"command-center\"}, instance)",
+                "refresh": 2
+            }
+        ]
+    }
+}

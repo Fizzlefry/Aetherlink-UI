@@ -1,0 +1,20 @@
+{
+  "test-persist": {
+    "interval_sec": 180,
+    "last_run": 1762661676.5441074,
+    "last_status": {
+      "ok": true,
+      "ts": 1762661676.5441074,
+      "message": "scheduled import completed for test-persist",
+      "result": {
+        "ok": true,
+        "stats": {
+          "imported": 0,
+          "skipped": 0
+        },
+        "tenant": "test-persist",
+        "message": "stub: real AccuLynx import not yet enabled"
+      }
+    }
+  }
+}

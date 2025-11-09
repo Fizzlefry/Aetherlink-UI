@@ -1,0 +1,370 @@
+[
+  {
+    "ts": 1762663224.665598,
+    "ts_iso": "2025-11-09T04:40:24.665597Z",
+    "tenant": "the-expert-co",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.requested"
+    }
+  },
+  {
+    "ts": 1762663224.6560915,
+    "ts_iso": "2025-11-09T04:40:24.656091Z",
+    "tenant": "the-expert-co",
+    "operation": "scheduler.import.force_run",
+    "source": "ui",
+    "metadata": {
+      "ts_iso": "2025-11-09T04:40:24.656091Z"
+    }
+  },
+  {
+    "ts": 1762663218.4977164,
+    "ts_iso": "2025-11-09T04:40:18.497716Z",
+    "tenant": "the-expert-co",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "ops.local.run.completed"
+    }
+  },
+  {
+    "ts": 1762663209.7880251,
+    "ts_iso": "2025-11-09T04:40:09.788025Z",
+    "tenant": "test-tenant",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762663209.7795317,
+    "ts_iso": "2025-11-09T04:40:09.779531Z",
+    "tenant": "test-tenant",
+    "operation": "scheduler.import.completed",
+    "source": "scheduler",
+    "metadata": {
+      "ok": true,
+      "status": null,
+      "ts_iso": "2025-11-09T04:40:09.770728Z"
+    }
+  },
+  {
+    "ts": 1762663169.3373806,
+    "ts_iso": "2025-11-09T04:39:29.337380Z",
+    "tenant": "the-expert-co",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.requested"
+    }
+  },
+  {
+    "ts": 1762663169.3268726,
+    "ts_iso": "2025-11-09T04:39:29.326872Z",
+    "tenant": "the-expert-co",
+    "operation": "scheduler.import.force_run",
+    "source": "ui",
+    "metadata": {
+      "ts_iso": "2025-11-09T04:39:29.326873Z"
+    }
+  },
+  {
+    "ts": 1762663163.183121,
+    "ts_iso": "2025-11-09T04:39:23.183120Z",
+    "tenant": "the-expert-co",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "ops.local.run.completed"
+    }
+  },
+  {
+    "ts": 1762663117.358594,
+    "ts_iso": "2025-11-09T04:38:37.358594Z",
+    "tenant": "the-expert-co",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "ops.local.run.completed"
+    }
+  },
+  {
+    "ts": 1762662900.6755211,
+    "ts_iso": "2025-11-09T04:35:00.675521Z",
+    "tenant": "test-tenant",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762662900.666012,
+    "ts_iso": "2025-11-09T04:35:00.666012Z",
+    "tenant": "test-tenant",
+    "operation": "scheduler.import.completed",
+    "source": "scheduler",
+    "metadata": {
+      "ok": true,
+      "status": null,
+      "ts_iso": "2025-11-09T04:35:00.657009Z"
+    }
+  },
+  {
+    "ts": 1762662525.212696,
+    "ts_iso": "2025-11-09T04:28:45.212696Z",
+    "tenant": "test-tenant",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762662525.2041829,
+    "ts_iso": "2025-11-09T04:28:45.204182Z",
+    "tenant": "test-tenant",
+    "operation": "scheduler.import.completed",
+    "source": "scheduler",
+    "metadata": {
+      "ok": false,
+      "status": 404,
+      "ts_iso": "2025-11-09T04:28:43.760823Z"
+    }
+  },
+  {
+    "ts": 1762662223.5000193,
+    "ts_iso": "2025-11-09T04:23:43.500019Z",
+    "tenant": "test-tenant",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762662223.4928918,
+    "ts_iso": "2025-11-09T04:23:43.492891Z",
+    "tenant": "test-tenant",
+    "operation": "scheduler.import.completed",
+    "source": "scheduler",
+    "metadata": {
+      "ok": false,
+      "status": 404,
+      "ts_iso": "2025-11-09T04:23:42.813464Z"
+    }
+  },
+  {
+    "ts": 1762662222.8038692,
+    "ts_iso": "2025-11-09T04:23:42.803869Z",
+    "tenant": "test-tenant",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.requested"
+    }
+  },
+  {
+    "ts": 1762662222.7923594,
+    "ts_iso": "2025-11-09T04:23:42.792359Z",
+    "tenant": "test-tenant",
+    "operation": "scheduler.import.force_run",
+    "source": "ui",
+    "metadata": {
+      "ts_iso": "2025-11-09T04:23:42.792359Z"
+    }
+  },
+  {
+    "ts": 1762662190.2974005,
+    "ts_iso": "2025-11-09T04:23:10.297400Z",
+    "tenant": "test-tenant",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762662190.2898962,
+    "ts_iso": "2025-11-09T04:23:10.289896Z",
+    "tenant": "test-tenant",
+    "operation": "scheduler.import.completed",
+    "source": "scheduler",
+    "metadata": {
+      "ok": true,
+      "status": null,
+      "ts_iso": "2025-11-09T04:23:10.284388Z"
+    }
+  },
+  {
+    "ts": 1762662190.2763863,
+    "ts_iso": "2025-11-09T04:23:10.276386Z",
+    "tenant": "test-tenant",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.requested"
+    }
+  },
+  {
+    "ts": 1762662190.2644632,
+    "ts_iso": "2025-11-09T04:23:10.264463Z",
+    "tenant": "test-tenant",
+    "operation": "scheduler.import.force_run",
+    "source": "ui",
+    "metadata": {
+      "ts_iso": "2025-11-09T04:23:10.264463Z"
+    }
+  },
+  {
+    "ts": 1762662150.7662787,
+    "ts_iso": "2025-11-09T04:22:30.766278Z",
+    "tenant": "test-tenant",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762662150.7597723,
+    "ts_iso": "2025-11-09T04:22:30.759772Z",
+    "tenant": "test-tenant",
+    "operation": "scheduler.import.completed",
+    "source": "scheduler",
+    "metadata": {
+      "ok": false,
+      "status": 404,
+      "ts_iso": "2025-11-09T04:22:30.281884Z"
+    }
+  },
+  {
+    "ts": 1762662150.273373,
+    "ts_iso": "2025-11-09T04:22:30.273372Z",
+    "tenant": "test-tenant",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.requested"
+    }
+  },
+  {
+    "ts": 1762662150.2637918,
+    "ts_iso": "2025-11-09T04:22:30.263791Z",
+    "tenant": "test-tenant",
+    "operation": "scheduler.import.force_run",
+    "source": "ui",
+    "metadata": {
+      "ts_iso": "2025-11-09T04:22:30.263792Z"
+    }
+  },
+  {
+    "ts": 1762662148.316941,
+    "ts_iso": "2025-11-09T04:22:28.316941Z",
+    "tenant": "test-tenant",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.schedule.created"
+    }
+  },
+  {
+    "ts": 1762662148.308337,
+    "ts_iso": "2025-11-09T04:22:28.308336Z",
+    "tenant": "test-tenant",
+    "operation": "scheduler.schedule.created",
+    "source": "ui",
+    "metadata": {
+      "interval_sec": 300
+    }
+  },
+  {
+    "ts": 1762662143.38108,
+    "ts_iso": "2025-11-09T04:22:23.381079Z",
+    "tenant": "test-tenant",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.requested"
+    }
+  },
+  {
+    "ts": 1762662143.3705773,
+    "ts_iso": "2025-11-09T04:22:23.370577Z",
+    "tenant": "test-tenant",
+    "operation": "scheduler.import.force_run",
+    "source": "ui",
+    "metadata": {
+      "ts_iso": "2025-11-09T04:22:23.370577Z"
+    }
+  },
+  {
+    "ts": 1762662083.1613827,
+    "ts_iso": "2025-11-09T04:21:23.161382Z",
+    "tenant": "test-tenant",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.requested"
+    }
+  },
+  {
+    "ts": 1762662083.1508753,
+    "ts_iso": "2025-11-09T04:21:23.150875Z",
+    "tenant": "test-tenant",
+    "operation": "scheduler.import.force_run",
+    "source": "ui",
+    "metadata": {
+      "ts_iso": "2025-11-09T04:21:23.150875Z"
+    }
+  },
+  {
+    "ts": 1762647915.4493783,
+    "ts_iso": "2025-11-09T00:25:15.449378Z",
+    "tenant": "system",
+    "operation": "startup_verify",
+    "source": "startup",
+    "metadata": {
+      "auto_paused_reapplied": 0,
+      "snapshot": {
+        "db": "degraded",
+        "replication": "ok",
+        "scheduler": "ok",
+        "degraded": true,
+        "details": {
+          "replication": {
+            "queue_length": 0,
+            "max_queue": 1000,
+            "ratio": 0.0
+          }
+        }
+      }
+    }
+  },
+  {
+    "ts": 1762647885.9047048,
+    "ts_iso": "2025-11-09T00:24:45.904705Z",
+    "tenant": "system",
+    "operation": "startup_verify",
+    "source": "startup",
+    "metadata": {
+      "auto_paused_reapplied": 0,
+      "snapshot": {
+        "db": "degraded",
+        "replication": "ok",
+        "scheduler": "ok",
+        "degraded": true,
+        "details": {
+          "replication": {
+            "queue_length": 0,
+            "max_queue": 1000,
+            "ratio": 0.0
+          }
+        }
+      }
+    }
+  }
+]

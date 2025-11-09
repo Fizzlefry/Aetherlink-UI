@@ -11,6 +11,7 @@ services:
       - ./prometheus-alerts.yml:/etc/prometheus/alerts.yml:ro
       - ./prometheus-recording-rules.yml:/etc/prometheus/recording-rules.yml:ro
       - ./prometheus-crm-events-rules.yml:/etc/prometheus/crm-events-rules.yml:ro
+      - ./aetherlink-alerts.yaml:/etc/prometheus/aetherlink-alerts.yml:ro
       - prometheus-data:/prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
@@ -143,6 +144,8 @@ services:
       - DATABASE_URL=postgresql+psycopg://crm:crm@postgres-crm:5432/crm
       - CRM_ENABLE_SEED=true
       - LOG_LEVEL=INFO
+      - SERVICE_NAME=peakpro-crm
+      - AETHER_ENV=local
       - MINIO_INTERNAL_ENDPOINT=minio:9000
       - MINIO_PUBLIC_ENDPOINT=localhost:9000
       - MINIO_ROOT_USER=admin
@@ -285,6 +288,34 @@ services:
       - aether-monitoring
     ports:
       - "9308:9308"
+
+  # RoofWonder service for monitoring integration
+  roofwonder:
+    build: ../services/roofwonder
+    container_name: aether-roofwonder-monitoring
+    ports:
+      - "8022:8022"
+    environment:
+      - SERVICE_NAME=roofwonder
+      - SERVICE_ENV=local
+      - PORT=8022
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
+
+  # PolicyPal AI service for monitoring integration
+  policypal-ai:
+    build: ../services/policypal-ai
+    container_name: aether-policypal-ai-monitoring
+    ports:
+      - "8030:8000"
+    environment:
+      - SERVICE_NAME=policypal-ai
+      - AETHER_ENV=local
+      - PORT=8000
+    restart: unless-stopped
+    networks:
+      - aether-monitoring
 
 volumes:
   prometheus-data:

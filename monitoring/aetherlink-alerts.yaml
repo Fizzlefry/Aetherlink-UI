@@ -1,0 +1,142 @@
+---
+# AetherLink Prometheus Alert Rules
+#
+# To use these rules:
+# 1. Add this file to your Prometheus configuration:
+#    rule_files:
+#      - "aetherlink-alerts.yaml"
+#
+# 2. Configure Alertmanager for notifications (Slack, PagerDuty, email, etc.)
+#
+# 3. Adjust the 'env' label filter to match your environment:
+#    - env="dev" for development
+#    - env="staging" for staging
+#    - env="prod" for production
+
+groups:
+  - name: aetherlink.verticals
+    interval: 30s
+    rules:
+      # 1) Service Down Alert
+      # Triggers when Command Center cannot reach a vertical service
+      - alert: AetherlinkVerticalServiceDown
+        expr: aether_service_up{env="dev"} == 0
+        for: 5m
+        labels:
+          severity: warning
+          component: vertical-service
+        annotations:
+          summary: "Vertical service {{ $labels.service }} is down"
+          description: |
+            Command Center could not reach vertical service {{ $labels.service }} for 5 minutes in environment {{ $labels.env }}.
+
+            Impact: Service is unavailable for user requests
+            Action: Check service logs and container status
+            Runbook: https://docs.aetherlink.io/runbooks/service-down
+
+      # 2) Data Stale Alert
+      # Triggers when a service hasn't updated its stats in >120s
+      - alert: AetherlinkVerticalDataStale
+        expr: aether_service_stale{env="dev"} == 1
+        for: 10m
+        labels:
+          severity: warning
+          component: vertical-service
+        annotations:
+          summary: "Vertical service {{ $labels.service }} data is stale"
+          description: |
+            Vertical service {{ $labels.service }} has not refreshed its stats in over 120 seconds for 10 minutes in environment {{ $labels.env }}.
+
+            Impact: Service may be frozen or experiencing issues
+            Action: Check service health and restart if necessary
+            Runbook: https://docs.aetherlink.io/runbooks/data-stale
+
+      # 3) Scrape Errors Alert
+      # Triggers when Command Center fails to scrape a service repeatedly
+      - alert: AetherlinkVerticalScrapeErrors
+        expr: rate(aether_verticals_scrape_errors_total{env="dev"}[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+          component: command-center
+        annotations:
+          summary: "Command Center scrape errors for {{ $labels.service }}"
+          description: |
+            Command Center is failing to scrape {{ $labels.service }} repeatedly in environment {{ $labels.env }}.
+
+            Impact: Metrics and monitoring data may be incomplete
+            Action: Check network connectivity and service health
+            Runbook: https://docs.aetherlink.io/runbooks/scrape-errors
+
+      # 4) Scrape Duration Slow Alert (Optional)
+      # Triggers when the average scrape takes longer than 5 seconds
+      - alert: AetherlinkVerticalScrapeSlow
+        expr: |
+          (
+            aether_verticals_scrape_duration_seconds_sum{env="dev"}
+            /
+            aether_verticals_scrape_duration_seconds_count{env="dev"}
+          ) > 5
+        for: 5m
+        labels:
+          severity: info
+          component: command-center
+        annotations:
+          summary: "Vertical scraping is slow in environment {{ $labels.env }}"
+          description: |
+            Average scrape duration over the last 5 minutes is greater than 5 seconds in environment {{ $labels.env }}.
+
+            Impact: Command Center observability dashboard may lag
+            Action: Investigate vertical service performance and database query times
+            Runbook: https://docs.aetherlink.io/runbooks/scrape-slow
+
+  # Additional alert group for business metrics (optional)
+  - name: aetherlink.business
+    interval: 1m
+    rules:
+      # Alert on platform-wide business metrics anomalies
+      # Example: sudden drop in total contacts/deals/jobs
+      - alert: AetherlinkPlatformActivityDrop
+        expr: |
+          (
+            sum(aether_platform_total_contacts{env="dev"})
+            + sum(aether_platform_total_deals{env="dev"})
+            + sum(aether_platform_total_jobs{env="dev"})
+          ) == 0
+        for: 15m
+        labels:
+          severity: warning
+          component: platform
+        annotations:
+          summary: "Platform shows zero activity in environment {{ $labels.env }}"
+          description: |
+            All business metrics (contacts, deals, jobs) are at zero for 15 minutes in environment {{ $labels.env }}.
+            This likely indicates a data collection or storage issue.
+
+            Action: Check vertical service databases and API connectivity
+
+# Notes for Production Use:
+#
+# 1. Environment-specific rules:
+#    - Create separate rules for each environment by duplicating groups
+#    - Use different severity levels (info for dev, warning for staging, critical for prod)
+#
+# 2. Notification routing (configure in Alertmanager):
+#    route:
+#      receiver: 'slack-dev'
+#      routes:
+#        - match:
+#            env: prod
+#          receiver: 'pagerduty-oncall'
+#        - match:
+#            env: staging
+#          receiver: 'slack-staging'
+#
+# 3. Alert grouping:
+#    - Group by service and component to avoid alert storms
+#    - Add inhibition rules to suppress lower-severity alerts when critical alerts fire
+#
+# 4. Testing:
+#    - Use Prometheus's /-/reload endpoint to reload rules without restart
+#    - Use amtool to validate Alertmanager configuration
+#    - Test alert routing with curl to Alertmanager API

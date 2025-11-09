@@ -1,0 +1,580 @@
+[
+  {
+    "ts": 1762661497.4455743,
+    "ts_iso": "2025-11-09T04:11:37.445574Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762661497.4360697,
+    "ts_iso": "2025-11-09T04:11:37.436070Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762661317.1582582,
+    "ts_iso": "2025-11-09T04:08:37.158258Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762661317.1497517,
+    "ts_iso": "2025-11-09T04:08:37.149752Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762661136.8805673,
+    "ts_iso": "2025-11-09T04:05:36.880567Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762661136.8720565,
+    "ts_iso": "2025-11-09T04:05:36.872056Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762660956.6589494,
+    "ts_iso": "2025-11-09T04:02:36.658949Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762660956.6504405,
+    "ts_iso": "2025-11-09T04:02:36.650440Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762660776.5181735,
+    "ts_iso": "2025-11-09T03:59:36.518173Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762660776.5096662,
+    "ts_iso": "2025-11-09T03:59:36.509666Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762660596.298817,
+    "ts_iso": "2025-11-09T03:56:36.298817Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762660596.2898026,
+    "ts_iso": "2025-11-09T03:56:36.289803Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762660416.0251982,
+    "ts_iso": "2025-11-09T03:53:36.025198Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762660416.0181935,
+    "ts_iso": "2025-11-09T03:53:36.018193Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762660235.7292097,
+    "ts_iso": "2025-11-09T03:50:35.729210Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762660235.720701,
+    "ts_iso": "2025-11-09T03:50:35.720701Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762660055.5282314,
+    "ts_iso": "2025-11-09T03:47:35.528231Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762660055.520086,
+    "ts_iso": "2025-11-09T03:47:35.520086Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762659875.2170537,
+    "ts_iso": "2025-11-09T03:44:35.217054Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762659875.2090538,
+    "ts_iso": "2025-11-09T03:44:35.209054Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762659695.0533707,
+    "ts_iso": "2025-11-09T03:41:35.053371Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762659695.045176,
+    "ts_iso": "2025-11-09T03:41:35.045176Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762659513.484053,
+    "ts_iso": "2025-11-09T03:38:33.484053Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762659513.4755402,
+    "ts_iso": "2025-11-09T03:38:33.475540Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762659333.174218,
+    "ts_iso": "2025-11-09T03:35:33.174218Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762659333.1657028,
+    "ts_iso": "2025-11-09T03:35:33.165703Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762659152.870286,
+    "ts_iso": "2025-11-09T03:32:32.870286Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762659152.862777,
+    "ts_iso": "2025-11-09T03:32:32.862777Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762658972.7652245,
+    "ts_iso": "2025-11-09T03:29:32.765224Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762658972.756719,
+    "ts_iso": "2025-11-09T03:29:32.756719Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762658792.4334917,
+    "ts_iso": "2025-11-09T03:26:32.433492Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762658792.4259827,
+    "ts_iso": "2025-11-09T03:26:32.425983Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762658612.2073948,
+    "ts_iso": "2025-11-09T03:23:32.207395Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762658612.1988885,
+    "ts_iso": "2025-11-09T03:23:32.198889Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762658431.8995492,
+    "ts_iso": "2025-11-09T03:20:31.899549Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762658431.8909614,
+    "ts_iso": "2025-11-09T03:20:31.890961Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762658251.654337,
+    "ts_iso": "2025-11-09T03:17:31.654337Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762658251.645827,
+    "ts_iso": "2025-11-09T03:17:31.645827Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762658071.358474,
+    "ts_iso": "2025-11-09T03:14:31.358474Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762658071.3494158,
+    "ts_iso": "2025-11-09T03:14:31.349416Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762657891.092476,
+    "ts_iso": "2025-11-09T03:11:31.092476Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762657891.0828893,
+    "ts_iso": "2025-11-09T03:11:31.082889Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762657710.796997,
+    "ts_iso": "2025-11-09T03:08:30.796997Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762657710.7884898,
+    "ts_iso": "2025-11-09T03:08:30.788490Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762657530.6715086,
+    "ts_iso": "2025-11-09T03:05:30.671509Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762657530.6630006,
+    "ts_iso": "2025-11-09T03:05:30.663001Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762657350.3757389,
+    "ts_iso": "2025-11-09T03:02:30.375739Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762657350.3664367,
+    "ts_iso": "2025-11-09T03:02:30.366437Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762657170.114244,
+    "ts_iso": "2025-11-09T02:59:30.114244Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762657170.1047394,
+    "ts_iso": "2025-11-09T02:59:30.104739Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762656989.8818529,
+    "ts_iso": "2025-11-09T02:56:29.881853Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762656989.8738434,
+    "ts_iso": "2025-11-09T02:56:29.873843Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762656809.6707978,
+    "ts_iso": "2025-11-09T02:53:29.670798Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762656809.6632855,
+    "ts_iso": "2025-11-09T02:53:29.663285Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762656629.3604567,
+    "ts_iso": "2025-11-09T02:50:29.360457Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762656629.3529475,
+    "ts_iso": "2025-11-09T02:50:29.352947Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762656449.1212542,
+    "ts_iso": "2025-11-09T02:47:29.121254Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762656449.1132529,
+    "ts_iso": "2025-11-09T02:47:29.113253Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762656268.9108725,
+    "ts_iso": "2025-11-09T02:44:28.910872Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762656268.9033628,
+    "ts_iso": "2025-11-09T02:44:28.903363Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762655999.5479102,
+    "ts_iso": "2025-11-09T02:39:59.547910Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.import.completed"
+    }
+  },
+  {
+    "ts": 1762655999.541398,
+    "ts_iso": "2025-11-09T02:39:59.541398Z",
+    "tenant": "test-persist",
+    "operation": "scheduled-run",
+    "source": "scheduler",
+    "metadata": {}
+  },
+  {
+    "ts": 1762655998.4177434,
+    "ts_iso": "2025-11-09T02:39:58.417743Z",
+    "tenant": "test-persist",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "scheduler.schedule.created"
+    }
+  },
+  {
+    "ts": 1762655998.4057238,
+    "ts_iso": "2025-11-09T02:39:58.405724Z",
+    "tenant": "test-persist",
+    "operation": "schedule",
+    "source": "api",
+    "metadata": {
+      "interval_sec": 180
+    }
+  }
+]

@@ -1,4 +1,25 @@
 import React, { useEffect, useState, useMemo } from "react";
+import {
+    fetchMeta,
+    fetchHealth,
+    fetchDeliveryHistory,
+    replayDelivery,
+    fetchAutohealRules,
+    clearEndpointCooldown,
+    fetchMetrics,
+    DeliveryHistoryItem,
+    DeliveryHistoryResponse,
+    AutohealRule,
+    AutohealRulesResponse,
+    MetaResponse,
+    HealthResponse
+} from "../commandCenterApi";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+import { AnomaliesPanel } from "../components/AnomaliesPanel";
+import { DeliveryReplayPanel } from "../components/DeliveryReplayPanel";
+import { VerticalAppsPanel } from "../components/VerticalAppsPanel";
+import { MediaStatsBadge } from "../components/MediaStatsBadge";
+import { MediaStatsCard } from "../components/MediaStatsCard";
 
 // Phase VIII M8: Time window types
 type TimeWindowKey = '15m' | '1h' | '24h' | 'all';
@@ -90,8 +111,8 @@ const OperatorDashboard: React.FC = () => {
     const [deliveries, setDeliveries] = useState<DeliveryEntry[]>([]);
     const [templates, setTemplates] = useState<AlertTemplate[]>([]);
     const [historicalDeliveries, setHistoricalDeliveries] = useState<Delivery[]>([]);
-    const [tenant, setTenant] = useState<string>("all");
-    const [statusFilter, setStatusFilter] = useState<string>("all");
+    const [tenant, setTenant] = useLocalStorage<string>("cc.dashboard.tenant", "all");
+    const [statusFilter, setStatusFilter] = useLocalStorage<string>("cc.dashboard.statusFilter", "all");
     const [timeWindow, setTimeWindow] = useState<TimeWindowKey>("1h"); // Phase VIII M8
     const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(null);
     const [selectedDelivery, setSelectedDelivery] = useState<any>(null);
@@ -108,6 +129,29 @@ const OperatorDashboard: React.FC = () => {
 
     // Phase VIII M10: Operator Audit Trail
     const [auditEntries, setAuditEntries] = useState<any[]>([]);
+
+    // Command Center state
+    const [meta, setMeta] = useState<MetaResponse | null>(null);
+    const [health, setHealth] = useState<HealthResponse | null>(null);
+    const [deliveryHistory, setDeliveryHistory] = useState<DeliveryHistoryItem[]>([]);
+    const [deliveryHistoryTotal, setDeliveryHistoryTotal] = useState(0);
+    const [autohealRules, setAutohealRules] = useState<AutohealRule[]>([]);
+    const [autohealRulesTotal, setAutohealRulesTotal] = useState(0);
+    const [userRoles, setUserRoles] = useLocalStorage<string>("cc.dashboard.userRoles", "operator");
+    const [loadingMeta, setLoadingMeta] = useState(false);
+    const [loadingHealth, setLoadingHealth] = useState(false);
+    const [loadingDeliveryHistory, setLoadingDeliveryHistory] = useState(false);
+    const [loadingAutohealRules, setLoadingAutohealRules] = useState(false);
+
+    // Load command center data on mount and role change
+    useEffect(() => {
+        fetchMetaData();
+        fetchHealthData();
+        fetchDeliveryHistoryData(tenant, statusFilter);
+        if (userRoles.includes("admin")) {
+            fetchAutohealRulesData();
+        }
+    }, [userRoles]);
     const [loadingAudit, setLoadingAudit] = useState<boolean>(false);
 
     const fetchAll = async (selectedTenant: string) => {
@@ -176,22 +220,61 @@ const OperatorDashboard: React.FC = () => {
     };
 
     // Fetch delivery history
-    const fetchDeliveryHistory = async (selectedTenant: string) => {
+    const fetchDeliveryHistoryData = async (selectedTenant: string, statusFilter: string) => {
         try {
-            setLoadingHistory(true);
-            const baseUrl = "http://localhost:8010";
-            const tenantParam = selectedTenant === "all" ? "" : `?tenant_id=${encodeURIComponent(selectedTenant)}`;
-            const res = await fetch(`${baseUrl}/alerts/deliveries/history${tenantParam}`, {
-                headers: { "X-User-Roles": "operator" },
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setHistoricalDeliveries(data.deliveries ?? []);
-            }
+            setLoadingDeliveryHistory(true);
+            const params: any = { limit: 50, offset: 0 };
+            if (selectedTenant !== "all") params.tenant_id = selectedTenant;
+            if (statusFilter !== "all") params.status = statusFilter;
+
+            const data = await fetchDeliveryHistory(params, userRoles);
+            setDeliveryHistory(data.items);
+            setDeliveryHistoryTotal(data.total);
         } catch (err) {
             console.error("Failed to load delivery history:", err);
+            setErrorMsg("Failed to load delivery history");
         } finally {
-            setLoadingHistory(false);
+            setLoadingDeliveryHistory(false);
+        }
+    };
+
+    // Fetch meta information
+    const fetchMetaData = async () => {
+        try {
+            setLoadingMeta(true);
+            const data = await fetchMeta(userRoles);
+            setMeta(data);
+        } catch (err) {
+            console.error("Failed to load meta:", err);
+        } finally {
+            setLoadingMeta(false);
+        }
+    };
+
+    // Fetch health status
+    const fetchHealthData = async () => {
+        try {
+            setLoadingHealth(true);
+            const data = await fetchHealth(userRoles);
+            setHealth(data);
+        } catch (err) {
+            console.error("Failed to load health:", err);
+        } finally {
+            setLoadingHealth(false);
+        }
+    };
+
+    // Fetch autoheal rules
+    const fetchAutohealRulesData = async () => {
+        try {
+            setLoadingAutohealRules(true);
+            const data = await fetchAutohealRules({}, userRoles);
+            setAutohealRules(data.items);
+            setAutohealRulesTotal(data.total);
+        } catch (err) {
+            console.error("Failed to load autoheal rules:", err);
+        } finally {
+            setLoadingAutohealRules(false);
         }
     };
 
@@ -288,7 +371,7 @@ const OperatorDashboard: React.FC = () => {
             if (res.ok) {
                 const json = await res.json();
                 alert(`✅ Delivery re-enqueued successfully!\nNew ID: ${json.new_id}\nOriginal ID: ${json.original_id}`);
-                fetchDeliveryHistory(tenant); // Refresh history
+                fetchDeliveryHistoryData(tenant, statusFilter); // Refresh history
                 handleCloseDelivery(); // Close drawer
             } else {
                 const error = await res.json();
@@ -473,17 +556,17 @@ const OperatorDashboard: React.FC = () => {
     useEffect(() => {
         fetchAll(tenant);
         fetchTemplates(tenant);
-        fetchDeliveryHistory(tenant);
+        fetchDeliveryHistoryData(tenant, statusFilter);
         fetchAuditLog(); // Phase VIII M10: Load audit trail
         const id = setInterval(() => {
             fetchAll(tenant);
             fetchTemplates(tenant);
-            fetchDeliveryHistory(tenant);
+            fetchDeliveryHistoryData(tenant, statusFilter);
             fetchAuditLog(); // Phase VIII M10: Refresh audit trail
         }, 30000);
         return () => clearInterval(id);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tenant]);
+    }, [tenant, statusFilter]);
 
     const severityCounts = eventStats?.by_severity || {};
     const infoCount = severityCounts["info"] || 0;
@@ -495,22 +578,35 @@ const OperatorDashboard: React.FC = () => {
         <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-semibold text-white">🎛️ Operator Dashboard</h1>
-                <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-400">Tenant:</span>
-                    <select
-                        value={tenant}
-                        onChange={(e) => setTenant(e.target.value)}
-                        className="border border-slate-600 bg-slate-800 text-white rounded px-3 py-1 text-sm"
-                    >
-                        <option value="all">All tenants (admin)</option>
-                        {TENANTS.map((t) =>
-                            t === "all" ? null : (
-                                <option key={t} value={t}>
-                                    {t}
-                                </option>
-                            )
-                        )}
-                    </select>
+                <div className="flex items-center gap-4 flex-wrap">
+                    <MediaStatsBadge />
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-400">User Roles:</span>
+                        <input
+                            type="text"
+                            value={userRoles}
+                            onChange={(e) => setUserRoles(e.target.value)}
+                            placeholder="operator"
+                            className="border border-slate-600 bg-slate-800 text-white rounded px-3 py-1 text-sm w-32"
+                        />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-400">Tenant:</span>
+                        <select
+                            value={tenant}
+                            onChange={(e) => setTenant(e.target.value)}
+                            className="border border-slate-600 bg-slate-800 text-white rounded px-3 py-1 text-sm"
+                        >
+                            <option value="all">All tenants (admin)</option>
+                            {TENANTS.map((t) =>
+                                t === "all" ? null : (
+                                    <option key={t} value={t}>
+                                        {t}
+                                    </option>
+                                )
+                            )}
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -520,6 +616,55 @@ const OperatorDashboard: React.FC = () => {
                     the Command Center is on v1.21.0+
                 </div>
             ) : null}
+
+            {/* Command Center Status & Anomalies Grid */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                {/* Command Center Status */}
+                <div className="xl:col-span-2 bg-slate-900/40 border border-slate-700 rounded-lg p-4">
+                    <h2 className="text-lg font-semibold text-white mb-3">🚀 Command Center Status</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${health?.status === 'healthy' ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                            <span className="text-sm text-gray-300">
+                                Health: {health?.status || 'Loading...'}
+                            </span>
+                        </div>
+                        <div className="text-sm text-gray-300">
+                            Uptime: {meta?.uptime || 'Loading...'}
+                        </div>
+                        <div className="text-sm text-gray-300">
+                            Build: {meta?.build || 'Loading...'}
+                        </div>
+                    </div>
+                    {meta?.endpoints && (
+                        <div className="mt-3">
+                            <p className="text-xs text-gray-400 mb-1">Available Endpoints:</p>
+                            <div className="flex flex-wrap gap-1">
+                                {meta.endpoints.map(endpoint => (
+                                    <span key={endpoint} className="text-xs bg-slate-800 text-gray-300 px-2 py-1 rounded">
+                                        {endpoint}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Phase IX M3: Anomalies Panel */}
+                <div className="xl:col-span-1">
+                    <AnomaliesPanel />
+                </div>
+            </div>
+
+            {/* Phase IX M4: Delivery Replay Panel */}
+            <div className="grid grid-cols-1 gap-4">
+                <DeliveryReplayPanel />
+            </div>
+
+            {/* Phase XI: Vertical Apps Panel */}
+            <div className="grid grid-cols-1 gap-4">
+                <VerticalAppsPanel />
+            </div>
 
             {/* Summary cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -545,6 +690,8 @@ const OperatorDashboard: React.FC = () => {
                     <p className="text-3xl font-bold mt-2 text-red-400">{deliveryStats?.near_failure ?? 0}</p>
                     <p className="text-xs text-gray-500 mt-1">5-attempt max watcher</p>
                 </div>
+                {/* Media stats card */}
+                <MediaStatsCard />
             </div>
 
             {/* Delivery queue table */}
@@ -601,6 +748,122 @@ const OperatorDashboard: React.FC = () => {
                     </table>
                 </div>
             </div>
+
+            {/* Delivery History */}
+            <div className="bg-slate-900/40 border border-slate-700 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-lg font-semibold text-white">📜 Delivery History</h2>
+                    <div className="flex items-center gap-2">
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="border border-slate-600 bg-slate-800 text-white rounded px-2 py-1 text-sm"
+                        >
+                            <option value="all">All Status</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="failed">Failed</option>
+                            <option value="pending">Pending</option>
+                            <option value="dead_letter">Dead Letter</option>
+                        </select>
+                        <button
+                            onClick={() => fetchDeliveryHistoryData(tenant, statusFilter)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                            disabled={loadingDeliveryHistory}
+                        >
+                            {loadingDeliveryHistory ? 'Loading...' : 'Refresh'}
+                        </button>
+                    </div>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                        <thead>
+                            <tr className="text-left text-gray-400 border-b border-slate-700">
+                                <th className="pb-2 pr-4">ID</th>
+                                <th className="pb-2 pr-4">Tenant</th>
+                                <th className="pb-2 pr-4">Status</th>
+                                <th className="pb-2 pr-4">Target</th>
+                                <th className="pb-2 pr-4">Attempts</th>
+                                <th className="pb-2 pr-4">Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {deliveryHistory.map((item) => (
+                                <tr key={item.id} className="border-b border-slate-800/40 hover:bg-slate-800/30">
+                                    <td className="py-2 pr-4 font-mono text-xs">{item.id.slice(0, 8)}...</td>
+                                    <td className="py-2 pr-4 text-xs">{item.tenant_id || '—'}</td>
+                                    <td className="py-2 pr-4">
+                                        <span className={`px-2 py-1 rounded text-xs ${item.status === 'delivered' ? 'bg-green-900/40 text-green-300' :
+                                            item.status === 'failed' ? 'bg-red-900/40 text-red-300' :
+                                                item.status === 'pending' ? 'bg-yellow-900/40 text-yellow-300' :
+                                                    'bg-gray-900/40 text-gray-300'
+                                            }`}>
+                                            {item.status}
+                                        </span>
+                                    </td>
+                                    <td className="py-2 pr-4 max-w-xs truncate text-xs">{item.target}</td>
+                                    <td className="py-2 pr-4 text-xs">{item.attempts || 0}</td>
+                                    <td className="py-2 pr-4 text-xs">
+                                        {item.created_at ? new Date(item.created_at).toLocaleString() : '—'}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    {deliveryHistory.length === 0 && !loadingDeliveryHistory && (
+                        <p className="text-gray-500 text-center py-4">No delivery history found.</p>
+                    )}
+                </div>
+            </div>
+
+            {/* Autoheal Rules (Admin only) */}
+            {userRoles.includes('admin') && (
+                <div className="bg-slate-900/40 border border-slate-700 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                        <h2 className="text-lg font-semibold text-white">🔧 Autoheal Rules</h2>
+                        <button
+                            onClick={fetchAutohealRulesData}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                            disabled={loadingAutohealRules}
+                        >
+                            {loadingAutohealRules ? 'Loading...' : 'Refresh'}
+                        </button>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full text-sm">
+                            <thead>
+                                <tr className="text-left text-gray-400 border-b border-slate-700">
+                                    <th className="pb-2 pr-4">ID</th>
+                                    <th className="pb-2 pr-4">Name</th>
+                                    <th className="pb-2 pr-4">Enabled</th>
+                                    <th className="pb-2 pr-4">Cooldown</th>
+                                    <th className="pb-2 pr-4">Last Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {autohealRules.map((rule) => (
+                                    <tr key={rule.id} className="border-b border-slate-800/40 hover:bg-slate-800/30">
+                                        <td className="py-2 pr-4 font-mono text-xs">{rule.id}</td>
+                                        <td className="py-2 pr-4">{rule.name || rule.id}</td>
+                                        <td className="py-2 pr-4">
+                                            <span className={`px-2 py-1 rounded text-xs ${rule.enabled ? 'bg-green-900/40 text-green-300' : 'bg-red-900/40 text-red-300'
+                                                }`}>
+                                                {rule.enabled ? 'Enabled' : 'Disabled'}
+                                            </span>
+                                        </td>
+                                        <td className="py-2 pr-4 text-xs">{rule.cooldown_seconds ? `${rule.cooldown_seconds}s` : '—'}</td>
+                                        <td className="py-2 pr-4 text-xs">
+                                            {rule.last_updated ? new Date(rule.last_updated).toLocaleString() : '—'}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {autohealRules.length === 0 && !loadingAutohealRules && (
+                            <p className="text-gray-500 text-center py-4">No autoheal rules found.</p>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Event severity breakdown */}
             <div className="bg-slate-900/40 border border-slate-700 rounded-lg p-4">

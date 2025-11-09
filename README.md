@@ -10,7 +10,32 @@
 
 AetherLink provides a unified platform for managing AI agents, monitoring system health, and orchestrating automated responses across distributed infrastructure. Built with FastAPI, React, and production-ready deployment patterns.
 
-## 🚀 Quick Start (5 minutes)
+## � Recent Releases
+
+### v0.2.0 - Phase XIV + XV: AccuLynx Integration & Enhanced Operations (November 2025)
+
+**New Features:**
+- **🔄 Real AccuLynx Integration**: Added production-ready AccuLynx API adapter with automatic stub/real mode switching based on API key configuration
+- **⚡ Run-Now Endpoint**: New `/acculynx/run-now/{tenant}` endpoint for immediate import execution with UI integration
+- **🔧 Configurable API Base**: Environment-driven API base URL configuration (`VITE_COMMAND_CENTER_URL`) for flexible deployments
+- **📊 Enhanced Audit Logging**: Normalized operation names and enriched metadata for better observability
+- **🏗️ DB Migration Prep**: Added PERSISTENCE-LAYER V1 markers throughout JSON storage for future database migration
+
+**Technical Improvements:**
+- **🔌 Async HTTP Client**: Integrated httpx for efficient AccuLynx API calls with proper timeout handling
+- **🛡️ Backward Compatibility**: All existing endpoints, scheduler behavior, and JSON persistence maintained
+- **📁 Modular Architecture**: Clean separation between stub and real API modes for development/production flexibility
+- **🔍 Comprehensive Validation**: Both stub mode (no API key) and real mode (with API key) thoroughly tested
+
+**Configuration:**
+- New environment variables: `ACCULYNX_BASE_URL`, `ACCULYNX_API_KEY`, `ACCULYNX_TIMEOUT_SEC`
+- UI configuration via `VITE_COMMAND_CENTER_URL` for multi-environment support
+
+**Breaking Changes:** None - Full backward compatibility maintained
+
+---
+
+## �🚀 Quick Start (5 minutes)
 
 ### Option 1: Docker Compose (Development)
 ```bash
@@ -162,9 +187,23 @@ AetherLink Command Center is a comprehensive operations platform that provides:
 ### Core Endpoints
 ```bash
 # Health & Discovery
+GET  /ops/health       # System health status
+GET  /ops/ping         # Simple ping check
+GET  /ops/db           # Database connectivity check
 GET  /healthz          # Kubernetes health check
 GET  /meta             # Feature discovery
 GET  /metrics          # Prometheus metrics
+
+# Phase XIV + XV: AccuLynx Integration
+POST /api/crm/import/acculynx/run-now           # Immediate import execution
+GET  /api/crm/import/acculynx/schedule/status   # Scheduler status
+POST /api/crm/import/acculynx/schedule          # Create/update schedule
+DELETE /api/crm/import/acculynx/schedule        # Remove schedule
+GET  /api/crm/import/acculynx/audit             # Import audit log
+
+# Local Actions (Phase XIV)
+POST /api/local/run     # Execute local actions
+GET  /api/local/runs    # Local action history
 
 # Alert Management
 GET  /alerts/deliveries/history  # Delivery history with filters
@@ -175,8 +214,9 @@ GET  /autoheal/rules   # View healing rules
 POST /autoheal/clear_endpoint_cooldown  # Clear cooldowns
 
 # Real-time Events
-GET  /events/stream    # Server-Sent Events
-GET  /events/audit     # 7-day audit history
+GET  /bus/events       # Event stream
+GET  /analytics/audit  # Audit history
+GET  /analytics/events/summary  # Event analytics
 ```
 
 ### Authentication
@@ -372,4 +412,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Discussions**: [GitHub Discussions](https://github.com/YOUR_ORG_OR_USER/AetherLink/discussions)
 
 ---
-

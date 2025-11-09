@@ -1,0 +1,54 @@
+# AetherLink Alertmanager Configuration
+# Lean config for Phase XIV M2 - Routes alerts to Command Center for operator visibility
+
+global:
+  resolve_timeout: 5m
+
+# Route configuration: env-aware routing to Command Center
+route:
+  receiver: command-center
+  group_by: ['alertname', 'env', 'service']
+  group_wait: 30s
+  group_interval: 2m
+  repeat_interval: 2h
+
+  routes:
+    # Local environment alerts
+    - matchers:
+        - env="local"
+      receiver: command-center-local
+      repeat_interval: 2h
+
+    # Critical severity alerts (shorter repeat for visibility)
+    - matchers:
+        - severity="critical"
+      receiver: command-center-critical
+      repeat_interval: 1h
+
+# Receivers: All alerts go to Command Center webhook for operator UI
+receivers:
+  - name: command-center
+    webhook_configs:
+      - url: 'http://host.docker.internal:8010/alerts/webhook'
+        send_resolved: true
+
+  - name: command-center-local
+    webhook_configs:
+      - url: 'http://host.docker.internal:8010/alerts/webhook'
+        send_resolved: true
+
+  - name: command-center-critical
+    webhook_configs:
+      - url: 'http://host.docker.internal:8010/alerts/webhook'
+        send_resolved: true
+
+# Inhibit rules: Suppress derivative alerts when root cause is firing
+inhibit_rules:
+  # When a service is down, inhibit staleness alerts (redundant)
+  - source_matchers:
+      - alertname="AetherlinkVerticalServiceDown"
+    target_matchers:
+      - alertname="AetherlinkVerticalDataStale"
+    equal:
+      - service
+      - env

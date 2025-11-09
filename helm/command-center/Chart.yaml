@@ -1,0 +1,18 @@
+apiVersion: v2
+name: command-center
+description: AetherLink Command Center - Operator control plane with real-time observability
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - aetherlink
+  - command-center
+  - observability
+  - kubernetes
+  - fastapi
+home: https://github.com/your-org/AetherLink
+sources:
+  - https://github.com/your-org/AetherLink
+maintainers:
+  - name: AetherLink Team
+    email: team@aetherlink.com

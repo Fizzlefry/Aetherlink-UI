@@ -99,7 +99,27 @@ services:
     volumes:
       - command-center-data:/app/data
     ports:
-      - "8010:8000"
+      - "8010:8010"
+    networks:
+      - deploy_default
+      - aetherlink_default
+    restart: unless-stopped
+
+  roofwonder:
+    build:
+      context: ../services/roofwonder
+    container_name: aether-roofwonder
+    env_file:
+      - ../config/.env.docker
+    environment:
+      - SERVICE_NAME=roofwonder
+      - AETHER_ENV=local
+      - DB_PATH=/app/roofwonder.db
+    ports:
+      - "8022:8022"
+    networks:
+      - deploy_default
+      - aetherlink_default
     restart: unless-stopped
 
   ai-orchestrator:
@@ -129,3 +149,9 @@ services:
 
 volumes:
   command-center-data:
+
+networks:
+  deploy_default:
+    external: true
+  aetherlink_default:
+    external: true

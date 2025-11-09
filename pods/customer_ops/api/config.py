@@ -85,11 +85,13 @@ class Settings(BaseSettings):
     ENABLE_ENRICHMENT: bool = True
 
     # --- Model provider config ---
-    MODEL_PROVIDER: str = "ollama"  # "openai" | "gemini" | "ollama"
+    MODEL_PROVIDER: str = "ollama"  # "openai" | "gemini" | "ollama" | "anthropic"
     MODEL_NAME: str = "llama3"
     OPENAI_API_KEY: str | None = None
     GOOGLE_API_KEY: str | None = None
     OLLAMA_BASE_URL: str = "http://localhost:11434"
+    ANTHROPIC_API_KEY: str | None = None
+    ANTHROPIC_ENDPOINT: str = "https://api.anthropic.com/v1/messages"
 
     # --- RAG / Embeddings ---
     RAG_ENABLED: bool = True

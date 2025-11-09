@@ -1,0 +1,168 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "type": "row",
+      "title": "Tenants Overview",
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Tenants Total",
+      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 1},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "aetherlink_analytics_tenants_total", "refId": "A", "instant": true}
+      ],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": ""}, "orientation": "horizontal"}
+    },
+    {
+      "type": "stat",
+      "title": "Tenants Active",
+      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 1},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "aetherlink_analytics_tenants_active", "refId": "A", "instant": true}
+      ],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": ""}, "orientation": "horizontal"}
+    },
+    {
+      "type": "stat",
+      "title": "Tenants Paused",
+      "gridPos": {"h": 6, "w": 8, "x": 16, "y": 1},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "aetherlink_analytics_tenants_paused", "refId": "A", "instant": true}
+      ],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": ""}, "orientation": "horizontal"}
+    },
+    {
+      "type": "timeseries",
+      "title": "Ops Velocity (last 24h gauge over time)",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 7},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "aetherlink_analytics_ops_last_24h", "refId": "A"}
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Health",
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 15},
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "DB Health",
+      "gridPos": {"h": 5, "w": 8, "x": 0, "y": 16},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "aetherlink_health_status{component=\"db\"}", "refId": "A", "instant": true}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": 0}, {"color": "green", "value": 1}]}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Replication Health",
+      "gridPos": {"h": 5, "w": 8, "x": 8, "y": 16},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "aetherlink_health_status{component=\"replication\"}", "refId": "A", "instant": true}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": 0}, {"color": "green", "value": 1}]}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Scheduler Health",
+      "gridPos": {"h": 5, "w": 8, "x": 16, "y": 16},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "aetherlink_health_status{component=\"scheduler\"}", "refId": "A", "instant": true}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": 0}, {"color": "green", "value": 1}]}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "row",
+      "title": "Events",
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 21},
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Recent Restarts / Auto-Recoveries",
+      "description": "Requires a JSON API datasource pointing to /analytics/audit?ops=restart,auto_recover,auto_pause,startup_verify with ops RBAC headers.",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 22},
+      "datasource": {"type": "marcusolsson-json-datasource", "uid": "aetherlink-api"},
+      "targets": [
+        {
+          "refId": "A",
+          "method": "GET",
+          "urlPath": "/analytics/audit",
+          "params": [{"key": "ops", "value": "restart,auto_recover,auto_pause,startup_verify"}, {"key": "limit", "value": "200"}],
+          "cache": 0
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "items",
+            "fields": ["ts_iso", "tenant", "operation", "source"]
+          }
+        }
+      ]
+    }
+  ],
+  "refresh": "15s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["aetherlink", "analytics"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {"refresh_intervals": ["5s", "10s", "15s", "30s", "1m"]},
+  "timezone": "",
+  "title": "AetherLink Analytics",
+  "uid": "aetherlink-analytics",
+  "version": 1,
+  "weekStart": ""
+}
+

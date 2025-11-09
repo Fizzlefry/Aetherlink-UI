@@ -340,7 +340,7 @@ def get_event_stats(tenant_id: str | None = None) -> dict[str, Any]:
 # Phase VII M2: Event Retention & Archival
 # ============================================================================
 
-RETENTION_DAYS = int(os.getenv("EVENT_RETENTION_DAYS", "30"))
+RETENTION_DAYS = int(os.getenv("EVENT_RETENTION_DAYS", "7"))
 ARCHIVE_ENABLED = os.getenv("EVENT_ARCHIVE_ENABLED", "false").lower() == "true"
 ARCHIVE_DIR = os.getenv("EVENT_ARCHIVE_DIR", "/app/data/archive")
 

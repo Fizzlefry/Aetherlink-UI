@@ -13,6 +13,7 @@ rule_files:
   - "/etc/prometheus/alerts.yml"
   - "/etc/prometheus/recording-rules.yml"
   - "/etc/prometheus/crm-events-rules.yml"
+  - "/etc/prometheus/aetherlink-alerts.yml"
 
 # Scrape configurations
 scrape_configs:
@@ -82,6 +83,45 @@ scrape_configs:
         labels:
           service: "crm-api"
           component: "crm"
+          env: "local"
+
+  # RoofWonder Roofing Service metrics
+  - job_name: "roofwonder"
+    metrics_path: "/metrics"
+    scheme: http
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    static_configs:
+      - targets: ["roofwonder:8022"]
+        labels:
+          service: "roofwonder"
+          component: "vertical"
+          env: "local"
+
+  # PeakPro CRM metrics
+  - job_name: "peakpro-crm"
+    metrics_path: "/metrics"
+    scheme: http
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    static_configs:
+      - targets: ["crm-api:8080"]
+        labels:
+          service: "peakpro-crm"
+          component: "vertical"
+          env: "local"
+
+  # PolicyPal AI metrics
+  - job_name: "policypal-ai"
+    metrics_path: "/metrics"
+    scheme: http
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    static_configs:
+      - targets: ["policypal-ai:8000"]
+        labels:
+          service: "policypal-ai"
+          component: "vertical"
           env: "local"
 
   # Blackbox Exporter HTTP probes
@@ -198,6 +238,21 @@ scrape_configs:
           project: "Aetherlink"
           module: "Events"
           component: "consumer"
+
+  # AetherLink Command Center (Vertical Fleet Monitoring)
+  - job_name: "aetherlink-command-center"
+    metrics_path: /metrics
+    scheme: http
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ["host.docker.internal:8010"]
+        labels:
+          service: "command-center"
+          component: "observability"
+          project: "Aetherlink"
+          module: "CommandCenter"
+          env: "local"
 
   # Optional: Service discovery for Kubernetes/Docker
   # - job_name: 'aetherlink_api_k8s'

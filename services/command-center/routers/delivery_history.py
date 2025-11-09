@@ -7,7 +7,7 @@ Shows what happened to each alert delivery over time.
 
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, Dict
 
 import event_store
 from auto_triage import classify_delivery  # Phase IX M1: Auto-Triage Engine
@@ -125,45 +125,38 @@ def seed_delivery_history():
 
 
 @router.get("/history", dependencies=[Depends(require_roles(["operator", "admin"]))])
-def list_delivery_history(tenant_id: str | None = None, limit: int = Query(50, ge=1, le=200)):
+def list_delivery_history(
+    tenant_id: str | None = None,
+    status: str | None = None,
+    triage: str | None = None,
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = 0
+):
     """
-    List recent alert delivery history.
-
-    Phase VIII M3: Returns recent deliveries with status, attempts, and errors.
-    Operators can see what happened to each alert delivery over time.
+    List recent alert delivery history with optional filters.
+    Returns: { "items": [...], "total": N }
 
     Query params:
     - tenant_id: Optional tenant filter
+    - status: Optional status filter (delivered, pending, failed, dead_letter)
+    - triage: Optional triage filter
     - limit: Max entries to return (default 50, max 200)
+    - offset: Pagination offset (default 0)
 
     Requires: operator or admin role
-
-    Example response:
-    [
-      {
-        "id": "abc-123",
-        "alert_event_id": "evt-456",
-        "tenant_id": "tenant-qa",
-        "rule_id": 1,
-        "rule_name": "[tpl] Alert Delivery Failures",
-        "event_type": "ops.alert.delivery.failed",
-        "target": "https://hooks.slack.com/services/...",
-        "status": "delivered",
-        "attempts": 1,
-        "max_attempts": 5,
-        "last_error": null,
-        "next_retry_at": null,
-        "created_at": "2025-11-04T10:00:00Z",
-        "updated_at": "2025-11-04T10:00:05Z"
-      }
-    ]
-
-    Status values:
-    - "delivered" - Successfully delivered to webhook
-    - "pending" - Queued, waiting for next attempt
-    - "failed" - Failed but retrying
-    - "dead_letter" - Failed after max attempts
     """
+    # Filter deliveries
+    deliveries = DELIVERY_HISTORY
+    if tenant_id:
+        deliveries = [d for d in deliveries if d.get("tenant_id") == tenant_id]
+    if status:
+        deliveries = [d for d in deliveries if d.get("status") == status]
+    if triage:
+        deliveries = [d for d in deliveries if d.get("triage") == triage]
+
+    total = len(deliveries)
+    paged = deliveries[offset:offset+limit]
+    return {"items": paged, "total": total}
     # Get live queue entries from Phase VII M5
     try:
         queue_entries = event_store.get_delivery_queue(limit=100)
@@ -405,6 +398,24 @@ def replay_delivery(delivery_id: str, request: Request):
         # Phase VIII M10: Log operator action
         actor = request.headers.get("X-User-Roles", "unknown")
         source_ip = request.client.host if request.client else None
+
+        # Emit real-time event for dashboard updates
+        import asyncio
+        event = {
+            "event_type": "delivery.replayed",
+            "source": "command-center",
+            "severity": "info",
+            "timestamp": datetime.now(UTC).isoformat(),
+            "payload": {
+                "original_delivery_id": delivery_id,
+                "new_delivery_id": new_delivery_id,
+                "tenant_id": new_delivery["tenant_id"],
+                "target": new_delivery["webhook_url"],
+                "operator": actor,
+            }
+        }
+        asyncio.create_task(publish_delivery_event(event))
+
         log_operator_action(
             actor=actor,
             action="delivery.replay",
@@ -430,3 +441,13 @@ def replay_delivery(delivery_id: str, request: Request):
     except Exception as e:
         print(f"[delivery_history] ❌ Error replaying delivery {delivery_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to replay delivery: {str(e)}")
+
+
+async def publish_delivery_event(event: Dict[str, Any]):
+    """Publish delivery event to event stream for real-time updates."""
+    try:
+        import httpx
+        async with httpx.AsyncClient() as client:
+            await client.post("http://localhost:8010/events/publish", json=event, headers={"X-User-Roles": "system"})
+    except Exception as e:
+        print(f"[delivery_history] Failed to publish event: {e}")

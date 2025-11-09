@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { EventStream } from "../components/EventStream";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+import { MediaStatsBadge } from "../components/MediaStatsBadge";
 
 type ServiceStatus = {
     status: string;
@@ -61,10 +63,13 @@ const CommandCenter: React.FC = () => {
     const [providerHealth, setProviderHealth] = useState<Record<string, ProviderHealth> | null>(null);
     const [loading, setLoading] = useState(true);
     const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+    const [userRoles, setUserRoles] = useLocalStorage<string>("cc.userRoles", "operator");
 
     const fetchHealth = async () => {
         try {
-            const res = await fetch("http://localhost:8010/ops/health");
+            const res = await fetch("http://localhost:8010/ops/health", {
+                headers: { "X-User-Roles": userRoles }
+            });
             const json = await res.json();
             setData(json);
             setLastUpdate(new Date());
@@ -155,7 +160,28 @@ const CommandCenter: React.FC = () => {
                 <h1 style={{ fontSize: "2rem", fontWeight: "bold", marginBottom: "0.5rem", color: "#111827" }}>
                     🎛️ AetherLink Command Center
                 </h1>
-                <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" }}>
+                    <label style={{ fontSize: "0.875rem", fontWeight: "500", color: "#374151" }}>
+                        Role:
+                    </label>
+                    <select
+                        value={userRoles}
+                        onChange={(e) => setUserRoles(e.target.value)}
+                        style={{
+                            padding: "0.5rem",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "0.375rem",
+                            background: "white",
+                            fontSize: "0.875rem",
+                            color: "#374151",
+                        }}
+                    >
+                        <option value="operator">Operator</option>
+                        <option value="admin">Admin</option>
+                        <option value="admin,operator">Admin + Operator</option>
+                    </select>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
                     <div
                         style={{
                             display: "inline-block",
@@ -169,6 +195,8 @@ const CommandCenter: React.FC = () => {
                     >
                         Overall: {data?.status?.toUpperCase() ?? "UNKNOWN"}
                     </div>
+                    {/* Media stats badge (from Media Service) */}
+                    <MediaStatsBadge />
                     {lastUpdate && (
                         <span style={{ fontSize: "0.875rem", color: "#6b7280" }}>
                             Last updated: {lastUpdate.toLocaleTimeString()}
@@ -508,7 +536,7 @@ const CommandCenter: React.FC = () => {
             </div>
 
             {/* Phase VI: Live Event Stream */}
-            <EventStream />
+            <EventStream userRoles={userRoles} />
         </div>
     );
 };

@@ -263,6 +263,78 @@ class OllamaClient(BaseModelClient):
             return {"text": content}
 
 
+class AnthropicClient(BaseModelClient):
+    def __init__(self, model: str, api_key: str, endpoint: str = "https://api.anthropic.com/v1/messages"):
+        self.model = model
+        self.api_key = api_key
+        self.endpoint = endpoint.rstrip("/")
+
+    async def ahealth(self) -> tuple[bool, dict[str, Any]]:
+        try:
+            async with httpx.AsyncClient(timeout=20) as client:
+                r = await client.post(
+                    self.endpoint,
+                    headers={
+                        "x-api-key": self.api_key,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json",
+                    },
+                    json={
+                        "model": self.model,
+                        "max_tokens": 8,
+                        "temperature": 0,
+                        "messages": [
+                            {"role": "user", "content": "Reply with 'pong'"},
+                        ],
+                    },
+                )
+                ok = r.status_code == 200
+                data = cast(dict[str, Any], r.json()) if ok else {"status": r.status_code, "text": r.text[:500]}
+                text = ""
+                if ok:
+                    content = data.get("content") or []
+                    if content:
+                        text = content[0].get("text", "")
+                return ok and "pong" in (text or "").lower(), {"provider": "anthropic", "model": self.model}
+        except Exception as e:
+            return False, {"provider": "anthropic", "model": self.model, "error": str(e)}
+
+    async def chat(
+        self,
+        prompt: str,
+        system: str | None = None,
+        context: dict[str, Any] | None = None,
+        tools: list[ToolSpec] | None = None,
+    ) -> dict[str, Any]:
+        # Minimal text flow (no tool execution). Tests allow plain text.
+        payload: dict[str, Any] = {
+            "model": self.model,
+            "max_tokens": 512,
+            "temperature": 0.2,
+            "messages": [
+                {"role": "user", "content": prompt},
+            ],
+        }
+        if system:
+            payload["system"] = system
+
+        async with httpx.AsyncClient(timeout=60) as client:
+            r = await client.post(
+                self.endpoint,
+                headers={
+                    "x-api-key": self.api_key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                json=payload,
+            )
+            r.raise_for_status()
+            data = cast(dict[str, Any], r.json())
+            content = data.get("content") or []
+            text = content[0].get("text", "") if content else ""
+            return {"text": text}
+
+
 def build_model_client() -> BaseModelClient:
     s = get_settings()
     prov = (s.MODEL_PROVIDER or "ollama").lower()
@@ -274,5 +346,10 @@ def build_model_client() -> BaseModelClient:
         if not s.GOOGLE_API_KEY:
             raise RuntimeError("GOOGLE_API_KEY not set")
         return GeminiClient(model=s.MODEL_NAME, api_key=s.GOOGLE_API_KEY)
+    if prov == "anthropic":
+        if not getattr(s, "ANTHROPIC_API_KEY", None):
+            raise RuntimeError("ANTHROPIC_API_KEY not set")
+        endpoint = getattr(s, "ANTHROPIC_ENDPOINT", "https://api.anthropic.com/v1/messages")
+        return AnthropicClient(model=s.MODEL_NAME, api_key=s.ANTHROPIC_API_KEY, endpoint=endpoint)
     # default: ollama
     return OllamaClient(model=s.MODEL_NAME, base_url=s.OLLAMA_BASE_URL)

@@ -1,0 +1,55 @@
+version: '3.8'
+
+# AetherLink CRM UI Production Deployment
+# Usage: docker-compose -f docker-compose.ui.yml up -d
+
+services:
+  # AetherLink CRM UI (React + Nginx)
+  crm-ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"  # Serve on standard HTTP port
+    depends_on:
+      - command-center
+    networks:
+      - aetherlink-network
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Command Center Backend (must be running)
+  command-center:
+    build:
+      context: ./services/command-center
+      dockerfile: Dockerfile
+    ports:
+      - "8010:8010"  # Dockerfile uses 8010 internally
+    networks:
+      - aetherlink-network
+    environment:
+      - EVENT_DB_PATH=./data/events.db
+      - ALERT_DB_PATH=./data/alerts.db
+      - AETHERLINK_ENV=docker
+    volumes:
+      - command-center-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  aetherlink-network:
+    driver: bridge
+
+volumes:
+  command-center-data:
+    driver: local

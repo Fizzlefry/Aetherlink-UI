@@ -1,0 +1,11 @@
+[
+  {
+    "action": "test",
+    "tenant": "the-expert-co",
+    "timestamp": 1762663117.3495166,
+    "ok": true,
+    "stdout": "Executed test",
+    "stderr": "",
+    "error": null
+  }
+]
