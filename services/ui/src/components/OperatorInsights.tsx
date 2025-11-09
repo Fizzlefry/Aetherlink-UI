@@ -113,6 +113,31 @@ export const OperatorInsights: React.FC<OperatorInsightsProps> = ({ userRoles })
   const last24h = data.summary.last_24h || { total: 0, success: 0, success_rate: 0 };
   const trends = data.trends.last_24h || { total_delta: 0, success_rate_delta: 0 };
 
+  // Show friendly empty state if no events exist
+  if (last24h.total === 0 && last1h.total === 0) {
+    return (
+      <div style={{ marginTop: "2rem" }}>
+        <div style={{ marginBottom: "1.25rem" }}>
+          <h2 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#111827" }}>
+            📈 Operator Insights
+          </h2>
+        </div>
+        <div
+          style={{
+            background: "white",
+            border: "1px solid #e5e7eb",
+            borderRadius: "12px",
+            padding: "1.5rem",
+          }}
+        >
+          <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+            No insight data yet. Trigger a remediation or run the test data generator.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const formatDelta = (v: number) => {
     if (v > 0) return `+${v.toFixed(1)}`;
     if (v < 0) return v.toFixed(1);
