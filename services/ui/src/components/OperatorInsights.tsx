@@ -41,6 +41,7 @@ export const OperatorInsights: React.FC<OperatorInsightsProps> = ({ userRoles })
   const [data, setData] = useState<InsightPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTenant, setSelectedTenant] = useState<string>("all");
 
   const fetchInsights = async () => {
     try {
@@ -144,23 +145,64 @@ export const OperatorInsights: React.FC<OperatorInsightsProps> = ({ userRoles })
     return "0";
   };
 
-  const topTenants = Object.entries(data.top.tenants_24h || {}).slice(0, 4);
+  // Derive tenant names for filter
+  const tenantEntries = Object.entries(data.top?.tenants_24h ?? {});
+  const tenantNames = tenantEntries.map(([name]) => name);
+
+  // Filter top tenants based on selection
+  const filteredTenants =
+    selectedTenant === "all"
+      ? tenantEntries.slice(0, 4)
+      : tenantEntries.filter(([name]) => name === selectedTenant);
+
   const topActions = Object.entries(data.top.actions_24h || {}).slice(0, 4);
   const topAlerts = Object.entries(data.top.alerts_24h || {}).slice(0, 4);
 
   return (
     <div style={{ marginTop: "2rem" }}>
       {/* Header */}
-      <div style={{ marginBottom: "1.25rem" }}>
-        <h2 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#111827" }}>
-          📈 Operator Insights
-        </h2>
-        <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>
-          Aggregated view of autonomous remediations (1h / 24h)
-        </p>
-        <p style={{ fontSize: "0.7rem", color: "#9ca3af", marginTop: "0.25rem" }}>
-          Generated at: {new Date(data.generated_at).toLocaleString()}
-        </p>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "1rem",
+          gap: "1rem",
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <h2 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#111827" }}>
+            📈 Operator Insights
+          </h2>
+          <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+            Aggregated view of autonomous remediations (1h / 24h)
+          </p>
+          <p style={{ fontSize: "0.7rem", color: "#9ca3af", marginTop: "0.25rem" }}>
+            Generated at: {new Date(data.generated_at).toLocaleString()}
+          </p>
+        </div>
+
+        <div>
+          <select
+            value={selectedTenant}
+            onChange={(e) => setSelectedTenant(e.target.value)}
+            style={{
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+              padding: "0.35rem 0.5rem",
+              fontSize: "0.75rem",
+              background: "white",
+            }}
+          >
+            <option value="all">All tenants</option>
+            {tenantNames.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* KPI Grid */}
@@ -289,11 +331,11 @@ export const OperatorInsights: React.FC<OperatorInsightsProps> = ({ userRoles })
           <h3 style={{ fontSize: "0.875rem", fontWeight: 600, color: "#111827", marginBottom: "0.5rem" }}>
             Top Tenants (24h)
           </h3>
-          {topTenants.length === 0 ? (
+          {filteredTenants.length === 0 ? (
             <p style={{ fontSize: "0.75rem", color: "#9ca3af" }}>No tenant data</p>
           ) : (
             <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-              {topTenants.map(([tenant, count]) => (
+              {filteredTenants.map(([tenant, count]) => (
                 <li key={tenant} style={{ display: "flex", justifyContent: "space-between" }}>
                   <span style={{ fontSize: "0.75rem", color: "#374151" }}>{tenant}</span>
                   <span style={{ fontSize: "0.75rem", color: "#111827", fontWeight: 600 }}>{count}</span>
