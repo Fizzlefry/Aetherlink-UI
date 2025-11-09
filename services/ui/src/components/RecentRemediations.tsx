@@ -101,6 +101,52 @@ export const RecentRemediations: React.FC<RecentRemediationsProps> = ({
     const errorCount = filteredItems.filter(e => e.status === "error").length;
     const successRate = filteredItems.length ? Math.round((successCount / filteredItems.length) * 100) : 0;
 
+    const downloadFile = (filename: string, content: string, type = "text/plain") => {
+        const blob = new Blob([content], { type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const handleExportJSON = () => {
+        const payload = filteredItems.map((e) => ({
+            id: e.id,
+            ts: e.ts,
+            alertname: e.alertname,
+            tenant: e.tenant,
+            action: e.action,
+            status: e.status,
+            details: e.details,
+        }));
+        downloadFile("recent-remediations.json", JSON.stringify(payload, null, 2), "application/json");
+    };
+
+    const handleExportCSV = () => {
+        const header = "id,ts,alertname,tenant,action,status,details";
+        const rows = filteredItems.map((e) =>
+            [
+                e.id,
+                e.ts,
+                JSON.stringify(e.alertname ?? ""),
+                JSON.stringify(e.tenant ?? ""),
+                JSON.stringify(e.action ?? ""),
+                e.status,
+                JSON.stringify(e.details ?? ""),
+            ].join(","),
+        );
+        const csv = [header, ...rows].join("\n");
+        downloadFile("recent-remediations.csv", csv, "text/csv");
+    };
+
+    const grafanaBase = "http://localhost:3000/d/aetherlink-recovery";
+    const grafanaUrl =
+        selectedTenant && selectedTenant !== "all"
+            ? `${grafanaBase}?var-tenant=${encodeURIComponent(selectedTenant)}`
+            : grafanaBase;
+
     return (
         <div style={{ marginTop: "3rem" }}>
             <div
@@ -147,81 +193,119 @@ export const RecentRemediations: React.FC<RecentRemediationsProps> = ({
 
             {/* Events List */}
             <div style={{ padding: "1.5rem", background: "white", borderRadius: "12px", border: "1px solid #e5e7eb" }}>
-                <div
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: "1rem",
-                        marginBottom: "1rem",
-                        flexWrap: "wrap",
-                    }}
-                >
-                    <h3 style={{ fontWeight: "600", color: "#374151" }}>Last 10 Events</h3>
+            <div
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "0.75rem",
+                    marginBottom: "1rem",
+                    flexWrap: "wrap",
+                }}
+            >
+                <h3 style={{ fontWeight: "600", color: "#374151" }}>Last 10 Events</h3>
+                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+                    <select
+                        value={selectedTenant}
+                        onChange={(e) => {
+                            const newTenant = e.target.value;
+                            setSelectedTenant(newTenant);
+                            if (onSelectTenant) {
+                                onSelectTenant(newTenant);
+                            }
+                        }}
+                        style={{
+                            border: "1px solid #d1d5db",
+                            borderRadius: "6px",
+                            padding: "0.35rem 0.5rem",
+                            fontSize: "0.75rem",
+                            color: "#374151",
+                            background: "white",
+                        }}
+                    >
+                        <option value="all">All tenants</option>
+                        {tenants.map((t) => (
+                            <option key={t} value={t}>
+                                {t}
+                            </option>
+                        ))}
+                    </select>
 
-                    <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-                        {/* Tenant filter */}
-                        <select
-                            value={selectedTenant}
-                            onChange={(e) => {
-                                const newTenant = e.target.value;
-                                setSelectedTenant(newTenant);
-                                if (onSelectTenant) {
-                                    onSelectTenant(newTenant);
-                                }
-                            }}
-                            style={{
-                                border: "1px solid #d1d5db",
-                                borderRadius: "6px",
-                                padding: "0.35rem 0.5rem",
-                                fontSize: "0.75rem",
-                                color: "#374151",
-                                background: "white",
-                            }}
-                        >
-                            <option value="all">All tenants</option>
-                            {tenants.map((t) => (
-                                <option key={t} value={t}>
-                                    {t}
-                                </option>
-                            ))}
-                        </select>
-
-                        {/* Status filter */}
-                        <select
-                            value={selectedStatus}
-                            onChange={(e) => setSelectedStatus(e.target.value)}
-                            style={{
-                                border: "1px solid #d1d5db",
-                                borderRadius: "6px",
-                                padding: "0.35rem 0.5rem",
-                                fontSize: "0.75rem",
-                                color: "#374151",
-                                background: "white",
-                            }}
-                        >
-                            <option value="all">All statuses</option>
-                            <option value="success">Success</option>
-                            <option value="error">Error</option>
-                        </select>
-
-                        <button
-                            onClick={fetchHistory}
-                            style={{
-                                padding: "0.375rem 0.75rem",
-                                background: "#f3f4f6",
-                                border: "1px solid #d1d5db",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                fontSize: "0.75rem",
-                                fontWeight: "500",
-                                color: "#374151",
-                            }}
-                        >
-                            🔄 Refresh
-                        </button>
-                    </div>
+                    <select
+                        value={selectedStatus}
+                        onChange={(e) => setSelectedStatus(e.target.value)}
+                        style={{
+                            border: "1px solid #d1d5db",
+                            borderRadius: "6px",
+                            padding: "0.35rem 0.5rem",
+                            fontSize: "0.75rem",
+                            color: "#374151",
+                            background: "white",
+                        }}
+                    >
+                        <option value="all">All statuses</option>
+                        <option value="success">Success</option>
+                        <option value="error">Error</option>
+                    </select>
+                    <button
+                        onClick={fetchHistory}
+                        style={{
+                            padding: "0.375rem 0.75rem",
+                            background: "#f3f4f6",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            fontSize: "0.75rem",
+                            fontWeight: "500",
+                            color: "#374151",
+                        }}
+                    >
+                        🔄 Refresh
+                    </button>
+                    <button
+                        onClick={handleExportCSV}
+                        style={{
+                            padding: "0.375rem 0.75rem",
+                            background: "#fff",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            fontSize: "0.75rem",
+                        }}
+                    >
+                        ⬇ CSV
+                    </button>
+                    <button
+                        onClick={handleExportJSON}
+                        style={{
+                            padding: "0.375rem 0.75rem",
+                            background: "#fff",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            fontSize: "0.75rem",
+                        }}
+                    >
+                        ⬇ JSON
+                    </button>
+                    <a
+                        href={grafanaUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                            padding: "0.375rem 0.75rem",
+                            background: "#fff",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "6px",
+                            fontSize: "0.75rem",
+                            textDecoration: "none",
+                            color: "#1f2937",
+                        }}
+                    >
+                        📊 Grafana
+                    </a>
                 </div>
+            </div>
 
                 {filteredItems.length > 0 ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>

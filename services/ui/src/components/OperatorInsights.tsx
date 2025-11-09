@@ -171,6 +171,51 @@ export const OperatorInsights: React.FC<OperatorInsightsProps> = ({
   const topActions = Object.entries(data.top.actions_24h || {}).slice(0, 4);
   const topAlerts = Object.entries(data.top.alerts_24h || {}).slice(0, 4);
 
+  const downloadFile = (filename: string, content: string, type = "text/plain") => {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportInsightsJSON = () => {
+    if (!data) return;
+    downloadFile("operator-insights.json", JSON.stringify(data, null, 2), "application/json");
+  };
+
+  const handleExportInsightsCSV = () => {
+    if (!data) return;
+    const lines: string[] = [];
+    lines.push("section,key,value");
+    const s1 = data.summary?.last_1h;
+    if (s1) {
+      lines.push(`summary_last_1h,total,${s1.total ?? 0}`);
+      lines.push(`summary_last_1h,success,${s1.success ?? 0}`);
+      lines.push(`summary_last_1h,success_rate,${s1.success_rate ?? 0}`);
+    }
+    const s24 = data.summary?.last_24h;
+    if (s24) {
+      lines.push(`summary_last_24h,total,${s24.total ?? 0}`);
+      lines.push(`summary_last_24h,success,${s24.success ?? 0}`);
+      lines.push(`summary_last_24h,success_rate,${s24.success_rate ?? 0}`);
+    }
+    const tenants = data.top?.tenants_24h ?? {};
+    Object.entries(tenants).forEach(([tenant, count]) => {
+      lines.push(`top_tenants_24h,${tenant},${count}`);
+    });
+    const csv = lines.join("\n");
+    downloadFile("operator-insights.csv", csv, "text/csv");
+  };
+
+  const grafanaBase = "http://localhost:3000/d/aetherlink-recovery";
+  const grafanaUrl =
+    selectedTenant && selectedTenant !== "all"
+      ? `${grafanaBase}?var-tenant=${encodeURIComponent(selectedTenant)}`
+      : grafanaBase;
+
   return (
     <div style={{ marginTop: "2rem" }}>
       {/* Header */}
@@ -180,6 +225,8 @@ export const OperatorInsights: React.FC<OperatorInsightsProps> = ({
           justifyContent: "space-between",
           marginBottom: "1rem",
           alignItems: "center",
+          gap: "0.75rem",
+          flexWrap: "wrap",
         }}
       >
         <div>
@@ -190,8 +237,7 @@ export const OperatorInsights: React.FC<OperatorInsightsProps> = ({
             Aggregated remediation trends and top offenders
           </p>
         </div>
-
-        <div>
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
           <select
             value={selectedTenant}
             onChange={(e) => {
@@ -216,6 +262,48 @@ export const OperatorInsights: React.FC<OperatorInsightsProps> = ({
               </option>
             ))}
           </select>
+          <button
+            onClick={handleExportInsightsCSV}
+            style={{
+              padding: "0.35rem 0.6rem",
+              background: "#fff",
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+              fontSize: "0.7rem",
+              cursor: "pointer",
+            }}
+          >
+            ⬇ CSV
+          </button>
+          <button
+            onClick={handleExportInsightsJSON}
+            style={{
+              padding: "0.35rem 0.6rem",
+              background: "#fff",
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+              fontSize: "0.7rem",
+              cursor: "pointer",
+            }}
+          >
+            ⬇ JSON
+          </button>
+          <a
+            href={grafanaUrl}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              padding: "0.35rem 0.6rem",
+              background: "#fff",
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+              fontSize: "0.7rem",
+              textDecoration: "none",
+              color: "#1f2937",
+            }}
+          >
+            📊 Grafana
+          </a>
         </div>
       </div>
 
