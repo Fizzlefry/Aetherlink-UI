@@ -58,7 +58,12 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
   const [lastFullRefresh, setLastFullRefresh] = useState<string | null>(null);
   const [wsStale, setWsStale] = useState(false);
 
-  const fetchTimeline = useCallback(async () => {
+  // Phase XX M10: degradation ladder
+  const [degraded, setDegraded] = useState(false);
+  const [degradedReason, setDegradedReason] = useState<string | null>(null);
+  const [lastRecoveredAt, setLastRecoveredAt] = useState<string | null>(null);
+
+  const fetchTimeline = useCallback(async (): Promise<boolean> => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -84,8 +89,16 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
 
       // Track full refresh timestamp
       setLastFullRefresh(new Date().toISOString());
+
+      // Phase XX M10: clear degraded on successful HTTP refresh
+      setDegraded(false);
+      setDegradedReason(null);
+      setLastRecoveredAt(new Date().toISOString());
+
+      return true;
     } catch (err) {
-      console.error("timeline fetch failed", err);
+      console.warn("[timeline] HTTP refresh failed", err);
+      return false;
     } finally {
       setLoading(false);
     }
@@ -147,6 +160,12 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
         // Successfully updated bucket → refresh anomaly overlay
         // Track WS update timestamp
         setLastWsUpdate(new Date().toISOString());
+
+        // Phase XX M10: WS is alive again, clear degraded
+        setWsStale(false);
+        setDegraded(false);
+        setDegradedReason(null);
+        setLastRecoveredAt(new Date().toISOString());
 
         // This keeps red dots accurate without refetching timeline
         const params = new URLSearchParams();
@@ -211,6 +230,30 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
 
     return () => clearInterval(staleCheckInterval);
   }, [lastWsUpdate]);
+
+  // Phase XX M10: WS degradation ladder
+  useEffect(() => {
+    // only act when we detect staleness
+    if (!wsStale) return;
+
+    let cancelled = false;
+
+    (async () => {
+      // 1) try HTTP refresh
+      const ok = await fetchTimeline();
+      if (cancelled) return;
+
+      if (!ok) {
+        // 2) mark UI as degraded
+        setDegraded(true);
+        setDegradedReason("WebSocket stale and HTTP refresh failed");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [wsStale, fetchTimeline]);
 
   return (
     <div style={{ marginTop: "2rem" }}>
@@ -387,6 +430,25 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
                 ⚠️ WS stale (no updates 35s+)
               </span>
             )}
+          </div>
+        )}
+
+        {/* Phase XX M10: Degraded mode banner */}
+        {degraded && (
+          <div
+            style={{
+              marginTop: "0.35rem",
+              fontSize: "0.65rem",
+              color: "#fecaca",
+              background: "#b91c1c",
+              padding: "0.25rem 0.5rem",
+              borderRadius: "0.25rem",
+              display: "inline-block",
+            }}
+          >
+            ⚠️ Timeline degraded – showing last known data.
+            {degradedReason ? ` (${degradedReason})` : null}
+            {lastRecoveredAt ? ` Last recovery: ${new Date(lastRecoveredAt).toLocaleTimeString()}` : null}
           </div>
         )}
       </div>
