@@ -4,35 +4,38 @@ AetherLink Command Center - Release Smoke Test Suite
 Validates core functionality for deployment readiness
 """
 
-import requests
-import time
 import os
-import sys
 import subprocess
-import threading
-from pathlib import Path
+import sys
+import time
+
+import requests
 
 # Configuration
 BASE_URL = "http://localhost:8000"
 TIMEOUT = 10
 
+
 def start_server():
     """Start the server in a separate thread"""
     env = os.environ.copy()
-    env['PYTHONPATH'] = r"c:\Users\jonmi\OneDrive\Documents\AetherLink"
+    env["PYTHONPATH"] = r"c:\Users\jonmi\OneDrive\Documents\AetherLink"
 
     cmd = [
-        sys.executable, "-c",
-        "import sys; sys.path.insert(0, 'services/command-center'); import uvicorn; uvicorn.run('main:app', host='127.0.0.1', port=8000, log_level='info')"
+        sys.executable,
+        "-c",
+        "import sys; sys.path.insert(0, 'services/command-center'); import uvicorn; uvicorn.run('main:app', host='127.0.0.1', port=8000, log_level='info')",
     ]
 
     proc = subprocess.Popen(cmd, cwd=r"c:\Users\jonmi\OneDrive\Documents\AetherLink", env=env)
     return proc
 
+
 def log(message, status="INFO"):
     """Simple logging function"""
     timestamp = time.strftime("%H:%M:%S")
     print(f"[{timestamp}] {status}: {message}")
+
 
 def test_health_check():
     """Test basic health endpoint"""
@@ -48,6 +51,7 @@ def test_health_check():
         log(f"Health check error: {e}", "ERROR")
     return False
 
+
 def test_ping():
     """Test ping endpoint"""
     try:
@@ -60,12 +64,15 @@ def test_ping():
         log(f"Ping test error: {e}", "ERROR")
     return False
 
+
 def test_chat_smoke():
     """Test basic local run functionality (replaces chat test)"""
     try:
         payload = {"action": "test", "params": {}}
         headers = {"x-tenant": "the-expert-co"}
-        response = requests.post(f"{BASE_URL}/api/local/run", json=payload, headers=headers, timeout=TIMEOUT)
+        response = requests.post(
+            f"{BASE_URL}/api/local/run", json=payload, headers=headers, timeout=TIMEOUT
+        )
         if response.status_code == 200:
             data = response.json()
             if data.get("ok") == True:
@@ -76,10 +83,13 @@ def test_chat_smoke():
         log(f"Local run test error: {e}", "ERROR")
     return False
 
+
 def test_scheduler_status():
     """Test scheduler status endpoint"""
     try:
-        response = requests.get(f"{BASE_URL}/api/crm/import/acculynx/schedule/status", timeout=TIMEOUT)
+        response = requests.get(
+            f"{BASE_URL}/api/crm/import/acculynx/schedule/status", timeout=TIMEOUT
+        )
         if response.status_code == 200:
             data = response.json()
             if "schedules" in data:
@@ -90,11 +100,14 @@ def test_scheduler_status():
         log(f"Scheduler status error: {e}", "ERROR")
     return False
 
+
 def test_import_status():
     """Test import status endpoint"""
     try:
         headers = {"x-tenant": "the-expert-co"}
-        response = requests.get(f"{BASE_URL}/api/crm/import/status", headers=headers, timeout=TIMEOUT)
+        response = requests.get(
+            f"{BASE_URL}/api/crm/import/status", headers=headers, timeout=TIMEOUT
+        )
         if response.status_code in [200, 404]:  # 404 is OK if no imports yet
             log("Import status test passed")
             return True
@@ -102,6 +115,7 @@ def test_import_status():
     except Exception as e:
         log(f"Import status error: {e}", "ERROR")
     return False
+
 
 def test_accuLynx_stub_mode():
     """Test AccuLynx run-now endpoint (stub mode when no API key)"""
@@ -112,7 +126,9 @@ def test_accuLynx_stub_mode():
             del os.environ["ACCULYNX_API_KEY"]
 
         headers = {"x-tenant": "the-expert-co", "x-ops": "1"}  # Add operator header
-        response = requests.post(f"{BASE_URL}/api/crm/import/acculynx/run-now", headers=headers, timeout=TIMEOUT)
+        response = requests.post(
+            f"{BASE_URL}/api/crm/import/acculynx/run-now", headers=headers, timeout=TIMEOUT
+        )
 
         # Restore key
         if old_key:
@@ -128,6 +144,7 @@ def test_accuLynx_stub_mode():
     except Exception as e:
         log(f"AccuLynx run-now error: {e}", "ERROR")
     return False
+
 
 def run_smoke_tests():
     """Run all smoke tests"""
@@ -175,6 +192,7 @@ def run_smoke_tests():
         log("Stopping server...")
         server_proc.terminate()
         server_proc.wait()
+
 
 if __name__ == "__main__":
     success = run_smoke_tests()

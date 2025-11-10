@@ -3,22 +3,22 @@ Phase IX M3: Anomaly Detection API Router
 Exposes real-time anomaly detection to operator dashboard.
 """
 
-from fastapi import APIRouter, Depends, Query
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from typing import Any
 
 from anomaly_detector import (
+    BASELINE_MINUTES,
+    WINDOW_MINUTES,
     detect_anomalies,
     format_incident_message,
-    WINDOW_MINUTES,
-    BASELINE_MINUTES,
 )
+from fastapi import APIRouter, Depends, Query
 from rbac import admin_required
 
 router = APIRouter(prefix="/anomalies", tags=["anomalies"])
 
 
-def _get_deliveries_between(start: datetime, end: datetime) -> List[Dict[str, Any]]:
+def _get_deliveries_between(start: datetime, end: datetime) -> list[dict[str, Any]]:
     """
     Fetch deliveries from the in-memory DELIVERY_HISTORY store.
     In production, this would query a proper database.
@@ -45,10 +45,9 @@ def _get_deliveries_between(start: datetime, end: datetime) -> List[Dict[str, An
 
     return result
 
+
 @router.get("/current")
-def get_current_anomalies(
-    _admin=Depends(admin_required)
-) -> Dict[str, Any]:
+def get_current_anomalies(_admin=Depends(admin_required)) -> dict[str, Any]:
     """
     Detect current anomalies by comparing recent window to baseline.
 
@@ -74,18 +73,18 @@ def get_current_anomalies(
     # Fetch deliveries from history
     recent_deliveries = _get_deliveries_between(window_start, now)
     baseline_deliveries = _get_deliveries_between(baseline_start, window_start)
-    
+
     # Detect anomalies
     incidents = detect_anomalies(recent_deliveries, baseline_deliveries, now)
-    
+
     # Add human-readable messages
     for incident in incidents:
         incident["message"] = format_incident_message(incident)
-    
+
     # Calculate summary
     critical_count = sum(1 for i in incidents if i["severity"] == "critical")
     warning_count = len(incidents) - critical_count
-    
+
     return {
         "incidents": incidents,
         "summary": {
@@ -98,11 +97,11 @@ def get_current_anomalies(
         "detected_at": now.isoformat() + "Z",
     }
 
+
 @router.get("/history")
 def get_anomaly_history(
-    hours: int = Query(24, ge=1, le=168),
-    _admin=Depends(admin_required)
-) -> Dict[str, Any]:
+    hours: int = Query(24, ge=1, le=168), _admin=Depends(admin_required)
+) -> dict[str, Any]:
     """
     Get historical anomaly detection by running detector over past time ranges.
     Useful for trend analysis and validation.
@@ -126,17 +125,19 @@ def get_anomaly_history(
 
         recent = _get_deliveries_between(window_start, snapshot_time)
         baseline = _get_deliveries_between(baseline_start, window_start)
-        
+
         incidents = detect_anomalies(recent, baseline, snapshot_time)
-        
+
         if incidents:  # Only include snapshots with incidents
-            snapshots.append({
-                "timestamp": snapshot_time.isoformat() + "Z",
-                "incident_count": len(incidents),
-                "critical_count": sum(1 for i in incidents if i["severity"] == "critical"),
-                "incidents": incidents[:5],  # Top 5 incidents per snapshot
-            })
-    
+            snapshots.append(
+                {
+                    "timestamp": snapshot_time.isoformat() + "Z",
+                    "incident_count": len(incidents),
+                    "critical_count": sum(1 for i in incidents if i["severity"] == "critical"),
+                    "incidents": incidents[:5],  # Top 5 incidents per snapshot
+                }
+            )
+
     return {
         "snapshots": snapshots,
         "hours_analyzed": hours,

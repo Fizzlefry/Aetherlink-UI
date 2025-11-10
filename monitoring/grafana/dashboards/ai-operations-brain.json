@@ -1,0 +1,441 @@
+{
+    "dashboard": {
+        "title": "AI Operations Brain - Learning & Autonomy",
+        "tags": [
+            "aetherlink",
+            "ai",
+            "operations",
+            "learning"
+        ],
+        "timezone": "browser",
+        "panels": [
+            {
+                "type": "row",
+                "title": "AI Operations Overview",
+                "gridPos": {
+                    "h": 1,
+                    "w": 24,
+                    "x": 0,
+                    "y": 0
+                }
+            },
+            {
+                "type": "stat",
+                "title": "Total Actions",
+                "gridPos": {
+                    "h": 6,
+                    "w": 6,
+                    "x": 0,
+                    "y": 1
+                },
+                "targets": [
+                    {
+                        "expr": "aetherlink_adaptive_actions_total",
+                        "refId": "A"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "mappings": [],
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green",
+                                    "value": 0
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "type": "stat",
+                "title": "Autonomous Actions",
+                "gridPos": {
+                    "h": 6,
+                    "w": 6,
+                    "x": 6,
+                    "y": 1
+                },
+                "targets": [
+                    {
+                        "expr": "aetherlink_adaptive_auto_actions_total",
+                        "refId": "A"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "mappings": [],
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "blue",
+                                    "value": 0
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "type": "stat",
+                "title": "Overall Success Rate",
+                "gridPos": {
+                    "h": 6,
+                    "w": 6,
+                    "x": 12,
+                    "y": 1
+                },
+                "targets": [
+                    {
+                        "expr": "aetherlink_adaptive_success_rate * 100",
+                        "refId": "A"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "percent",
+                        "mappings": [],
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "red",
+                                    "value": 0
+                                },
+                                {
+                                    "color": "yellow",
+                                    "value": 70
+                                },
+                                {
+                                    "color": "green",
+                                    "value": 85
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "type": "stat",
+                "title": "Auto Success Rate",
+                "gridPos": {
+                    "h": 6,
+                    "w": 6,
+                    "x": 18,
+                    "y": 1
+                },
+                "targets": [
+                    {
+                        "expr": "aetherlink_adaptive_auto_success_rate * 100",
+                        "refId": "A"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "percent",
+                        "mappings": [],
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "red",
+                                    "value": 0
+                                },
+                                {
+                                    "color": "yellow",
+                                    "value": 75
+                                },
+                                {
+                                    "color": "green",
+                                    "value": 90
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "type": "row",
+                "title": "Learning Performance",
+                "gridPos": {
+                    "h": 1,
+                    "w": 24,
+                    "x": 0,
+                    "y": 7
+                }
+            },
+            {
+                "type": "timeseries",
+                "title": "Success Rate Trends (1h, 24h, 7d)",
+                "gridPos": {
+                    "h": 8,
+                    "w": 24,
+                    "x": 0,
+                    "y": 8
+                },
+                "targets": [
+                    {
+                        "expr": "aetherlink_adaptive_success_rate_1h",
+                        "refId": "A",
+                        "legendFormat": "1 Hour"
+                    },
+                    {
+                        "expr": "aetherlink_adaptive_success_rate_24h",
+                        "refId": "B",
+                        "legendFormat": "24 Hours"
+                    },
+                    {
+                        "expr": "aetherlink_adaptive_success_rate_7d",
+                        "refId": "C",
+                        "legendFormat": "7 Days"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "percent",
+                        "custom": {
+                            "axisPlacement": "auto",
+                            "barAlignment": 0,
+                            "drawStyle": "line",
+                            "fillOpacity": 10,
+                            "gradientMode": "none",
+                            "hideFrom": {
+                                "legend": false,
+                                "tooltip": false,
+                                "vis": false
+                            },
+                            "lineInterpolation": "linear",
+                            "lineWidth": 1,
+                            "pointSize": 5,
+                            "scaleDistribution": {
+                                "type": "linear"
+                            },
+                            "showPoints": "never",
+                            "spanNulls": false,
+                            "stacking": {
+                                "group": "A",
+                                "mode": "none"
+                            },
+                            "thresholdsStyle": {
+                                "mode": "off"
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "type": "row",
+                "title": "Alert Type Performance",
+                "gridPos": {
+                    "h": 1,
+                    "w": 24,
+                    "x": 0,
+                    "y": 16
+                }
+            },
+            {
+                "type": "table",
+                "title": "Alert Type Breakdown",
+                "gridPos": {
+                    "h": 8,
+                    "w": 24,
+                    "x": 0,
+                    "y": 17
+                },
+                "targets": [
+                    {
+                        "expr": "aetherlink_adaptive_alert_type_performance",
+                        "refId": "A",
+                        "format": "table",
+                        "instant": true
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "custom": {
+                            "align": "auto",
+                            "cellOptions": {
+                                "type": "auto"
+                            },
+                            "inspect": false
+                        }
+                    },
+                    "overrides": [
+                        {
+                            "matcher": {
+                                "id": "byName",
+                                "options": "alert_type"
+                            },
+                            "properties": [
+                                {
+                                    "id": "displayName",
+                                    "value": "Alert Type"
+                                }
+                            ]
+                        },
+                        {
+                            "matcher": {
+                                "id": "byName",
+                                "options": "total_actions"
+                            },
+                            "properties": [
+                                {
+                                    "id": "displayName",
+                                    "value": "Total Actions"
+                                }
+                            ]
+                        },
+                        {
+                            "matcher": {
+                                "id": "byName",
+                                "options": "success_rate"
+                            },
+                            "properties": [
+                                {
+                                    "id": "displayName",
+                                    "value": "Success Rate"
+                                },
+                                {
+                                    "id": "unit",
+                                    "value": "percent"
+                                }
+                            ]
+                        },
+                        {
+                            "matcher": {
+                                "id": "byName",
+                                "options": "auto_success_rate"
+                            },
+                            "properties": [
+                                {
+                                    "id": "displayName",
+                                    "value": "Auto Success Rate"
+                                },
+                                {
+                                    "id": "unit",
+                                    "value": "percent"
+                                }
+                            ]
+                        },
+                        {
+                            "matcher": {
+                                "id": "byName",
+                                "options": "current_threshold"
+                            },
+                            "properties": [
+                                {
+                                    "id": "displayName",
+                                    "value": "Current Threshold"
+                                },
+                                {
+                                    "id": "unit",
+                                    "value": "percent"
+                                }
+                            ]
+                        },
+                        {
+                            "matcher": {
+                                "id": "byName",
+                                "options": "positive_feedback"
+                            },
+                            "properties": [
+                                {
+                                    "id": "displayName",
+                                    "value": "Positive Feedback"
+                                }
+                            ]
+                        },
+                        {
+                            "matcher": {
+                                "id": "byName",
+                                "options": "negative_feedback"
+                            },
+                            "properties": [
+                                {
+                                    "id": "displayName",
+                                    "value": "Negative Feedback"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "type": "row",
+                "title": "Learning Dynamics",
+                "gridPos": {
+                    "h": 1,
+                    "w": 24,
+                    "x": 0,
+                    "y": 25
+                }
+            },
+            {
+                "type": "timeseries",
+                "title": "Dynamic Threshold Adjustments",
+                "gridPos": {
+                    "h": 8,
+                    "w": 24,
+                    "x": 0,
+                    "y": 26
+                },
+                "targets": [
+                    {
+                        "expr": "aetherlink_adaptive_dynamic_thresholds",
+                        "refId": "A"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "percent",
+                        "custom": {
+                            "axisPlacement": "auto",
+                            "barAlignment": 0,
+                            "drawStyle": "line",
+                            "fillOpacity": 10,
+                            "gradientMode": "none",
+                            "hideFrom": {
+                                "legend": false,
+                                "tooltip": false,
+                                "vis": false
+                            },
+                            "lineInterpolation": "linear",
+                            "lineWidth": 1,
+                            "pointSize": 5,
+                            "scaleDistribution": {
+                                "type": "linear"
+                            },
+                            "showPoints": "never",
+                            "spanNulls": false,
+                            "stacking": {
+                                "group": "A",
+                                "mode": "none"
+                            },
+                            "thresholdsStyle": {
+                                "mode": "off"
+                            }
+                        }
+                    }
+                }
+            }
+        ],
+        "time": {
+            "from": "now-24h",
+            "to": "now"
+        },
+        "timepicker": {},
+        "templating": {
+            "list": []
+        },
+        "annotations": {
+            "list": []
+        },
+        "refresh": "30s",
+        "schemaVersion": 38,
+        "version": 1,
+        "links": []
+    }
+}

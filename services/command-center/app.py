@@ -1,21 +1,24 @@
-﻿import asyncio
+import asyncio
 import logging
 import os
+import random
 import time
 import uuid
+from collections.abc import Callable
 from contextlib import asynccontextmanager
-from datetime import UTC, datetime, timezone
-from typing import Any, Callable
-import random
+from datetime import UTC, datetime
+from typing import Any
 
 # import alert_evaluator
 # import alert_store
 # import event_store
 import httpx
+
 # from audit import audit_middleware, get_audit_stats
-from fastapi import Depends, FastAPI, HTTPException, Request, Query
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException, Query, Request
+
 # from prometheus_client import Counter, Gauge
+
 
 # Dummy prometheus classes for when prometheus_client is not available
 class Counter:
@@ -30,6 +33,7 @@ class Counter:
     def inc(self, amount=1):
         pass
 
+
 class Gauge:
     def __init__(self, name, description, labelnames=None):
         self.name = name
@@ -41,7 +45,10 @@ class Gauge:
 
     def set(self, value):
         pass
+
+
 from pydantic import BaseModel, Field
+
 # from rbac import require_roles
 # from routers import alert_templates, alerts, delivery_history, events, operator_audit_router
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -60,12 +67,13 @@ def to_iso(ts: float | None) -> str | None:
     """
     if not ts:
         return None
-    return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat().replace("+00:00", "Z")
+    return datetime.fromtimestamp(ts, tz=UTC).isoformat().replace("+00:00", "Z")
 
 
 # Phase XII: Lightweight RBAC for operator-only actions
 OPS_HEADER_KEYS = ["x-ops", "x-role"]
 OPS_ALLOWED_VALUES = ["1", "ops", "admin"]
+
 
 def ensure_ops(request: Request):
     """
@@ -83,14 +91,14 @@ def ensure_ops(request: Request):
             log.debug(f"[rbac] Operator access granted via {key}={val}")
             return
     # No valid operator header found
-    log.warning(f"[rbac] Operator access denied - missing or invalid operator headers")
+    log.warning("[rbac] Operator access denied - missing or invalid operator headers")
     raise HTTPException(status_code=403, detail="operator privileges required")
 
 
 # Phase XIII/XIV: File-based persistence helpers (atomic JSON saves)
 import json
-from pathlib import Path
 import shutil
+from pathlib import Path
 
 # Allow override so prod/staging can store data elsewhere
 DATA_DIR = Path(os.getenv("COMMAND_CENTER_DATA_DIR", "./data"))
@@ -110,7 +118,12 @@ DUAL_WRITE = os.getenv("COMMAND_CENTER_DUAL_WRITE", "false").lower() in ("1", "t
 DB_STORE = None
 
 # Phase XVII: Replication toggles (off by default)
-REPLICATION_ENABLED = os.getenv("COMMAND_CENTER_REPLICATION", "off").lower() in ("1", "true", "on", "yes")
+REPLICATION_ENABLED = os.getenv("COMMAND_CENTER_REPLICATION", "off").lower() in (
+    "1",
+    "true",
+    "on",
+    "yes",
+)
 REPLICA_URL = os.getenv("COMMAND_CENTER_REPLICA_URL", "").strip()  # http(s):// or file://path
 REPLICA_BACKOFF_MAX = int(os.getenv("COMMAND_CENTER_REPLICA_BACKOFF_MAX", "60"))
 REPLICA_QUEUE_MAXSIZE = int(os.getenv("COMMAND_CENTER_REPLICA_QUEUE_MAXSIZE", "1000"))
@@ -118,11 +131,21 @@ _REPLICA_Q: asyncio.Queue | None = None
 
 # Phase XVIII: Adaptive health toggles
 HEALTH_INTERVAL_SEC = int(os.getenv("COMMAND_CENTER_HEALTH_INTERVAL", "30"))
-AUTO_RECOVER = os.getenv("COMMAND_CENTER_AUTO_RECOVER", "true").lower() in ("1", "true", "on", "yes")
+AUTO_RECOVER = os.getenv("COMMAND_CENTER_AUTO_RECOVER", "true").lower() in (
+    "1",
+    "true",
+    "on",
+    "yes",
+)
 SCHEDULER_STALL_SEC = int(os.getenv("COMMAND_CENTER_SCHEDULER_STALL_SEC", "30"))
 
 # Phase XIX: Restart controls
-ALLOW_RESTART = os.getenv("COMMAND_CENTER_ALLOW_RESTART", "true").lower() in ("1", "true", "on", "yes")
+ALLOW_RESTART = os.getenv("COMMAND_CENTER_ALLOW_RESTART", "true").lower() in (
+    "1",
+    "true",
+    "on",
+    "yes",
+)
 RESTART_DELAY_SEC = int(os.getenv("COMMAND_CENTER_RESTART_DELAY_SEC", "3"))
 
 # Phase XVIII: Health state snapshot
@@ -249,6 +272,7 @@ def load_json_self_heal(path: Path, default):
     print(f"[persist] no valid backups for {path}, using default")
     return default
 
+
 # Phase VII M3: Tenant Context Middleware
 class TenantContextMiddleware(BaseHTTPMiddleware):
     """
@@ -277,7 +301,7 @@ async def lifespan(app: FastAPI):
     some background workers or integrations aren't available.
     """
     global DB_STORE
-    
+
     log.info("[command-center] Starting Command Center")
     print("Lifespan starting")
 
@@ -308,6 +332,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AetherLink Command Center", version="0.1.0")
 
+
 @app.get("/test")
 def test():
     print("Test endpoint called")
@@ -316,6 +341,7 @@ def test():
     except Exception as e:
         print(f"Exception in test: {e}")
         return {"error": str(e)}
+
 
 # Phase VII M3: Add tenant context middleware
 # app.add_middleware(TenantContextMiddleware)
@@ -515,7 +541,11 @@ async def replication_loop(poll_delay: float = 0.2):
                         tenant=item.get("tenant", "system"),
                         operation="replicate",
                         source="replica",
-                        metadata={"table": item.get("table"), "op": item.get("op"), "target": target},
+                        metadata={
+                            "table": item.get("table"),
+                            "op": item.get("op"),
+                            "target": target,
+                        },
                     )
                 except Exception:
                     pass
@@ -524,7 +554,7 @@ async def replication_loop(poll_delay: float = 0.2):
                 await asyncio.sleep(min(backoff, REPLICA_BACKOFF_MAX) + random.random())
                 backoff = min(backoff * 2.0, float(REPLICA_BACKOFF_MAX))
                 await _REPLICA_Q.put(item)
-        except Exception as e:
+        except Exception:
             try:
                 replica_failures_total.labels(target=_replica_target(), kind="loop").inc()
             except Exception:
@@ -549,7 +579,7 @@ async def _replicate_once(item: dict, target: str) -> bool:
         else:
             # unknown target is treated as no-op success to avoid blocking
             return True
-    except Exception as e:
+    except Exception:
         try:
             replica_failures_total.labels(target=target, kind="send").inc()
         except Exception:
@@ -577,7 +607,9 @@ def _enqueue_replication(table: str, op: str, payload: dict[str, Any], tenant: s
 
 
 # Phase IX/XI: AccuLynx Scheduler Helper Functions
-def log_scheduler_audit(tenant: str, operation: str, source: str = "api", metadata: dict[str, Any] | None = None):
+def log_scheduler_audit(
+    tenant: str, operation: str, source: str = "api", metadata: dict[str, Any] | None = None
+):
     """
     Record operator action in audit trail.
 
@@ -637,7 +669,9 @@ async def emit_event(ev: dict[str, Any]) -> None:
         DB_STORE.append_event(ev)
 
     # Audit
-    log_scheduler_audit(ev["tenant"], "event_emit", source=ev["source"], metadata={"type": ev["type"]})
+    log_scheduler_audit(
+        ev["tenant"], "event_emit", source=ev["source"], metadata={"type": ev["type"]}
+    )
 
     # Replicate
     if REPLICATION_ENABLED:
@@ -665,7 +699,7 @@ async def acculynx_pull_for_tenant(tenant: str):
             "ok": True,
             "stats": {"imported": 0, "skipped": 0},
             "tenant": tenant,
-            "message": "stub: real AccuLynx import not yet enabled"
+            "message": "stub: real AccuLynx import not yet enabled",
         }
 
         # Update schedule state
@@ -686,13 +720,12 @@ async def acculynx_pull_for_tenant(tenant: str):
         except Exception:
             pass
         # Phase XVII: enqueue replication
-        _enqueue_replication("schedules", "update", {"tenant": tenant, **ACCU_IMPORT_SCHEDULES[tenant]}, tenant)
+        _enqueue_replication(
+            "schedules", "update", {"tenant": tenant, **ACCU_IMPORT_SCHEDULES[tenant]}, tenant
+        )
         # Optional audit to reflect scheduler activity
         log_scheduler_audit(tenant, "scheduled-run", source="scheduler")
-        await emit_event({
-            "tenant": tenant,
-            "type": "scheduler.import.completed"
-        })
+        await emit_event({"tenant": tenant, "type": "scheduler.import.completed"})
 
         # Prometheus metric - record successful scheduled import
         acculynx_scheduled_imports_total.labels(tenant=tenant).inc()
@@ -718,14 +751,16 @@ async def acculynx_pull_for_tenant(tenant: str):
         except Exception:
             pass
         # Phase XVII: enqueue replication
-        _enqueue_replication("schedules", "update", {"tenant": tenant, **ACCU_IMPORT_SCHEDULES[tenant]}, tenant)
+        _enqueue_replication(
+            "schedules", "update", {"tenant": tenant, **ACCU_IMPORT_SCHEDULES[tenant]}, tenant
+        )
         # Audit failure for operator visibility
-        log_scheduler_audit(tenant, "scheduled-run-failed", source="scheduler", metadata={"error": str(e)})
-        await emit_event({
-            "tenant": tenant,
-            "type": "scheduler.import.failed",
-            "payload": {"error": str(e)}
-        })
+        log_scheduler_audit(
+            tenant, "scheduled-run-failed", source="scheduler", metadata={"error": str(e)}
+        )
+        await emit_event(
+            {"tenant": tenant, "type": "scheduler.import.failed", "payload": {"error": str(e)}}
+        )
         log.error(f"[acculynx-scheduler] Import failed for {tenant}: {e}")
         return {"ok": False, "error": str(e)}
 
@@ -759,7 +794,9 @@ async def acculynx_scheduler_loop(poll_interval: int = 5):
                 last_run = float(cfg.get("last_run", 0))
 
                 if now - last_run >= interval:
-                    log.info(f"[acculynx-scheduler] Triggering import for {tenant} (interval: {interval}s)")
+                    log.info(
+                        f"[acculynx-scheduler] Triggering import for {tenant} (interval: {interval}s)"
+                    )
                     await acculynx_pull_for_tenant(tenant)
 
         except Exception as e:
@@ -1014,7 +1051,16 @@ async def replication_status(request: Request):
                 netloc = p.hostname or ""
                 if p.port:
                     netloc = f"{netloc}:{p.port}"
-                target_url = urlunparse((p.scheme, netloc, p.path or "", p.params or "", p.query or "", p.fragment or ""))
+                target_url = urlunparse(
+                    (
+                        p.scheme,
+                        netloc,
+                        p.path or "",
+                        p.params or "",
+                        p.query or "",
+                        p.fragment or "",
+                    )
+                )
         except Exception:
             pass
 
@@ -1085,7 +1131,10 @@ def _compute_db_health() -> bool:
                 return bool(res and isinstance(res[0], str) and res[0].lower() == "ok")
         else:
             # JSON mode: all persistence files should exist and be non-empty
-            files_ok = all(p.exists() and p.stat().st_size > 0 for p in [SCHEDULES_FILE, AUDIT_FILE, LOCAL_RUNS_FILE])
+            files_ok = all(
+                p.exists() and p.stat().st_size > 0
+                for p in [SCHEDULES_FILE, AUDIT_FILE, LOCAL_RUNS_FILE]
+            )
             return files_ok
     except Exception:
         return False
@@ -1137,7 +1186,9 @@ def _auto_pause_all(reason: str) -> int:
                 pass
             _enqueue_replication("schedules", "update", {"tenant": tenant, **cfg}, tenant)
     if changed:
-        log_scheduler_audit("system", "auto_pause", source="health", metadata={"reason": reason, "count": changed})
+        log_scheduler_audit(
+            "system", "auto_pause", source="health", metadata={"reason": reason, "count": changed}
+        )
     return changed
 
 
@@ -1163,7 +1214,12 @@ def _auto_resume_all(reason: str) -> int:
                 pass
             _enqueue_replication("schedules", "update", {"tenant": tenant, **cfg}, tenant)
     if changed:
-        log_scheduler_audit("system", "auto_recover", source="health", metadata={"component": "scheduler", "reason": reason, "count": changed})
+        log_scheduler_audit(
+            "system",
+            "auto_recover",
+            source="health",
+            metadata={"component": "scheduler", "reason": reason, "count": changed},
+        )
     return changed
 
 
@@ -1182,7 +1238,12 @@ def _reapply_auto_paused() -> int:
                 pass
             _enqueue_replication("schedules", "update", {"tenant": tenant, **cfg}, tenant)
     if changed:
-        log_scheduler_audit("system", "auto_pause", source="startup", metadata={"reason": "reapply_auto_paused", "count": changed})
+        log_scheduler_audit(
+            "system",
+            "auto_pause",
+            source="startup",
+            metadata={"reason": "reapply_auto_paused", "count": changed},
+        )
     return changed
 
 
@@ -1195,7 +1256,7 @@ async def health_loop():
             _set_health("db", db_ok)
 
             rep_bp, rep_details = _compute_replication_health()
-            rep_ok = (rep_bp != "critical")
+            rep_ok = rep_bp != "critical"
             _HEALTH_STATE["replication"] = rep_bp
             try:
                 # For replication, also set a binary gauge for ok/degraded
@@ -1317,11 +1378,7 @@ async def ops_restart(request: Request, mode: str = Query("graceful")):
         "client": getattr(request.client, "host", None) if hasattr(request, "client") else None,
     }
     log_scheduler_audit("system", "restart", source="ops", metadata=meta)
-    await emit_event({
-        "tenant": "system",
-        "type": "core.restart",
-        "payload": meta
-    })
+    await emit_event({"tenant": "system", "type": "core.restart", "payload": meta})
 
     async def _do_exit(wait: int):
         try:
@@ -1378,7 +1435,9 @@ async def analytics_summary(request: Request, hours: int = Query(24, ge=1, le=16
         return LOCAL_ACTION_RUNS[:limit]
 
     audits = [a for a in _load_audit(2000) if float(a.get("ts", 0)) >= cutoff]
-    runs = [r for r in _load_local_runs(1000) if float(r.get("timestamp") or r.get("ts", 0)) >= cutoff]
+    runs = [
+        r for r in _load_local_runs(1000) if float(r.get("timestamp") or r.get("ts", 0)) >= cutoff
+    ]
 
     # Basic rollups
     ops_total = len(audits)
@@ -1418,8 +1477,12 @@ async def analytics_summary(request: Request, hours: int = Query(24, ge=1, le=16
 async def analytics_tenant_detail(
     request: Request,
     tenant: str,
-    hours: int = Query(24, ge=1, le=168, description="Lookback window in hours (1-168, default 24)"),
-    limit: int = Query(10, ge=1, le=50, description="Number of recent audit entries (1-50, default 10)"),
+    hours: int = Query(
+        24, ge=1, le=168, description="Lookback window in hours (1-168, default 24)"
+    ),
+    limit: int = Query(
+        10, ge=1, le=50, description="Number of recent audit entries (1-50, default 10)"
+    ),
 ):
     """
     RBAC-protected per-tenant analytics drilldown.
@@ -1455,8 +1518,16 @@ async def analytics_tenant_detail(
             pass
         return LOCAL_ACTION_RUNS[:limit]
 
-    audits = [a for a in _load_audit(2000) if (a.get("tenant") == tenant and float(a.get("ts", 0.0)) >= cutoff)]
-    runs = [r for r in _load_local_runs(1000) if ((r.get("tenant") == tenant) and float(r.get("timestamp") or r.get("ts", 0.0)) >= cutoff)]
+    audits = [
+        a
+        for a in _load_audit(2000)
+        if (a.get("tenant") == tenant and float(a.get("ts", 0.0)) >= cutoff)
+    ]
+    runs = [
+        r
+        for r in _load_local_runs(1000)
+        if ((r.get("tenant") == tenant) and float(r.get("timestamp") or r.get("ts", 0.0)) >= cutoff)
+    ]
 
     # Recent audit (last 10 entries for this tenant, freshest first)
     def _load_recent_audit(limit: int = 10, fetch: int = 200) -> list[dict[str, Any]]:
@@ -1469,11 +1540,13 @@ async def analytics_tenant_detail(
             if a.get("tenant") != tenant:
                 continue
             ts = float(a.get("ts", 0.0)) if a.get("ts") is not None else 0.0
-            items.append({
-                "ts_iso": to_iso(ts),
-                "operation": a.get("operation"),
-                "source": a.get("source"),
-            })
+            items.append(
+                {
+                    "ts_iso": to_iso(ts),
+                    "operation": a.get("operation"),
+                    "source": a.get("source"),
+                }
+            )
             if len(items) >= limit:
                 break
         return items
@@ -1489,7 +1562,9 @@ async def analytics_tenant_detail(
 
 
 @app.get("/analytics/audit")
-async def analytics_audit(request: Request, limit: int = Query(100, ge=1, le=2000), ops: str | None = Query(None)):
+async def analytics_audit(
+    request: Request, limit: int = Query(100, ge=1, le=2000), ops: str | None = Query(None)
+):
     """
     RBAC-protected audit feed for dashboards.
 
@@ -1556,7 +1631,9 @@ async def ingest_event(request: Request):
         # TODO: JSON fallback if needed
 
         # Audit
-        log_scheduler_audit(tenant, "event_ingest", source=ev["source"], metadata={"type": ev["type"]})
+        log_scheduler_audit(
+            tenant, "event_ingest", source=ev["source"], metadata={"type": ev["type"]}
+        )
 
         # Replicate
         if REPLICATION_ENABLED:
@@ -1565,7 +1642,10 @@ async def ingest_event(request: Request):
         # Route to subscribers
         route_event(ev)
 
-        return {"ok": True, "event_id": f"{ev['source']}-{ev['type']}-{int(ev['ts'] or time.time())}"}
+        return {
+            "ok": True,
+            "event_id": f"{ev['source']}-{ev['type']}-{int(ev['ts'] or time.time())}",
+        }
     except Exception as e:
         log.error(f"Event ingest failed: {e}")
         raise HTTPException(500, f"Event ingest failed: {str(e)}")
@@ -1650,6 +1730,7 @@ async def analytics_events_summary(request: Request):
         "recent_audit": recent_audit,
         "ts_iso": datetime.utcnow().isoformat() + "Z",
     }
+
 
 # @app.post("/ops/register", dependencies=[Depends(operator_only)])
 # async def register_service(payload: ServiceRegistration):
@@ -1737,7 +1818,7 @@ async def local_run(request: Request):
         action = body.get("action")
         if not action:
             return {"ok": False, "error": "action is required"}
-        
+
         # Record the run
         run_rec = {
             "action": action,
@@ -1746,9 +1827,9 @@ async def local_run(request: Request):
             "ok": True,
             "stdout": f"Executed {action}",
             "stderr": "",
-            "error": None
+            "error": None,
         }
-        
+
         LOCAL_ACTION_RUNS.insert(0, run_rec)
         if len(LOCAL_ACTION_RUNS) > MAX_LOCAL_ACTION_RUNS:
             LOCAL_ACTION_RUNS.pop()
@@ -1768,11 +1849,9 @@ async def local_run(request: Request):
         local_actions_total.labels(tenant=tenant, action=action).inc()
 
         # Emit completion event
-        await emit_event({
-            "tenant": tenant,
-            "type": "ops.local.run.completed",
-            "payload": {"action": action}
-        })
+        await emit_event(
+            {"tenant": tenant, "type": "ops.local.run.completed", "payload": {"action": action}}
+        )
 
         return {"ok": True, "stdout": f"Executed {action}", "stderr": "", "error": None}
     except Exception as e:
@@ -1780,12 +1859,15 @@ async def local_run(request: Request):
         # Emit failure event
         tenant = request.headers.get("x-tenant", "the-expert-co")
         action = (await request.json()).get("action") if request else None
-        await emit_event({
-            "tenant": tenant,
-            "type": "ops.local.run.failed",
-            "payload": {"action": action, "error": str(e)}
-        })
+        await emit_event(
+            {
+                "tenant": tenant,
+                "type": "ops.local.run.failed",
+                "payload": {"action": action, "error": str(e)},
+            }
+        )
         return {"ok": False, "error": str(e)}
+
 
 @app.get("/api/local/runs")
 async def list_local_runs():
@@ -1831,14 +1913,18 @@ async def acculynx_schedule(request: Request):
         except Exception:
             pass
         # Phase XVII: enqueue replication
-        _enqueue_replication("schedules", "upsert", {"tenant": tenant, **ACCU_IMPORT_SCHEDULES[tenant]}, tenant)
+        _enqueue_replication(
+            "schedules", "upsert", {"tenant": tenant, **ACCU_IMPORT_SCHEDULES[tenant]}, tenant
+        )
 
         log_scheduler_audit(tenant, "schedule", metadata={"interval_sec": interval_sec})
-        await emit_event({
-            "tenant": tenant,
-            "type": "scheduler.schedule.created",
-            "payload": {"interval_sec": interval_sec}
-        })
+        await emit_event(
+            {
+                "tenant": tenant,
+                "type": "scheduler.schedule.created",
+                "payload": {"interval_sec": interval_sec},
+            }
+        )
         log.info(f"[acculynx-schedule] Set schedule for {tenant}: {interval_sec}s")
 
         return {
@@ -1887,13 +1973,12 @@ async def acculynx_pause(request: Request):
         except Exception:
             pass
         # Phase XVII: enqueue replication
-        _enqueue_replication("schedules", "update", {"tenant": tenant, **ACCU_IMPORT_SCHEDULES[tenant]}, tenant)
+        _enqueue_replication(
+            "schedules", "update", {"tenant": tenant, **ACCU_IMPORT_SCHEDULES[tenant]}, tenant
+        )
 
         log_scheduler_audit(tenant, "pause")
-        await emit_event({
-            "tenant": tenant,
-            "type": "scheduler.schedule.paused"
-        })
+        await emit_event({"tenant": tenant, "type": "scheduler.schedule.paused"})
         log.info(f"[acculynx-pause] Paused scheduler for {tenant}")
         return {"ok": True, "tenant": tenant, "paused": True}
     except Exception as e:
@@ -1936,13 +2021,12 @@ async def acculynx_resume(request: Request):
         except Exception:
             pass
         # Phase XVII: enqueue replication
-        _enqueue_replication("schedules", "update", {"tenant": tenant, **ACCU_IMPORT_SCHEDULES[tenant]}, tenant)
+        _enqueue_replication(
+            "schedules", "update", {"tenant": tenant, **ACCU_IMPORT_SCHEDULES[tenant]}, tenant
+        )
 
         log_scheduler_audit(tenant, "resume")
-        await emit_event({
-            "tenant": tenant,
-            "type": "scheduler.schedule.resumed"
-        })
+        await emit_event({"tenant": tenant, "type": "scheduler.schedule.resumed"})
         log.info(f"[acculynx-resume] Resumed scheduler for {tenant}")
         return {"ok": True, "tenant": tenant, "paused": False}
     except Exception as e:
@@ -1964,10 +2048,7 @@ async def acculynx_run_now(request: Request):
     try:
         tenant = request.headers.get("x-tenant", "the-expert-co")
         log_scheduler_audit(tenant, "run-now", metadata={"source": "manual"})
-        await emit_event({
-            "tenant": tenant,
-            "type": "scheduler.import.requested"
-        })
+        await emit_event({"tenant": tenant, "type": "scheduler.import.requested"})
         log.info(f"[acculynx-run-now] Manual import triggered for {tenant}")
 
         result = await acculynx_pull_for_tenant(tenant)
@@ -2003,10 +2084,7 @@ async def acculynx_delete_schedule(request: Request):
             # Phase XVII: enqueue replication
             _enqueue_replication("schedules", "delete", {"tenant": tenant}, tenant)
             log_scheduler_audit(tenant, "delete")
-            await emit_event({
-                "tenant": tenant,
-                "type": "scheduler.schedule.deleted"
-            })
+            await emit_event({"tenant": tenant, "type": "scheduler.schedule.deleted"})
             log.info(f"[acculynx-delete] Deleted schedule for {tenant}")
             return {"ok": True, "tenant": tenant, "message": "Schedule deleted"}
         else:

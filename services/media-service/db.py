@@ -2,11 +2,13 @@
 Database helper for Media Service
 SQLite-based media tracking
 """
+
 import os
 import sqlite3
 from contextlib import contextmanager
 
 DB_PATH = os.getenv("MEDIA_DB_PATH", "./media.db")
+
 
 @contextmanager
 def get_db():
@@ -17,6 +19,7 @@ def get_db():
         yield conn
     finally:
         conn.close()
+
 
 def init_db():
     """Initialize database schema"""

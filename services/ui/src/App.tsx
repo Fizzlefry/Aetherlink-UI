@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { ICON_COMMAND_CENTER } from "./icons";
 import { fetchLeads, fetchOwners, patchLead, createLead, Owner, fetchLeadActivity, createNote, ActivityItem, fetchLeadSummary, extractLeadFromText } from "./api";
 import { getTenantFromToken } from "./auth";
 import type Keycloak from "keycloak-js";
@@ -306,7 +307,7 @@ function App({ keycloak }: { keycloak: Keycloak }) {
                                     transition: "all 0.2s"
                                 }}
                             >
-                                🎛️ Command Center
+                                🧰 Command Center
                             </button>
                             <button
                                 onClick={() => setActiveTab("operator")}

@@ -10,60 +10,59 @@ Flow:
 5. Log to audit trail (Phase VIII M10)
 """
 
-from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
+from datetime import datetime
+from typing import Any
 
 from .predictors import (
+    analyze_triage_distribution,
     choose_strategy,
     predict_outcome_probability,
-    analyze_triage_distribution,
     should_apply_autoheal,
 )
 from .rules import (
     AUTOHEAL_LIMITS,
     GLOBAL_SAFETY,
-    get_tenant_config,
-    is_autoheal_allowed,
     get_strategy_limits,
+    is_autoheal_allowed,
 )
 
 
 @dataclass
 class AutohealResult:
     """Result of an auto-healing cycle execution."""
+
     run_at: str
     incidents_detected: int
-    actions_taken: List[Dict[str, Any]]
-    actions_skipped: List[Dict[str, Any]]
+    actions_taken: list[dict[str, Any]]
+    actions_skipped: list[dict[str, Any]]
     total_replays: int
     total_escalations: int
     total_deferrals: int
     execution_time_ms: float
     dry_run: bool
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return asdict(self)
 
 
 # In-memory state tracking (replace with Redis/DB in production)
-_healing_history: List[Dict[str, Any]] = []
-_last_heal_by_endpoint: Dict[str, datetime] = {}
+_healing_history: list[dict[str, Any]] = []
+_last_heal_by_endpoint: dict[str, datetime] = {}
 
 
 def _get_recent_deliveries_for_incident(
-    incident: Dict[str, Any],
-    time_window_minutes: int = 10
-) -> List[Dict[str, Any]]:
+    incident: dict[str, Any], time_window_minutes: int = 10
+) -> list[dict[str, Any]]:
     """
     Fetch recent deliveries affected by an incident.
     Replace with actual database query in production.
-    
+
     Args:
         incident: Anomaly incident
         time_window_minutes: How far back to look
-    
+
     Returns:
         List of delivery records
     """
@@ -91,19 +90,19 @@ def _get_recent_deliveries_for_incident(
     #         "max_deliveries": 100,
     #     })
     #     return [dict(row) for row in result.fetchall()]
-    
+
     # For now, return empty list (will be wired in integration)
     return []
 
 
-def _replay_delivery(delivery_id: str, meta: Dict[str, Any]) -> bool:
+def _replay_delivery(delivery_id: str, meta: dict[str, Any]) -> bool:
     """
     Replay a single delivery via Phase VIII M7/M9 mechanism.
-    
+
     Args:
         delivery_id: Delivery to replay
         meta: Metadata for audit trail
-    
+
     Returns:
         Success boolean
     """
@@ -112,21 +111,18 @@ def _replay_delivery(delivery_id: str, meta: Dict[str, Any]) -> bool:
     #
     # from routers.delivery_history import replay_delivery_internal
     # return await replay_delivery_internal(delivery_id, meta)
-    
+
     # For now, simulate success
     print(f"[AUTOHEAL] Replaying delivery {delivery_id} with meta: {meta}")
     return True
 
 
 def _log_autoheal_action(
-    action: str,
-    incident: Dict[str, Any],
-    strategy: str,
-    details: Dict[str, Any]
+    action: str, incident: dict[str, Any], strategy: str, details: dict[str, Any]
 ) -> None:
     """
     Log auto-healing action to Phase VIII M10 audit trail.
-    
+
     Args:
         action: Action type (replay, escalate, defer, etc.)
         incident: Triggering incident
@@ -149,24 +145,22 @@ def _log_autoheal_action(
     #         **details,
     #     }
     # )
-    
+
     # For now, print to console
     print(f"[AUDIT] {action} - {strategy} - {incident['endpoint']}")
 
 
 def _execute_replay_strategy(
-    incident: Dict[str, Any],
-    limits: Dict[str, Any],
-    dry_run: bool = False
-) -> Dict[str, Any]:
+    incident: dict[str, Any], limits: dict[str, Any], dry_run: bool = False
+) -> dict[str, Any]:
     """
     Execute REPLAY_RECENT strategy.
-    
+
     Args:
         incident: Anomaly incident
         limits: Strategy execution limits
         dry_run: If True, predict but don't execute
-    
+
     Returns:
         Action result dictionary
     """
@@ -175,16 +169,13 @@ def _execute_replay_strategy(
     time_window = limits.get("time_window_minutes", 10)
     max_deliveries = limits.get("max_deliveries", 25)
     allowed_labels = limits.get("allowed_triage_labels", [])
-    
+
     # Fetch affected deliveries
     deliveries = _get_recent_deliveries_for_incident(incident, time_window)
-    
+
     # Filter by triage label (only replay safe categories)
-    eligible = [
-        d for d in deliveries
-        if d.get("triage_label") in allowed_labels
-    ][:max_deliveries]
-    
+    eligible = [d for d in deliveries if d.get("triage_label") in allowed_labels][:max_deliveries]
+
     if dry_run:
         return {
             "strategy": "REPLAY_RECENT",
@@ -193,7 +184,7 @@ def _execute_replay_strategy(
             "count": len(eligible),
             "incident": incident,
         }
-    
+
     # Execute replays
     replayed = []
     for delivery in eligible:
@@ -203,11 +194,11 @@ def _execute_replay_strategy(
                 "autoheal": True,
                 "strategy": "REPLAY_RECENT",
                 "incident_id": incident.get("detected_at"),
-            }
+            },
         )
         if success:
             replayed.append(delivery["id"])
-    
+
     # Log action
     _log_autoheal_action(
         action="autoheal_replay",
@@ -216,9 +207,9 @@ def _execute_replay_strategy(
         details={
             "replayed_count": len(replayed),
             "delivery_ids": replayed,
-        }
+        },
     )
-    
+
     return {
         "strategy": "REPLAY_RECENT",
         "executed": True,
@@ -229,13 +220,11 @@ def _execute_replay_strategy(
 
 
 def _execute_escalate_strategy(
-    incident: Dict[str, Any],
-    limits: Dict[str, Any],
-    dry_run: bool = False
-) -> Dict[str, Any]:
+    incident: dict[str, Any], limits: dict[str, Any], dry_run: bool = False
+) -> dict[str, Any]:
     """
     Execute ESCALATE_OPERATOR strategy.
-    
+
     Creates operator task / incident ticket.
     """
     if dry_run:
@@ -246,7 +235,7 @@ def _execute_escalate_strategy(
             "priority": limits.get("priority", "high"),
             "incident": incident,
         }
-    
+
     # Log escalation
     _log_autoheal_action(
         action="autoheal_escalate",
@@ -255,9 +244,9 @@ def _execute_escalate_strategy(
         details={
             "priority": limits.get("priority", "high"),
             "reason": "Failure cluster exceeds auto-healing thresholds",
-        }
+        },
     )
-    
+
     return {
         "strategy": "ESCALATE_OPERATOR",
         "executed": True,
@@ -269,17 +258,15 @@ def _execute_escalate_strategy(
 
 
 def _execute_defer_strategy(
-    incident: Dict[str, Any],
-    limits: Dict[str, Any],
-    dry_run: bool = False
-) -> Dict[str, Any]:
+    incident: dict[str, Any], limits: dict[str, Any], dry_run: bool = False
+) -> dict[str, Any]:
     """
     Execute DEFER_AND_MONITOR strategy.
-    
+
     Marks incident for recheck after cooldown period.
     """
     recheck_after = limits.get("recheck_after_seconds", 120)
-    
+
     if dry_run:
         return {
             "strategy": "DEFER_AND_MONITOR",
@@ -287,10 +274,10 @@ def _execute_defer_strategy(
             "would_recheck_after_seconds": recheck_after,
             "incident": incident,
         }
-    
+
     # Track deferred incident
     # TODO: Store in database with recheck timestamp
-    
+
     _log_autoheal_action(
         action="autoheal_defer",
         incident=incident,
@@ -298,9 +285,9 @@ def _execute_defer_strategy(
         details={
             "recheck_after_seconds": recheck_after,
             "reason": "Waiting for clearer pattern",
-        }
+        },
     )
-    
+
     return {
         "strategy": "DEFER_AND_MONITOR",
         "executed": True,
@@ -310,20 +297,17 @@ def _execute_defer_strategy(
     }
 
 
-def run_autoheal_cycle(
-    now: Optional[datetime] = None,
-    dry_run: Optional[bool] = None
-) -> AutohealResult:
+def run_autoheal_cycle(now: datetime | None = None, dry_run: bool | None = None) -> AutohealResult:
     """
     Execute one auto-healing cycle.
-    
+
     Args:
         now: Current timestamp (for testing)
         dry_run: If True, predict but don't execute actions
-    
+
     Returns:
         AutohealResult with execution summary
-    
+
     Flow:
     1. Detect anomalies using Phase IX M3
     2. For each anomaly:
@@ -337,7 +321,7 @@ def run_autoheal_cycle(
     start_time = datetime.utcnow()
     now = now or start_time
     dry_run = dry_run if dry_run is not None else GLOBAL_SAFETY["dry_run"]
-    
+
     # Import here to avoid circular dependencies
     # In production, these should be properly structured
     try:
@@ -346,77 +330,83 @@ def run_autoheal_cycle(
         # Fallback for testing
         def detect_anomalies(recent, baseline, timestamp):
             return []
-    
+
     # Step 1: Detect current anomalies (Phase IX M3)
     # This requires recent + baseline deliveries
     # For production integration, wire up the actual calls
     incidents = []  # detect_anomalies(...) would go here
-    
+
     actions_taken = []
     actions_skipped = []
     total_replays = 0
     total_escalations = 0
     total_deferrals = 0
-    
+
     # Step 2: Process each incident
     for incident in incidents:
         tenant_id = incident["tenant_id"]
         endpoint = incident["endpoint"]
-        
+
         # Check if auto-healing is allowed
         allowed, reason = is_autoheal_allowed(tenant_id, endpoint, "REPLAY_RECENT")
         if not allowed:
-            actions_skipped.append({
-                "incident": incident,
-                "reason": reason,
-            })
+            actions_skipped.append(
+                {
+                    "incident": incident,
+                    "reason": reason,
+                }
+            )
             continue
-        
+
         # Check endpoint cooldown
         last_heal = _last_heal_by_endpoint.get(endpoint)
         if last_heal:
             minutes_since = (now - last_heal).total_seconds() / 60
             cooldown = AUTOHEAL_LIMITS["REPLAY_RECENT"]["cooldown_minutes"]
             if minutes_since < cooldown:
-                actions_skipped.append({
-                    "incident": incident,
-                    "reason": f"Cooldown active ({minutes_since:.1f}m < {cooldown}m)",
-                })
+                actions_skipped.append(
+                    {
+                        "incident": incident,
+                        "reason": f"Cooldown active ({minutes_since:.1f}m < {cooldown}m)",
+                    }
+                )
                 continue
-        
+
         # Fetch recent deliveries for context
         deliveries = _get_recent_deliveries_for_incident(incident)
-        
+
         # Analyze triage distribution (Phase IX M1)
         triage_analysis = analyze_triage_distribution(deliveries)
-        
+
         # Build context for predictor
         context = {
             **triage_analysis,
             "endpoint_in_maintenance": False,  # TODO: Check maintenance calendar
-            "minutes_since_last_heal": 999,    # TODO: Check history
+            "minutes_since_last_heal": 999,  # TODO: Check history
         }
-        
+
         # Choose healing strategy
         strategy = choose_strategy(incident, context)
-        
+
         # Predict outcome probability
         probability = predict_outcome_probability(incident, strategy, context)
-        
+
         # Final safety check
         should_apply, check_reason = should_apply_autoheal(incident, strategy, context)
         if not should_apply:
-            actions_skipped.append({
-                "incident": incident,
-                "strategy": strategy,
-                "probability": probability,
-                "reason": check_reason,
-            })
+            actions_skipped.append(
+                {
+                    "incident": incident,
+                    "strategy": strategy,
+                    "probability": probability,
+                    "reason": check_reason,
+                }
+            )
             continue
-        
+
         # Get strategy limits (with tenant overrides)
         limits = get_strategy_limits(strategy, tenant_id)
-        
+
         # Execute strategy
         result = None
         if strategy == "REPLAY_RECENT":
@@ -430,32 +420,38 @@ def run_autoheal_cycle(
             total_deferrals += 1
         else:
             # Unknown strategy - log and skip
-            actions_skipped.append({
-                "incident": incident,
-                "strategy": strategy,
-                "reason": f"Strategy '{strategy}' not implemented",
-            })
+            actions_skipped.append(
+                {
+                    "incident": incident,
+                    "strategy": strategy,
+                    "reason": f"Strategy '{strategy}' not implemented",
+                }
+            )
             continue
-        
+
         # Track execution
         if result and not dry_run:
             _last_heal_by_endpoint[endpoint] = now
-            _healing_history.append({
-                "timestamp": now.isoformat() + "Z",
-                "incident": incident,
+            _healing_history.append(
+                {
+                    "timestamp": now.isoformat() + "Z",
+                    "incident": incident,
+                    "strategy": strategy,
+                    "result": result,
+                }
+            )
+
+        actions_taken.append(
+            {
                 "strategy": strategy,
-                "result": result,
-            })
-        
-        actions_taken.append({
-            "strategy": strategy,
-            "probability": probability,
-            **result,
-        })
-    
+                "probability": probability,
+                **result,
+            }
+        )
+
     # Calculate execution time
     execution_time_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
-    
+
     return AutohealResult(
         run_at=now.isoformat() + "Z",
         incidents_detected=len(incidents),
@@ -469,7 +465,7 @@ def run_autoheal_cycle(
     )
 
 
-def get_healing_history(limit: int = 100) -> List[Dict[str, Any]]:
+def get_healing_history(limit: int = 100) -> list[dict[str, Any]]:
     """Get recent auto-healing execution history."""
     return _healing_history[-limit:]
 

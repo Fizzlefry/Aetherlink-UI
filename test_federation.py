@@ -4,10 +4,12 @@ Test script for Phase XXIII: Federation Awareness
 Tests the new federation endpoints and background task functionality.
 """
 
-import requests
 import os
 
+import requests
+
 BASE_URL = "http://localhost:8010"
+
 
 def test_federation_endpoints():
     """Test federation endpoints with and without auth."""
@@ -78,7 +80,9 @@ def test_federation_endpoints():
         if response.status_code == 200:
             data = response.json()
             print("✅ Federation health endpoint works")
-            print(f"   Status: {data.get('status')}, Peers up: {data.get('peers_up')}/{data.get('peers_total')}")
+            print(
+                f"   Status: {data.get('status')}, Peers up: {data.get('peers_up')}/{data.get('peers_total')}"
+            )
         else:
             print(f"❌ Federation health failed: {response.status_code}")
     except Exception as e:
@@ -95,12 +99,17 @@ def test_federation_endpoints():
     except Exception as e:
         print(f"❌ Error testing ops feed with federation key: {e}")
 
+
 def test_federation_config():
     """Test federation configuration from environment."""
     print("\n🔧 Testing Federation Configuration...")
 
     fed_enabled = os.getenv("AETHERLINK_FEDERATION_ENABLED", "true").lower() == "true"
-    fed_peers = os.getenv("AETHERLINK_FEDERATION_PEERS", "").split(",") if os.getenv("AETHERLINK_FEDERATION_PEERS") else []
+    fed_peers = (
+        os.getenv("AETHERLINK_FEDERATION_PEERS", "").split(",")
+        if os.getenv("AETHERLINK_FEDERATION_PEERS")
+        else []
+    )
     fed_interval = int(os.getenv("AETHERLINK_FEDERATION_INTERVAL", "15"))
     fed_node_id = os.getenv("AETHERLINK_NODE_ID", "cc-local")
 
@@ -115,6 +124,7 @@ def test_federation_config():
         print("⚠️  Federation enabled but no peers configured (single-node mode)")
     else:
         print("ℹ️  Federation disabled")
+
 
 if __name__ == "__main__":
     print("🌐 Phase XXIII: Federation Awareness Test")

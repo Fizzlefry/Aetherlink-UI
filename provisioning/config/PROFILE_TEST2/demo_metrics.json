@@ -1,0 +1,32 @@
+{
+  "tenant_id": "PROFILE_TEST2",
+  "period_start": "2025-11-06T08:56:15.139135",
+  "period_end": "2025-11-09T08:56:15.139135",
+  "profile": {
+    "name": "finserv",
+    "display_name": "Financial Services",
+    "description": "Security and compliance-focused alerts typical of banking, fintech, and regulated financial institutions",
+    "target_audience": "Banks, payment processors, financial technology companies",
+    "generated_at": "2025-11-09T08:56:15.139135"
+  },
+  "summary": {
+    "total_alerts": 10,
+    "total_incidents": 2,
+    "auto_resolved_percentage": 0.5,
+    "average_resolution_time": 1885.8333333333333,
+    "ai_actions_taken": 7,
+    "system_uptime": 0.9867154059260184
+  },
+  "performance": {
+    "cpu_usage_avg": 0.6231623861035369,
+    "memory_usage_avg": 0.442005489361195,
+    "disk_usage_avg": 0.40837730788561355,
+    "network_latency_avg": 13.014323145793135
+  },
+  "ai_insights": {
+    "learning_iterations": 251,
+    "model_accuracy": 0.8960455048153375,
+    "false_positive_rate": 0.03394519060270805,
+    "prediction_accuracy": 0.939358620022222
+  }
+}

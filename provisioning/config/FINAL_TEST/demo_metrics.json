@@ -1,0 +1,32 @@
+{
+  "tenant_id": "FINAL_TEST",
+  "period_start": "2025-11-02T08:56:38.033394",
+  "period_end": "2025-11-09T08:56:38.033394",
+  "profile": {
+    "name": "saas",
+    "display_name": "Software-as-a-Service",
+    "description": "Application performance and scalability alerts typical of cloud platforms and SaaS providers",
+    "target_audience": "Cloud platforms, DevOps teams, SaaS companies",
+    "generated_at": "2025-11-09T08:56:38.033394"
+  },
+  "summary": {
+    "total_alerts": 25,
+    "total_incidents": 3,
+    "auto_resolved_percentage": 0.24,
+    "average_resolution_time": 1806.4,
+    "ai_actions_taken": 13,
+    "system_uptime": 0.981130017993169
+  },
+  "performance": {
+    "cpu_usage_avg": 0.5040632087874619,
+    "memory_usage_avg": 0.4797418915727578,
+    "disk_usage_avg": 0.34083564194862137,
+    "network_latency_avg": 10.35774284541156
+  },
+  "ai_insights": {
+    "learning_iterations": 115,
+    "model_accuracy": 0.9291798204766649,
+    "false_positive_rate": 0.0502571808617806,
+    "prediction_accuracy": 0.9231048687729669
+  }
+}

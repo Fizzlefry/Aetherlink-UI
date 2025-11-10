@@ -27,9 +27,7 @@ SERVICE_NAME = os.getenv("SERVICE_NAME", "peakpro-crm")
 SERVICE_ENV = os.getenv("AETHER_ENV", "local")
 
 aether_service_up = Gauge(
-    "aether_service_up",
-    "Service reachability flag for AetherLink monitoring",
-    ["service", "env"]
+    "aether_service_up", "Service reachability flag for AetherLink monitoring", ["service", "env"]
 )
 
 print(f"[DEBUG] AetherLink gauge created: SERVICE_NAME={SERVICE_NAME}, SERVICE_ENV={SERVICE_ENV}")

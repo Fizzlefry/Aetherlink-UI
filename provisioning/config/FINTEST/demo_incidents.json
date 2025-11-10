@@ -1,0 +1,118 @@
+{
+  "incidents": [
+    {
+      "id": "incident_014480e03ad640f9",
+      "tenant_id": "FINTEST",
+      "title": "Incident: HIGH: SSL Certificate Expiry alert",
+      "description": "Critical incident triggered by HIGH: SSL Certificate Expiry alert. Investigation and remediation in progress.",
+      "severity": "high",
+      "status": "open",
+      "created_at": "2025-11-04T00:27:44.554462",
+      "updated_at": "2025-11-04T01:29:44.554462",
+      "resolved_at": null,
+      "primary_alert": "alert_24783c442c98416b",
+      "related_alerts": [],
+      "ai_insights": {
+        "root_cause_probability": 0.7292095138612167,
+        "predicted_duration": 5915,
+        "impact_scope": "single_service",
+        "similar_incidents": 7,
+        "recommended_actions": [
+          "auto_restart_service",
+          "create_ticket",
+          "run_diagnostic"
+        ]
+      },
+      "actions_taken": [
+        {
+          "timestamp": "2025-11-09T07:53:22.555001",
+          "action": "auto_restart_service",
+          "actor": "NOC Engineer",
+          "result": "investigating"
+        }
+      ],
+      "impact_assessment": {
+        "user_impact": "significant",
+        "business_impact": "high",
+        "duration_hours": 23
+      },
+      "assigned_team": "AI Ops"
+    },
+    {
+      "id": "incident_7e04629c1c9b45c8",
+      "tenant_id": "FINTEST",
+      "title": "Incident: HIGH: SSL Certificate Expiry alert",
+      "description": "Critical incident triggered by HIGH: SSL Certificate Expiry alert. Investigation and remediation in progress.",
+      "severity": "high",
+      "status": "investigating",
+      "created_at": "2025-11-05T16:06:30.554462",
+      "updated_at": "2025-11-05T23:27:30.554462",
+      "resolved_at": null,
+      "primary_alert": "alert_d9b50d95c36846b4",
+      "related_alerts": [],
+      "ai_insights": {
+        "root_cause_probability": 0.6129558532976463,
+        "predicted_duration": 2302,
+        "impact_scope": "system_wide",
+        "similar_incidents": 6,
+        "recommended_actions": [
+          "create_ticket",
+          "scale_resources",
+          "reroute_traffic"
+        ]
+      },
+      "actions_taken": [
+        {
+          "timestamp": "2025-11-08T23:53:22.555001",
+          "action": "auto_restart_service",
+          "actor": "Platform Team",
+          "result": "investigating"
+        }
+      ],
+      "impact_assessment": {
+        "user_impact": "significant",
+        "business_impact": "high",
+        "duration_hours": 22
+      },
+      "assigned_team": "Security Team"
+    },
+    {
+      "id": "incident_be6bdafdd56c49ed",
+      "tenant_id": "FINTEST",
+      "title": "Incident: CRITICAL: Failed Login Attempts alert",
+      "description": "Critical incident triggered by CRITICAL: Failed Login Attempts alert. Investigation and remediation in progress.",
+      "severity": "critical",
+      "status": "investigating",
+      "created_at": "2025-11-08T04:47:46.554462",
+      "updated_at": "2025-11-08T06:10:46.554462",
+      "resolved_at": null,
+      "primary_alert": "alert_c269c347331a4234",
+      "related_alerts": [],
+      "ai_insights": {
+        "root_cause_probability": 0.7696627604345487,
+        "predicted_duration": 6627,
+        "impact_scope": "single_service",
+        "similar_incidents": 1,
+        "recommended_actions": [
+          "create_ticket",
+          "kill_process",
+          "scale_resources"
+        ]
+      },
+      "actions_taken": [
+        {
+          "timestamp": "2025-11-08T12:53:22.555001",
+          "action": "reroute_traffic",
+          "actor": "NOC Engineer",
+          "result": "partially_successful"
+        }
+      ],
+      "impact_assessment": {
+        "user_impact": "severe",
+        "business_impact": "critical",
+        "duration_hours": 15
+      },
+      "assigned_team": "Database Team"
+    }
+  ]
+}

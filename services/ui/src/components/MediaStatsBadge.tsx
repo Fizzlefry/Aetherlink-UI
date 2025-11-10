@@ -154,4 +154,3 @@ export const MediaStatsBadge: React.FC<MediaStatsBadgeProps> = ({ className = ""
 };
 
 export default MediaStatsBadge;
-

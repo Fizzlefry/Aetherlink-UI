@@ -36,7 +36,7 @@ type MediaStatsCardProps = {
  * Used in Operator Dashboard and (optionally) job detail views.
  */
 export function MediaStatsCard({ jobId, className = "" }: MediaStatsCardProps) {
-  
+
   const [data, setData] = useState<MediaStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -186,7 +186,7 @@ export function MediaStatsCard({ jobId, className = "" }: MediaStatsCardProps) {
         </div>
       )}
 
-      
+
     </div>
   );
 }

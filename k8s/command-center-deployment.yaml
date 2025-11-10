@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aetherlink-command-center
+  namespace: aetherlink
+  labels:
+    app: command-center
+    component: ai-operations-brain
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: command-center
+  template:
+    metadata:
+      labels:
+        app: command-center
+        component: ai-operations-brain
+    spec:
+      containers:
+        - name: command-center
+          image: aetherlink/command-center:${TAG:-latest}
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: ADAPTIVE_AI_ENABLED
+              value: "true"
+            - name: LEARNING_OPTIMIZER_ENABLED
+              value: "true"
+            - name: AUTO_RESPONSE_ENABLED
+              value: "true"
+            - name: LEARNING_UPDATE_INTERVAL
+              value: "300"
+            - name: ADAPTIVE_CONFIDENCE_THRESHOLD
+              value: "0.8"
+            - name: AUDIT_RETENTION_DAYS
+              value: "90"
+          # Add other environment variables from config
+          envFrom:
+            - configMapRef:
+                name: aetherlink-config
+            - secretRef:
+                name: aetherlink-secrets
+          volumeMounts:
+            - name: data-storage
+              mountPath: /app/data
+            - name: audit-storage
+              mountPath: /app/audit
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /ops/ping
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ops/ping
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: data-storage
+          persistentVolumeClaim:
+            claimName: command-center-data-pvc
+        - name: audit-storage
+          persistentVolumeClaim:
+            claimName: command-center-audit-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: command-center-service
+  namespace: aetherlink
+  labels:
+    app: command-center
+spec:
+  selector:
+    app: command-center
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: command-center-data-pvc
+  namespace: aetherlink
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: command-center-audit-pvc
+  namespace: aetherlink
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi

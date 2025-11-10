@@ -1,0 +1,121 @@
+{
+  "incidents": [
+    {
+      "id": "incident_743fd5fc148949fe",
+      "tenant_id": "BETA_TEST",
+      "title": "Incident: HIGH: Disk space running low",
+      "description": "Critical incident triggered by HIGH: Disk space running low. Investigation and remediation in progress.",
+      "severity": "high",
+      "status": "closed",
+      "created_at": "2025-11-02T10:58:39.121691",
+      "updated_at": "2025-11-02T13:20:39.121691",
+      "resolved_at": "2025-11-02T13:20:39.121691",
+      "primary_alert": "alert_70df9bbdb8b34bcf",
+      "related_alerts": [],
+      "ai_insights": {
+        "root_cause_probability": 0.8126756155393307,
+        "predicted_duration": 3491,
+        "impact_scope": "single_service",
+        "similar_incidents": 10,
+        "recommended_actions": [
+          "run_diagnostic",
+          "scale_resources",
+          "kill_process"
+        ]
+      },
+      "actions_taken": [
+        {
+          "timestamp": "2025-11-09T07:51:18.121691",
+          "action": "apply_config_change",
+          "actor": "NOC Engineer",
+          "result": "partially_successful"
+        }
+      ],
+      "impact_assessment": {
+        "user_impact": "significant",
+        "business_impact": "high",
+        "duration_hours": 7
+      },
+      "assigned_team": "Network Team",
+      "resolution_time": 3058
+    },
+    {
+      "id": "incident_7f01bc2646564c86",
+      "tenant_id": "BETA_TEST",
+      "title": "Incident: HIGH: Error rate spike detected",
+      "description": "Critical incident triggered by HIGH: Error rate spike detected. Investigation and remediation in progress.",
+      "severity": "high",
+      "status": "resolved",
+      "created_at": "2025-11-03T04:06:09.121691",
+      "updated_at": "2025-11-03T07:59:09.121691",
+      "resolved_at": "2025-11-03T07:59:09.121691",
+      "primary_alert": "alert_6518aed351c24697",
+      "related_alerts": [],
+      "ai_insights": {
+        "root_cause_probability": 0.7262642940945233,
+        "predicted_duration": 7132,
+        "impact_scope": "single_service",
+        "similar_incidents": 10,
+        "recommended_actions": [
+          "auto_restart_service",
+          "scale_resources",
+          "create_ticket"
+        ]
+      },
+      "actions_taken": [
+        {
+          "timestamp": "2025-11-09T06:51:18.121691",
+          "action": "kill_process",
+          "actor": "AI System",
+          "result": "partially_successful"
+        }
+      ],
+      "impact_assessment": {
+        "user_impact": "significant",
+        "business_impact": "high",
+        "duration_hours": 4
+      },
+      "assigned_team": "Network Team",
+      "resolution_time": 6001
+    },
+    {
+      "id": "incident_474cf0ebe1034780",
+      "tenant_id": "BETA_TEST",
+      "title": "Incident: CRITICAL: Failed Login Attempts alert",
+      "description": "Critical incident triggered by CRITICAL: Failed Login Attempts alert. Investigation and remediation in progress.",
+      "severity": "critical",
+      "status": "closed",
+      "created_at": "2025-11-05T07:24:44.121691",
+      "updated_at": "2025-11-05T09:20:44.121691",
+      "resolved_at": "2025-11-05T09:20:44.121691",
+      "primary_alert": "alert_0eaad9c469b744da",
+      "related_alerts": [],
+      "ai_insights": {
+        "root_cause_probability": 0.737269193960979,
+        "predicted_duration": 4542,
+        "impact_scope": "multiple_services",
+        "similar_incidents": 3,
+        "recommended_actions": [
+          "reroute_traffic",
+          "kill_process",
+          "send_notification"
+        ]
+      },
+      "actions_taken": [
+        {
+          "timestamp": "2025-11-08T21:51:18.121691",
+          "action": "reroute_traffic",
+          "actor": "NOC Engineer",
+          "result": "successful"
+        }
+      ],
+      "impact_assessment": {
+        "user_impact": "severe",
+        "business_impact": "critical",
+        "duration_hours": 14
+      },
+      "assigned_team": "Database Team",
+      "resolution_time": 3711
+    }
+  ]
+}

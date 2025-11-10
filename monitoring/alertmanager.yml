@@ -63,6 +63,12 @@ route:
     - receiver: autoheal
       continue: false
 
+    # Phase XXXIV: Auto-remediation for anomaly alerts
+    - matchers:
+        - alertname=~"AetherLink_.*"
+      receiver: auto_remediate
+      continue: true # Also send to other receivers for notification
+
 receivers:
   # Default receiver - uses webhook if SLACK_WEBHOOK_URL is set, otherwise no-op
   - name: slack_default
@@ -170,6 +176,12 @@ receivers:
   - name: autoheal-notify
     webhook_configs:
       - url: http://aether-agent:8080/alertmanager
+        send_resolved: true
+
+  # Phase XXXIV: Auto-remediation webhook for anomaly alerts
+  - name: auto_remediate
+    webhook_configs:
+      - url: http://command-center:8000/ops/remediate
         send_resolved: true
 
 # Alert storm control: inhibit derivative alerts when root cause is firing

@@ -1,0 +1,92 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\usepackage{enumitem}
+
+% Define pandoc-specific commands
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+% Define Shaded environment for code blocks
+\usepackage{color}
+\definecolor{shadecolor}{gray}{0.95}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\usepackage{framed}
+\definecolor{shadecolor}{gray}{0.95}
+
+% Define Highlighting environment for syntax highlighting
+\newenvironment{Highlighting}{\begin{snugshade}}{\end{snugshade}}
+
+\definecolor{AetherBlue}{RGB}{16,53,89}
+\definecolor{AetherGray}{RGB}{110,120,130}
+
+\pagestyle{fancy}
+\fancyhf{}
+
+% header
+\fancyhead[L]{\textcolor{AetherBlue}{AetherLink\texttrademark{} — Beta Launch Playbook}}
+\fancyhead[R]{\textcolor{AetherGray}{v1.0}}
+
+% footer uses the variable:
+\fancyfoot[L]{\textcolor{AetherGray}{© $date$ $rights_holder$ — All rights reserved.}}
+\fancyfoot[R]{\textcolor{AetherGray}{Page \thepage\ of \pageref{LastPage}}}
+
+\setlength{\headheight}{14pt}
+
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{AetherBlue}}
+  {\thesection}{1em}{}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=AetherBlue,
+    urlcolor=AetherBlue
+}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    {\Huge\bfseries AetherLink\texttrademark{} Beta Launch Playbook \par}
+    \vspace{0.5cm}
+    {\Large Version 1.0 \par}
+    \vspace{0.75cm}
+    {\large © $date$ $rights_holder$ — All rights reserved. \par}
+    \vspace{0.5cm}
+    {\large Proprietary and Confidential \par}
+    \vfill
+    {\large $date$ \par}
+    \vspace{1cm}
+    \begin{flushleft}
+    \textbf{Ownership Notice}\\
+    AetherLink\texttrademark{} and all related software, systems, documentation, operational playbooks, and AI/automation components are the exclusive intellectual property of \textbf{$rights_holder$}. Unauthorized use, reproduction, or distribution is prohibited.
+    \end{flushleft}
+\end{titlepage}
+
+\onehalfspacing
+
+$if(toc)$
+{
+\hypersetup{linkcolor=black}
+\tableofcontents
+\newpage
+}
+$endif$
+
+$body$
+
+\newpage
+\section*{Intellectual Property \& Ownership}
+This document and all associated AetherLink\texttrademark{} source code, architectures, AI systems, dashboards, provisioning scripts, monitoring assets, and operational materials are proprietary creations of \textbf{$rights_holder$}. All rights are reserved.
+
+No part of this work may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of the owner, except in the case of brief quotations embodied in critical reviews and certain other noncommercial uses permitted by copyright law.
+
+\end{document}

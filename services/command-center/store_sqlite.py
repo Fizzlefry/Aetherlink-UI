@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 
 class SQLiteStore:
@@ -114,7 +115,9 @@ class SQLiteStore:
             for r in rows:
                 last_status = json.loads(r["last_status_json"]) if r["last_status_json"] else {}
                 out[r["tenant"]] = {
-                    "interval_sec": int(r["interval_sec"]) if r["interval_sec"] is not None else 300,
+                    "interval_sec": int(r["interval_sec"])
+                    if r["interval_sec"] is not None
+                    else 300,
                     "paused": bool(r["paused"]),
                     "last_run": float(r["last_run"]) if r["last_run"] is not None else 0.0,
                     "last_status": last_status,
@@ -326,4 +329,3 @@ class SQLiteStore:
                 self._on_failure(table, op)
             except Exception:
                 pass
-

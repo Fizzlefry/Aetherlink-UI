@@ -264,7 +264,9 @@ class OllamaClient(BaseModelClient):
 
 
 class AnthropicClient(BaseModelClient):
-    def __init__(self, model: str, api_key: str, endpoint: str = "https://api.anthropic.com/v1/messages"):
+    def __init__(
+        self, model: str, api_key: str, endpoint: str = "https://api.anthropic.com/v1/messages"
+    ):
         self.model = model
         self.api_key = api_key
         self.endpoint = endpoint.rstrip("/")
@@ -289,13 +291,20 @@ class AnthropicClient(BaseModelClient):
                     },
                 )
                 ok = r.status_code == 200
-                data = cast(dict[str, Any], r.json()) if ok else {"status": r.status_code, "text": r.text[:500]}
+                data = (
+                    cast(dict[str, Any], r.json())
+                    if ok
+                    else {"status": r.status_code, "text": r.text[:500]}
+                )
                 text = ""
                 if ok:
                     content = data.get("content") or []
                     if content:
                         text = content[0].get("text", "")
-                return ok and "pong" in (text or "").lower(), {"provider": "anthropic", "model": self.model}
+                return ok and "pong" in (text or "").lower(), {
+                    "provider": "anthropic",
+                    "model": self.model,
+                }
         except Exception as e:
             return False, {"provider": "anthropic", "model": self.model, "error": str(e)}
 

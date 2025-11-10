@@ -1,0 +1,757 @@
+{
+  "alerts": [
+    {
+      "id": "alert_70df9bbdb8b34bcf",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-02T10:58:39.121691",
+      "category": "system",
+      "type": "Disk Space",
+      "severity": "high",
+      "status": "acknowledged",
+      "title": "HIGH: Disk space running low",
+      "description": "Available disk space is below recommended thresholds.",
+      "source": "system_4",
+      "tags": [
+        "disk_space",
+        "system",
+        "performance",
+        "infrastructure"
+      ],
+      "metrics": {
+        "disk_percent": 90.19482762884616,
+        "available_gb": 13.94803112743483
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8663798749171505,
+        "predicted_impact": "high",
+        "recommended_action": "auto_restart_service",
+        "estimated_resolution_time": 1657,
+        "similar_incidents": 1
+      },
+      "resolution_time": null,
+      "assigned_to": "noc_team"
+    },
+    {
+      "id": "alert_6518aed351c24697",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-03T04:06:09.121691",
+      "category": "application",
+      "type": "Error Rate",
+      "severity": "high",
+      "status": "active",
+      "title": "HIGH: Error rate spike detected",
+      "description": "Application error rate has spiked above acceptable levels.",
+      "source": "system_10",
+      "tags": [
+        "app",
+        "service",
+        "error_rate",
+        "application"
+      ],
+      "metrics": {
+        "value": 73.31828741818715
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9453079044470309,
+        "predicted_impact": "high",
+        "recommended_action": "clear_cache",
+        "estimated_resolution_time": 600,
+        "similar_incidents": 3
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_e46ae2422f1f4dc4",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-03T13:53:32.121691",
+      "category": "system",
+      "type": "Disk Space",
+      "severity": "medium",
+      "status": "auto_resolved",
+      "title": "Disk space running low",
+      "description": "Available disk space is below recommended thresholds.",
+      "source": "system_5",
+      "tags": [
+        "disk_space",
+        "system",
+        "performance",
+        "infrastructure"
+      ],
+      "metrics": {
+        "disk_percent": 90.52454862015045,
+        "available_gb": 15.021841876985944
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9147741492433017,
+        "predicted_impact": "medium",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 1373,
+        "similar_incidents": 4
+      },
+      "resolution_time": 2801,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_9b2cd9f1b85d4025",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-03T20:41:31.121691",
+      "category": "security",
+      "type": "Suspicious Activity",
+      "severity": "low",
+      "status": "auto_resolved",
+      "title": "Suspicious Activity alert",
+      "description": "Detailed information for Suspicious Activity alert.",
+      "source": "system_8",
+      "tags": [
+        "suspicious_activity",
+        "compliance",
+        "security"
+      ],
+      "metrics": {
+        "value": 11.925288530345613
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8878017715438886,
+        "predicted_impact": "low",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 1297,
+        "similar_incidents": 1
+      },
+      "resolution_time": 1553,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_9143c0d9bd27465a",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-04T00:48:00.121691",
+      "category": "security",
+      "type": "SSL Certificate Expiry",
+      "severity": "low",
+      "status": "active",
+      "title": "SSL Certificate Expiry alert",
+      "description": "Detailed information for SSL Certificate Expiry alert.",
+      "source": "system_9",
+      "tags": [
+        "compliance",
+        "ssl_certificate_expiry",
+        "security"
+      ],
+      "metrics": {
+        "value": 52.27995689088096
+      },
+      "ai_analysis": {
+        "confidence_score": 0.828186053434253,
+        "predicted_impact": "low",
+        "recommended_action": "auto_restart_service",
+        "estimated_resolution_time": 476,
+        "similar_incidents": 0
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_742de301440d4573",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-04T00:56:34.121691",
+      "category": "security",
+      "type": "Failed Login Attempts",
+      "severity": "high",
+      "status": "acknowledged",
+      "title": "HIGH: Failed Login Attempts alert",
+      "description": "Detailed information for Failed Login Attempts alert.",
+      "source": "system_9",
+      "tags": [
+        "failed_login_attempts",
+        "compliance",
+        "security"
+      ],
+      "metrics": {
+        "value": 63.699781812192704
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9249021835889825,
+        "predicted_impact": "high",
+        "recommended_action": "auto_restart_service",
+        "estimated_resolution_time": 325,
+        "similar_incidents": 3
+      },
+      "resolution_time": null,
+      "assigned_to": "auto_escalated"
+    },
+    {
+      "id": "alert_d6cd16825856450d",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-04T01:35:03.121691",
+      "category": "system",
+      "type": "Memory Usage",
+      "severity": "medium",
+      "status": "auto_resolved",
+      "title": "Memory usage critical",
+      "description": "Memory consumption is approaching critical levels, risking system stability.",
+      "source": "system_3",
+      "tags": [
+        "performance",
+        "memory_usage",
+        "system",
+        "infrastructure"
+      ],
+      "metrics": {
+        "memory_percent": 95.60573979069234,
+        "swap_percent": 17.986160711402515
+      },
+      "ai_analysis": {
+        "confidence_score": 0.936280686552283,
+        "predicted_impact": "medium",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 1495,
+        "similar_incidents": 1
+      },
+      "resolution_time": 1107,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_e1fc69ddd8634299",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-04T06:56:34.121691",
+      "category": "application",
+      "type": "Database Connections",
+      "severity": "high",
+      "status": "auto_resolved",
+      "title": "HIGH: Database connection pool exhausted",
+      "description": "Database connection pool is at maximum capacity.",
+      "source": "system_8",
+      "tags": [
+        "app",
+        "service",
+        "database_connections",
+        "application"
+      ],
+      "metrics": {
+        "value": 58.2541613536279
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9798589429162845,
+        "predicted_impact": "high",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 1327,
+        "similar_incidents": 5
+      },
+      "resolution_time": 2722,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_f4ad8f2926384936",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-04T12:09:56.121691",
+      "category": "system",
+      "type": "Disk Space",
+      "severity": "medium",
+      "status": "acknowledged",
+      "title": "Disk space running low",
+      "description": "Available disk space is below recommended thresholds.",
+      "source": "system_2",
+      "tags": [
+        "disk_space",
+        "system",
+        "performance",
+        "infrastructure"
+      ],
+      "metrics": {
+        "disk_percent": 85.30705781552626,
+        "available_gb": 16.21455075196501
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7908898491615395,
+        "predicted_impact": "medium",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 419,
+        "similar_incidents": 1
+      },
+      "resolution_time": null,
+      "assigned_to": "auto_escalated"
+    },
+    {
+      "id": "alert_cc981cf5389e4066",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-05T03:41:11.121691",
+      "category": "infrastructure",
+      "type": "Server Unreachable",
+      "severity": "critical",
+      "status": "auto_resolved",
+      "title": "CRITICAL: Server Unreachable alert",
+      "description": "Detailed information for Server Unreachable alert.",
+      "source": "system_7",
+      "tags": [
+        "server_unreachable",
+        "infra",
+        "platform",
+        "infrastructure"
+      ],
+      "metrics": {
+        "value": 28.852509789121704
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8615063149014381,
+        "predicted_impact": "critical",
+        "recommended_action": "auto_restart_service",
+        "estimated_resolution_time": 1280,
+        "similar_incidents": 5
+      },
+      "resolution_time": 477,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_0eaad9c469b744da",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-05T07:24:44.121691",
+      "category": "security",
+      "type": "Failed Login Attempts",
+      "severity": "critical",
+      "status": "auto_resolved",
+      "title": "CRITICAL: Failed Login Attempts alert",
+      "description": "Detailed information for Failed Login Attempts alert.",
+      "source": "system_2",
+      "tags": [
+        "failed_login_attempts",
+        "compliance",
+        "security"
+      ],
+      "metrics": {
+        "value": 17.69170325791347
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8521218317484004,
+        "predicted_impact": "critical",
+        "recommended_action": "rollback_deployment",
+        "estimated_resolution_time": 1431,
+        "similar_incidents": 3
+      },
+      "resolution_time": 3280,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_9a440d7dfd4644b3",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-05T10:13:27.121691",
+      "category": "system",
+      "type": "Memory Usage",
+      "severity": "low",
+      "status": "auto_resolved",
+      "title": "Memory usage critical",
+      "description": "Memory consumption is approaching critical levels, risking system stability.",
+      "source": "system_10",
+      "tags": [
+        "performance",
+        "memory_usage",
+        "system",
+        "infrastructure"
+      ],
+      "metrics": {
+        "memory_percent": 93.58733271182892,
+        "swap_percent": 18.74579542049404
+      },
+      "ai_analysis": {
+        "confidence_score": 0.854674099479628,
+        "predicted_impact": "low",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 1376,
+        "similar_incidents": 3
+      },
+      "resolution_time": 1337,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_224a503fec8544fb",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-05T15:00:31.121691",
+      "category": "system",
+      "type": "Service Down",
+      "severity": "low",
+      "status": "resolved",
+      "title": "Service unavailable",
+      "description": "Critical service is not responding to health checks.",
+      "source": "system_3",
+      "tags": [
+        "performance",
+        "service_down",
+        "system",
+        "infrastructure"
+      ],
+      "metrics": {
+        "value": 59.91590308582807
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9026809842548729,
+        "predicted_impact": "low",
+        "recommended_action": "clear_cache",
+        "estimated_resolution_time": 1318,
+        "similar_incidents": 0
+      },
+      "resolution_time": 1569,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_b066e431d1e04792",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-05T21:49:50.121691",
+      "category": "security",
+      "type": "SSL Certificate Expiry",
+      "severity": "medium",
+      "status": "acknowledged",
+      "title": "SSL Certificate Expiry alert",
+      "description": "Detailed information for SSL Certificate Expiry alert.",
+      "source": "system_2",
+      "tags": [
+        "compliance",
+        "ssl_certificate_expiry",
+        "security"
+      ],
+      "metrics": {
+        "value": 46.62158225611114
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9173515601168916,
+        "predicted_impact": "medium",
+        "recommended_action": "send_notification",
+        "estimated_resolution_time": 1265,
+        "similar_incidents": 3
+      },
+      "resolution_time": null,
+      "assigned_to": "auto_escalated"
+    },
+    {
+      "id": "alert_5662d249cb0840c3",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-06T00:43:32.121691",
+      "category": "application",
+      "type": "Throughput",
+      "severity": "high",
+      "status": "acknowledged",
+      "title": "HIGH: Throughput alert",
+      "description": "Detailed information for Throughput alert.",
+      "source": "system_1",
+      "tags": [
+        "throughput",
+        "service",
+        "app",
+        "application"
+      ],
+      "metrics": {
+        "value": 60.41850150653575
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8012563417484153,
+        "predicted_impact": "high",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 862,
+        "similar_incidents": 5
+      },
+      "resolution_time": null,
+      "assigned_to": "auto_escalated"
+    },
+    {
+      "id": "alert_cf2a4558a58c4ab7",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-06T21:25:32.121691",
+      "category": "system",
+      "type": "Memory Usage",
+      "severity": "low",
+      "status": "acknowledged",
+      "title": "Memory usage critical",
+      "description": "Memory consumption is approaching critical levels, risking system stability.",
+      "source": "system_5",
+      "tags": [
+        "performance",
+        "memory_usage",
+        "system",
+        "infrastructure"
+      ],
+      "metrics": {
+        "memory_percent": 96.67942476318193,
+        "swap_percent": 10.839461429601512
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9005726451963665,
+        "predicted_impact": "low",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 470,
+        "similar_incidents": 3
+      },
+      "resolution_time": null,
+      "assigned_to": "ai_system"
+    },
+    {
+      "id": "alert_f3698503a5184275",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-07T09:34:16.121691",
+      "category": "infrastructure",
+      "type": "Load Balancer Issues",
+      "severity": "low",
+      "status": "active",
+      "title": "Load Balancer Issues alert",
+      "description": "Detailed information for Load Balancer Issues alert.",
+      "source": "system_10",
+      "tags": [
+        "load_balancer_issues",
+        "infra",
+        "platform",
+        "infrastructure"
+      ],
+      "metrics": {
+        "value": 2.359758441757498
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7045370305455588,
+        "predicted_impact": "low",
+        "recommended_action": "clear_cache",
+        "estimated_resolution_time": 884,
+        "similar_incidents": 0
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_755ffdf38f1f4e45",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-07T15:32:16.121691",
+      "category": "system",
+      "type": "Network Latency",
+      "severity": "medium",
+      "status": "resolved",
+      "title": "Network latency increased",
+      "description": "Network response times have increased significantly.",
+      "source": "system_1",
+      "tags": [
+        "performance",
+        "network_latency",
+        "system",
+        "infrastructure"
+      ],
+      "metrics": {
+        "latency_ms": 214.1267900378128,
+        "packet_loss": 2.8846461375730015
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7967215912209633,
+        "predicted_impact": "medium",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 805,
+        "similar_incidents": 5
+      },
+      "resolution_time": 1691,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_0e5b29fe70784deb",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-07T18:08:24.121691",
+      "category": "security",
+      "type": "Failed Login Attempts",
+      "severity": "low",
+      "status": "active",
+      "title": "Failed Login Attempts alert",
+      "description": "Detailed information for Failed Login Attempts alert.",
+      "source": "system_10",
+      "tags": [
+        "failed_login_attempts",
+        "compliance",
+        "security"
+      ],
+      "metrics": {
+        "value": 3.659074012130259
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9002492633347583,
+        "predicted_impact": "low",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 1789,
+        "similar_incidents": 3
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_a0f90b21a85e4ab3",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-07T18:35:28.121691",
+      "category": "security",
+      "type": "Access Violations",
+      "severity": "high",
+      "status": "acknowledged",
+      "title": "HIGH: Access Violations alert",
+      "description": "Detailed information for Access Violations alert.",
+      "source": "system_6",
+      "tags": [
+        "access_violations",
+        "compliance",
+        "security"
+      ],
+      "metrics": {
+        "value": 76.68773999888222
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8812611427692001,
+        "predicted_impact": "high",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 308,
+        "similar_incidents": 1
+      },
+      "resolution_time": null,
+      "assigned_to": "ai_system"
+    },
+    {
+      "id": "alert_f2ccf04f84ed49a5",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-07T18:55:08.121691",
+      "category": "system",
+      "type": "Service Down",
+      "severity": "medium",
+      "status": "resolved",
+      "title": "Service unavailable",
+      "description": "Critical service is not responding to health checks.",
+      "source": "system_9",
+      "tags": [
+        "performance",
+        "service_down",
+        "system",
+        "infrastructure"
+      ],
+      "metrics": {
+        "value": 25.876521112847506
+      },
+      "ai_analysis": {
+        "confidence_score": 0.780209735074717,
+        "predicted_impact": "medium",
+        "recommended_action": "rollback_deployment",
+        "estimated_resolution_time": 1403,
+        "similar_incidents": 4
+      },
+      "resolution_time": 1659,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_fffc845dd3d645fd",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-08T12:19:35.121691",
+      "category": "application",
+      "type": "Response Time",
+      "severity": "low",
+      "status": "active",
+      "title": "Slow response times",
+      "description": "Application response times are slower than expected.",
+      "source": "system_4",
+      "tags": [
+        "response_time",
+        "app",
+        "service",
+        "application"
+      ],
+      "metrics": {
+        "response_time_ms": 5281.40816613272,
+        "requests_per_second": 54.57786676894396
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8101223492015461,
+        "predicted_impact": "low",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 1181,
+        "similar_incidents": 3
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_2b3560b6fca64f0f",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-09T00:27:08.121691",
+      "category": "system",
+      "type": "Disk Space",
+      "severity": "medium",
+      "status": "auto_resolved",
+      "title": "Disk space running low",
+      "description": "Available disk space is below recommended thresholds.",
+      "source": "system_4",
+      "tags": [
+        "disk_space",
+        "system",
+        "performance",
+        "infrastructure"
+      ],
+      "metrics": {
+        "disk_percent": 89.204664061037,
+        "available_gb": 16.597479168876763
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9313128383786802,
+        "predicted_impact": "medium",
+        "recommended_action": "reroute_traffic",
+        "estimated_resolution_time": 617,
+        "similar_incidents": 1
+      },
+      "resolution_time": 123,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_3a522cbcee51462f",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-09T05:35:00.121691",
+      "category": "system",
+      "type": "Network Latency",
+      "severity": "medium",
+      "status": "resolved",
+      "title": "Network latency increased",
+      "description": "Network response times have increased significantly.",
+      "source": "system_8",
+      "tags": [
+        "performance",
+        "network_latency",
+        "system",
+        "infrastructure"
+      ],
+      "metrics": {
+        "latency_ms": 434.269019011998,
+        "packet_loss": 0.05229422871006972
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7471278316196923,
+        "predicted_impact": "medium",
+        "recommended_action": "clear_cache",
+        "estimated_resolution_time": 562,
+        "similar_incidents": 4
+      },
+      "resolution_time": 2553,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_4fc9a19508ff4888",
+      "tenant_id": "BETA_TEST",
+      "timestamp": "2025-11-09T05:37:27.121691",
+      "category": "infrastructure",
+      "type": "Server Unreachable",
+      "severity": "low",
+      "status": "resolved",
+      "title": "Server Unreachable alert",
+      "description": "Detailed information for Server Unreachable alert.",
+      "source": "system_5",
+      "tags": [
+        "server_unreachable",
+        "infra",
+        "platform",
+        "infrastructure"
+      ],
+      "metrics": {
+        "value": 83.73614618016396
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9228695769828983,
+        "predicted_impact": "low",
+        "recommended_action": "rollback_deployment",
+        "estimated_resolution_time": 401,
+        "similar_incidents": 4
+      },
+      "resolution_time": 2187,
+      "assigned_to": null
+    }
+  ]
+}

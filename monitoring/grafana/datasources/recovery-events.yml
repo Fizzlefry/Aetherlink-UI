@@ -1,0 +1,15 @@
+apiVersion: 1
+
+datasources:
+  - name: Recovery Events
+    type: frser-sqlite-datasource
+    access: proxy
+    isDefault: false
+    uid: recovery-events-sqlite
+    jsonData:
+      # Adjust path based on your Grafana setup
+      # For Docker: /var/lib/grafana/recovery_events.sqlite
+      # For local: absolute path to monitoring/recovery_events.sqlite
+      path: /var/lib/grafana/recovery_events.sqlite
+    editable: true
+    version: 1

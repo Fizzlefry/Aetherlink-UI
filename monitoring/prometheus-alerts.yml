@@ -790,3 +790,61 @@ groups:
           summary: "Autoheal availability error budget burning FAST"
           description: "Service downtime consuming error budget rapidly. Restore service immediately."
           runbook_url: "https://docs.aetherlink.io/runbooks/autoheal-down"
+
+  # ============================================================================
+  # Phase XXXI: AI Guardrails Alerts
+  # ============================================================================
+  - name: aetherlink-ai-ops-alerts
+    interval: 30s
+    rules:
+      # AI auto actions spike (potential runaway)
+      - alert: AetherLinkAIAutoActionsSpike
+        expr: sum(rate(aetherlink_adaptive_actions_executed_total{mode="auto"}[5m])) by (tenant) > 20
+        for: 5m
+        labels:
+          severity: warning
+          team: aetherlink
+          component: ai-automation
+        annotations:
+          summary: "AI auto actions spike for {{ $labels.tenant }}"
+          description: 'AI executed more than 20 actions in 5m ({{ $value | printf "%.1f" }}/min). Check for automation runaway.'
+          runbook_url: "https://docs.aetherlink.io/runbooks/ai-guardrails"
+
+      # High guardrail blocking rate (too restrictive or noisy alerts)
+      - alert: AetherLinkAIGuardrailBlocksHigh
+        expr: sum(rate(aetherlink_adaptive_actions_skipped_total{reason!="dry_run"}[5m])) by (tenant) > 10
+        for: 5m
+        labels:
+          severity: info
+          team: aetherlink
+          component: ai-guardrails
+        annotations:
+          summary: "AI guardrail blocks high for {{ $labels.tenant }}"
+          description: 'AI tried to act but was blocked {{ $value | printf "%.1f" }}/min. May indicate overly restrictive guardrails or noisy alerts.'
+          runbook_url: "https://docs.aetherlink.io/runbooks/ai-guardrails-tuning"
+
+      # Low AI success ratio (poor automation quality)
+      - alert: AetherLinkAILowSuccessRatio
+        expr: aetherlink:adaptive:success_ratio_5m < 0.5
+        for: 10m
+        labels:
+          severity: warning
+          team: aetherlink
+          component: ai-quality
+        annotations:
+          summary: "AI success ratio low for {{ $labels.tenant }}"
+          description: 'AI automation success ratio is {{ $value | printf "%.1f" }}%. Check confidence floors and action quality.'
+          runbook_url: "https://docs.aetherlink.io/runbooks/ai-quality-tuning"
+
+      # Confidence floor too high (blocking good actions)
+      - alert: AetherLinkAIConfidenceFloorHigh
+        expr: aetherlink_adaptive_confidence_floor > 0.9
+        for: 15m
+        labels:
+          severity: info
+          team: aetherlink
+          component: ai-thresholds
+        annotations:
+          summary: "AI confidence floor very high for {{ $labels.tenant }}"
+          description: 'Confidence floor is {{ $value | printf "%.2f" }}. May be blocking legitimate AI actions.'
+          runbook_url: "https://docs.aetherlink.io/runbooks/ai-threshold-tuning"

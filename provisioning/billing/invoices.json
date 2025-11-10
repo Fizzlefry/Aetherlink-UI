@@ -1,0 +1,56 @@
+{
+  "inv_VALIDATION_STARTER_20251109_082726": {
+    "invoice_id": "inv_VALIDATION_STARTER_20251109_082726",
+    "tenant_id": "VALIDATION_STARTER",
+    "period_start": "2025-11-09T08:27:26.640512",
+    "period_end": "2025-12-09T08:27:26.640512",
+    "plan_id": "starter",
+    "base_cost": 499.0,
+    "usage": {
+      "operations": 500,
+      "ai_actions": 50,
+      "api_calls": 0,
+      "storage_used_gb": 0
+    },
+    "overage": {},
+    "total_cost": 499.0,
+    "status": "pending",
+    "generated_at": "2025-11-09T08:27:26.642620"
+  },
+  "inv_VALIDATION_STARTER_20251109_082750": {
+    "invoice_id": "inv_VALIDATION_STARTER_20251109_082750",
+    "tenant_id": "VALIDATION_STARTER",
+    "period_start": "2025-11-09T08:27:50.648939",
+    "period_end": "2025-12-09T08:27:50.648939",
+    "plan_id": "starter",
+    "base_cost": 499.0,
+    "usage": {
+      "operations": 500,
+      "ai_actions": 50,
+      "api_calls": 0,
+      "storage_used_gb": 0
+    },
+    "overage": {},
+    "total_cost": 499.0,
+    "status": "pending",
+    "generated_at": "2025-11-09T08:27:50.651591"
+  },
+  "inv_VALIDATION_STARTER_20251109_082853": {
+    "invoice_id": "inv_VALIDATION_STARTER_20251109_082853",
+    "tenant_id": "VALIDATION_STARTER",
+    "period_start": "2025-11-09T08:28:53.611518",
+    "period_end": "2025-12-09T08:28:53.611518",
+    "plan_id": "starter",
+    "base_cost": 499.0,
+    "usage": {
+      "operations": 500,
+      "ai_actions": 50,
+      "api_calls": 0,
+      "storage_used_gb": 0
+    },
+    "overage": {},
+    "total_cost": 499.0,
+    "status": "pending",
+    "generated_at": "2025-11-09T08:28:53.614663"
+  }
+}

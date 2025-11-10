@@ -8,6 +8,17 @@ RUN python -m pip install -U pip && pip install -r /app/pods/customer_ops/requir
 
 # ---- runtime ----
 FROM python:3.11-slim AS runtime
+
+# Phase XXX: Container metadata labels for marketplace readiness
+LABEL com.aetherlink.service="command-center" \
+    com.aetherlink.version="1.0.0" \
+    com.aetherlink.maintainer="AetherLink Team" \
+    com.aetherlink.description="AI-Ops Platform with Guarded Automation" \
+    org.opencontainers.image.title="AetherLink Command Center" \
+    org.opencontainers.image.description="Production-ready AI-Ops platform with RBAC and guardrails" \
+    org.opencontainers.image.vendor="AetherLink" \
+    org.opencontainers.image.version="1.0.0"
+
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 COPY --from=deps /usr/local/lib/python3.11 /usr/local/lib/python3.11

@@ -1,0 +1,222 @@
+{
+  "tenant_534a5ddb4f02e519": {
+    "tenant_id": "tenant_534a5ddb4f02e519",
+    "name": "Validation Corp",
+    "domain": "validation.com",
+    "api_key": "p5BF5GMegbg2w6Kt4bKB322VK20bjrSV",
+    "admin_key": "TJhqzOLCimPGEPuHKp8tyuP6r6AjWRq4",
+    "created_at": "2025-11-09T08:27:50.645774",
+    "status": "active",
+    "limits": {
+      "max_operations_per_month": 10000,
+      "max_ai_actions_per_month": 1000,
+      "max_alerts_per_day": 1000,
+      "max_api_calls_per_minute": 60,
+      "max_storage_gb": 10,
+      "max_users": 5
+    },
+    "billing": {
+      "stripe_customer_id": null,
+      "subscription_id": null,
+      "plan_id": "starter",
+      "billing_email": "billing@validation.com",
+      "payment_method": null,
+      "next_billing_date": null,
+      "usage_this_month": {
+        "operations": 0,
+        "ai_actions": 0,
+        "api_calls": 0,
+        "storage_used_gb": 0
+      }
+    },
+    "features": {
+      "ai_operations_brain": true,
+      "autonomous_actions": true,
+      "learning_optimizer": true,
+      "audit_trails": true,
+      "multi_tenant": false,
+      "custom_integrations": false,
+      "advanced_analytics": false,
+      "federated_operations": false,
+      "custom_ai_models": false,
+      "white_label": false
+    },
+    "metadata": {}
+  },
+  "tenant_2438dcfe53fa52ca": {
+    "tenant_id": "tenant_2438dcfe53fa52ca",
+    "name": "Enterprise Validation Inc",
+    "domain": "enterprise-validation.com",
+    "api_key": "HhaLBDxB5NnEm1X0YNfUuXRzb6LoJonD",
+    "admin_key": "TakbwA4GTddoPAh89rNIrALRqW2vpcqr",
+    "created_at": "2025-11-09T08:27:50.646829",
+    "status": "active",
+    "limits": {
+      "max_operations_per_month": 1000000,
+      "max_ai_actions_per_month": 100000,
+      "max_alerts_per_day": 50000,
+      "max_api_calls_per_minute": 1000,
+      "max_storage_gb": 1000,
+      "max_users": 100
+    },
+    "billing": {
+      "stripe_customer_id": null,
+      "subscription_id": null,
+      "plan_id": "enterprise",
+      "billing_email": "billing@enterprise-validation.com",
+      "payment_method": null,
+      "next_billing_date": null,
+      "usage_this_month": {
+        "operations": 0,
+        "ai_actions": 0,
+        "api_calls": 0,
+        "storage_used_gb": 0
+      }
+    },
+    "features": {
+      "ai_operations_brain": true,
+      "autonomous_actions": true,
+      "learning_optimizer": true,
+      "audit_trails": true,
+      "multi_tenant": true,
+      "custom_integrations": true,
+      "advanced_analytics": true,
+      "federated_operations": true,
+      "custom_ai_models": true,
+      "white_label": false
+    },
+    "metadata": {}
+  },
+  "tenant_927b758a9ef9e2b5": {
+    "tenant_id": "tenant_927b758a9ef9e2b5",
+    "name": "Test",
+    "domain": "test.com",
+    "api_key": "z9D0dQQWUjNQ5NVjwcT0uSxa1bRGq0ct",
+    "admin_key": "M4IEENO73qwVIsI2BZ5Xj1XlKDRMcmpd",
+    "created_at": "2025-11-09T08:28:13.366360",
+    "status": "active",
+    "limits": {
+      "max_operations_per_month": 10000,
+      "max_ai_actions_per_month": 1000,
+      "max_alerts_per_day": 1000,
+      "max_api_calls_per_minute": 60,
+      "max_storage_gb": 10,
+      "max_users": 5
+    },
+    "billing": {
+      "stripe_customer_id": null,
+      "subscription_id": null,
+      "plan_id": "starter",
+      "billing_email": "test@test.com",
+      "payment_method": null,
+      "next_billing_date": null,
+      "usage_this_month": {
+        "operations": 0,
+        "ai_actions": 0,
+        "api_calls": 0,
+        "storage_used_gb": 0
+      }
+    },
+    "features": {
+      "ai_operations_brain": true,
+      "autonomous_actions": true,
+      "learning_optimizer": true,
+      "audit_trails": true,
+      "multi_tenant": false,
+      "custom_integrations": false,
+      "advanced_analytics": false,
+      "federated_operations": false,
+      "custom_ai_models": false,
+      "white_label": false
+    },
+    "metadata": {}
+  },
+  "tenant_05f625700803348d": {
+    "tenant_id": "tenant_05f625700803348d",
+    "name": "Validation Corp",
+    "domain": "validation.com",
+    "api_key": "TNPvq7yDDtceVHgdDOZvb7KZt3Db7TnK",
+    "admin_key": "33p6iP2GUxqom7yDOS5KpcvyVifE4gYR",
+    "created_at": "2025-11-09T08:28:53.594755",
+    "status": "active",
+    "limits": {
+      "max_operations_per_month": 10000,
+      "max_ai_actions_per_month": 1000,
+      "max_alerts_per_day": 1000,
+      "max_api_calls_per_minute": 60,
+      "max_storage_gb": 10,
+      "max_users": 5
+    },
+    "billing": {
+      "stripe_customer_id": null,
+      "subscription_id": null,
+      "plan_id": "starter",
+      "billing_email": "billing@validation.com",
+      "payment_method": null,
+      "next_billing_date": null,
+      "usage_this_month": {
+        "operations": 0,
+        "ai_actions": 0,
+        "api_calls": 0,
+        "storage_used_gb": 0
+      }
+    },
+    "features": {
+      "ai_operations_brain": true,
+      "autonomous_actions": true,
+      "learning_optimizer": true,
+      "audit_trails": true,
+      "multi_tenant": false,
+      "custom_integrations": false,
+      "advanced_analytics": false,
+      "federated_operations": false,
+      "custom_ai_models": false,
+      "white_label": false
+    },
+    "metadata": {}
+  },
+  "tenant_85a237a41d270de9": {
+    "tenant_id": "tenant_85a237a41d270de9",
+    "name": "Enterprise Validation Inc",
+    "domain": "enterprise-validation.com",
+    "api_key": "7uRSG4GO6VknugdVAjQRLkI17tUiU1B6",
+    "admin_key": "I8Xc3gacEnwDraK6qTeJ6d6yrF5HYpl8",
+    "created_at": "2025-11-09T08:28:53.596755",
+    "status": "active",
+    "limits": {
+      "max_operations_per_month": 1000000,
+      "max_ai_actions_per_month": 100000,
+      "max_alerts_per_day": 50000,
+      "max_api_calls_per_minute": 1000,
+      "max_storage_gb": 1000,
+      "max_users": 100
+    },
+    "billing": {
+      "stripe_customer_id": null,
+      "subscription_id": null,
+      "plan_id": "enterprise",
+      "billing_email": "billing@enterprise-validation.com",
+      "payment_method": null,
+      "next_billing_date": null,
+      "usage_this_month": {
+        "operations": 0,
+        "ai_actions": 0,
+        "api_calls": 0,
+        "storage_used_gb": 0
+      }
+    },
+    "features": {
+      "ai_operations_brain": true,
+      "autonomous_actions": true,
+      "learning_optimizer": true,
+      "audit_trails": true,
+      "multi_tenant": true,
+      "custom_integrations": true,
+      "advanced_analytics": true,
+      "federated_operations": true,
+      "custom_ai_models": true,
+      "white_label": false
+    },
+    "metadata": {}
+  }
+}

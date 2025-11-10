@@ -1,0 +1,201 @@
+{
+  "summary": {
+    "total_tests": 21,
+    "passed": 12,
+    "failed": 9,
+    "success_rate": 0.5714285714285714,
+    "duration_seconds": 4.191016435623169
+  },
+  "results": [
+    {
+      "test": "Tenant Creation - Starter",
+      "success": true,
+      "message": "Created tenant tenant_534a5ddb4f02e519",
+      "timestamp": "2025-11-09T08:27:50.646829",
+      "details": {
+        "tenant_id": "tenant_534a5ddb4f02e519"
+      }
+    },
+    {
+      "test": "Tenant Creation - Enterprise",
+      "success": true,
+      "message": "Created tenant tenant_2438dcfe53fa52ca",
+      "timestamp": "2025-11-09T08:27:50.648939",
+      "details": {
+        "tenant_id": "tenant_2438dcfe53fa52ca"
+      }
+    },
+    {
+      "test": "Tenant Config - tenant_534a5ddb4f02e519",
+      "success": false,
+      "message": "Configuration file missing",
+      "timestamp": "2025-11-09T08:27:50.648939",
+      "details": {}
+    },
+    {
+      "test": "Tenant Config - tenant_2438dcfe53fa52ca",
+      "success": false,
+      "message": "Configuration file missing",
+      "timestamp": "2025-11-09T08:27:50.648939",
+      "details": {}
+    },
+    {
+      "test": "Billing Subscription",
+      "success": true,
+      "message": "Created subscription",
+      "timestamp": "2025-11-09T08:27:50.649984",
+      "details": {
+        "subscription_id": "sub_1",
+        "customer_id": "cus_1",
+        "plan_id": "starter",
+        "status": "active",
+        "current_period_end": "2025-12-09T08:27:50.648939"
+      }
+    },
+    {
+      "test": "Usage Recording",
+      "success": true,
+      "message": "Recorded usage metrics",
+      "timestamp": "2025-11-09T08:27:50.650585",
+      "details": {}
+    },
+    {
+      "test": "Usage Summary",
+      "success": true,
+      "message": "Retrieved usage summary",
+      "timestamp": "2025-11-09T08:27:50.650585",
+      "details": {
+        "plan_id": "starter",
+        "current_period_start": "2025-11-09T08:27:50.648939",
+        "current_period_end": "2025-12-09T08:27:50.648939",
+        "usage": {
+          "operations": 500,
+          "ai_actions": 50,
+          "api_calls": 0,
+          "storage_used_gb": 0
+        },
+        "limits": {
+          "operations": 10000,
+          "ai_actions": 1000
+        },
+        "overage": {},
+        "estimated_cost": 499.0
+      }
+    },
+    {
+      "test": "Invoice Generation",
+      "success": true,
+      "message": "Generated invoice",
+      "timestamp": "2025-11-09T08:27:50.651591",
+      "details": {
+        "invoice_id": "inv_VALIDATION_STARTER_20251109_082750",
+        "tenant_id": "VALIDATION_STARTER",
+        "period_start": "2025-11-09T08:27:50.648939",
+        "period_end": "2025-12-09T08:27:50.648939",
+        "plan_id": "starter",
+        "base_cost": 499.0,
+        "usage": {
+          "operations": 500,
+          "ai_actions": 50,
+          "api_calls": 0,
+          "storage_used_gb": 0
+        },
+        "overage": {},
+        "total_cost": 499.0,
+        "status": "pending",
+        "generated_at": "2025-11-09T08:27:50.651591"
+      }
+    },
+    {
+      "test": "Tenant Directory - tenant_534a5ddb4f02e519",
+      "success": false,
+      "message": "Tenant directory missing",
+      "timestamp": "2025-11-09T08:27:50.651591",
+      "details": {}
+    },
+    {
+      "test": "Tenant Directory - tenant_2438dcfe53fa52ca",
+      "success": false,
+      "message": "Tenant directory missing",
+      "timestamp": "2025-11-09T08:27:50.651591",
+      "details": {}
+    },
+    {
+      "test": "Resource Limits - tenant_534a5ddb4f02e519",
+      "success": false,
+      "message": "Limits file missing",
+      "timestamp": "2025-11-09T08:27:50.651591",
+      "details": {}
+    },
+    {
+      "test": "Resource Limits - tenant_2438dcfe53fa52ca",
+      "success": false,
+      "message": "Limits file missing",
+      "timestamp": "2025-11-09T08:27:50.651591",
+      "details": {}
+    },
+    {
+      "test": "API Health Check",
+      "success": false,
+      "message": "API health check failed: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /health (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001FBA93EDB10>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+      "timestamp": "2025-11-09T08:27:54.748112",
+      "details": {}
+    },
+    {
+      "test": "API Keys - tenant_534a5ddb4f02e519",
+      "success": false,
+      "message": "API keys file missing",
+      "timestamp": "2025-11-09T08:27:54.748112",
+      "details": {}
+    },
+    {
+      "test": "API Keys - tenant_2438dcfe53fa52ca",
+      "success": false,
+      "message": "API keys file missing",
+      "timestamp": "2025-11-09T08:27:54.748112",
+      "details": {}
+    },
+    {
+      "test": "Documentation - COMMERCIAL_LICENSING.md",
+      "success": true,
+      "message": "Documentation exists (7500 bytes)",
+      "timestamp": "2025-11-09T08:27:54.748112",
+      "details": {}
+    },
+    {
+      "test": "Documentation - ENTERPRISE_SUPPORT_PLAN.md",
+      "success": true,
+      "message": "Documentation exists (8749 bytes)",
+      "timestamp": "2025-11-09T08:27:54.748112",
+      "details": {}
+    },
+    {
+      "test": "Documentation - COMMERCIAL_PRESENTATION.md",
+      "success": true,
+      "message": "Documentation exists (12053 bytes)",
+      "timestamp": "2025-11-09T08:27:54.749292",
+      "details": {}
+    },
+    {
+      "test": "Documentation - README.md",
+      "success": true,
+      "message": "Documentation exists (14629 bytes)",
+      "timestamp": "2025-11-09T08:27:54.749292",
+      "details": {}
+    },
+    {
+      "test": "Script Validation - provisioning/tenant_provisioning.py",
+      "success": true,
+      "message": "Script compiles successfully",
+      "timestamp": "2025-11-09T08:27:54.793944",
+      "details": {}
+    },
+    {
+      "test": "Script Validation - provisioning/billing_integration.py",
+      "success": true,
+      "message": "Script compiles successfully",
+      "timestamp": "2025-11-09T08:27:54.836790",
+      "details": {}
+    }
+  ]
+}

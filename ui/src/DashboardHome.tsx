@@ -3,6 +3,15 @@ import { useEffect, useState } from "react";
 import { LocalRunsCard } from "./components/LocalRunsCard";
 import { LastAuditBadge } from "./components/LastAuditBadge";
 import { api } from "./lib/api";
+import { OpsMetricsCard } from "./components/OpsMetricsCard";
+import { AnalyticsCard } from "./components/AnalyticsCard";
+import { JobsControlCard } from "./components/JobsControlCard";
+import { QueueStatusCard } from "./components/QueueStatusCard";
+import { TenantScopeSelector } from "./components/TenantScopeSelector";
+import { RecentOperatorActivity } from "./components/RecentOperatorActivity";
+import { LiveAlertStream } from "./components/LiveAlertStream";
+import { AdaptiveRecommendations } from "./components/AdaptiveRecommendations";
+import { ICON_COMMAND_CENTER, ICON_CRM_DEFAULT, ICON_CRM_POLICY, ICON_CRM_HOME, ICON_CRM_CHAT } from "./icons";
 
 interface BundleData {
     status: any;
@@ -15,6 +24,13 @@ interface BundleData {
 
 interface DashboardHomeProps {
     bundle: BundleData | null;
+}
+
+interface BackendInfo {
+    service: string;
+    version: string;
+    features: Record<string, boolean>;
+    endpoints: string[];
 }
 
 type ScheduleStatus = {
@@ -97,6 +113,90 @@ function CommandCenterStatusCard() {
     );
 }
 
+function AIAutomationStatusCard() {
+    const [status, setStatus] = useState<"loading" | "enabled" | "disabled" | "dry-run">("loading");
+    const [config, setConfig] = useState<any>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const controller = new AbortController();
+
+        async function load() {
+            try {
+                const res = await api("/health/env", {
+                    method: "GET",
+                    signal: controller.signal,
+                });
+
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+
+                const json = await res.json();
+                setConfig(json);
+
+                // Determine status based on features
+                const features = json.features || {};
+                if (features.adaptive_dry_run) {
+                    setStatus("dry-run");
+                } else if (features.ai_guardrails && features.adaptive_auto_actions) {
+                    setStatus("enabled");
+                } else {
+                    setStatus("disabled");
+                }
+                setError(null);
+            } catch (err: any) {
+                setStatus("disabled");
+                setError(err.message ?? "Failed to check AI status");
+            }
+        }
+
+        load();
+
+        // Poll every 60 seconds (less frequent for config)
+        const id = setInterval(load, 60000);
+        return () => {
+            controller.abort();
+            clearInterval(id);
+        };
+    }, []);
+
+    const getStatusColor = () => {
+        switch (status) {
+            case "enabled": return "bg-blue-500";
+            case "dry-run": return "bg-yellow-500";
+            case "disabled": return "bg-gray-500";
+            default: return "bg-gray-400 animate-pulse";
+        }
+    };
+
+    const getStatusText = () => {
+        switch (status) {
+            case "enabled": return "AI Automation: ACTIVE";
+            case "dry-run": return "AI Automation: DRY-RUN";
+            case "disabled": return "AI Automation: DISABLED";
+            default: return "Checking AI status...";
+        }
+    };
+
+    return (
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center space-x-2 mb-2">
+                <div className={`w-3 h-3 rounded-full ${getStatusColor()}`}></div>
+                <span className="font-medium text-gray-900">AI Automation</span>
+            </div>
+            <p className="text-sm text-gray-600">{getStatusText()}</p>
+            {config && (
+                <div className="text-xs text-gray-500 mt-1">
+                    Guardrails: {config.features?.ai_guardrails ? "ENFORCED" : "OFF"} |
+                    Environment: {config.environment?.toUpperCase()}
+                </div>
+            )}
+            {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+        </div>
+    );
+}
+
 function SchedulerSummaryCard() {
     const [count, setCount] = useState<number | null>(null);
     const [ts, setTs] = useState<string | null>(null);
@@ -142,21 +242,54 @@ function SchedulerSummaryCard() {
         <div className="card p-4 bg-white shadow-sm rounded-lg">
             <div className="text-sm text-slate-500">AccuLynx Scheduler</div>
             <div className="text-2xl font-semibold">
-                {count === null ? "…" : `${count} tenant${count === 1 ? "" : "s"}`}
+                {count === null ? "..." : `${count} tenant${count === 1 ? "" : "s"}`}
             </div>
             <div className="text-xs text-slate-400 mt-1">
-                {ts ? `as of ${ts}` : "checking…"}
+                {ts ? `as of ${ts}` : "checking..."}
             </div>
         </div>
     );
 }
+
+const UI_VERSION = "0.2.0";
+
+function FooterStatus() {
+    const [status, setStatus] = useState<"loading" | "connected" | "disconnected">("loading");
+
+    useEffect(() => {
+        let cancelled = false;
+
+        async function ping() {
+            try {
+                await api("/ops/ping");
+                if (!cancelled) setStatus("connected");
+            } catch {
+                if (!cancelled) setStatus("disconnected");
+            }
+        }
+
+        ping();
+        const id = setInterval(ping, 10000); // every 10s
+        return () => {
+            cancelled = true;
+            clearInterval(id);
+        };
+    }, []);
+
+    return (
+        <span className="ml-3 text-xs">
+            {status === "connected" ? "online" : status === "disconnected" ? "offline" : "checking..."}
+        </span>
+    );
+}
+
 
 const crmVerticals = [
     {
         id: 'peakpro',
         name: 'PeakPro CRM',
         description: 'Roofing services and commercial inspections',
-        icon: '🏠',
+        icon: ICON_CRM_DEFAULT,
         path: '/peakpro',
         color: 'bg-blue-500',
         status: 'Active'
@@ -165,7 +298,7 @@ const crmVerticals = [
         id: 'policypal',
         name: 'PolicyPal CRM',
         description: 'Insurance claims and policy management',
-        icon: '📋',
+        icon: ICON_CRM_POLICY,
         path: '/policypal',
         color: 'bg-green-500',
         status: 'Active'
@@ -174,7 +307,7 @@ const crmVerticals = [
         id: 'roofwonder',
         name: 'RoofWonder CRM',
         description: 'Residential roofing and maintenance',
-        icon: '🔨',
+        icon: ICON_CRM_HOME,
         path: '/roofwonder',
         color: 'bg-orange-500',
         status: 'Coming Soon'
@@ -183,7 +316,7 @@ const crmVerticals = [
         id: 'clientellme',
         name: 'Clientellme CRM',
         description: 'Client relationship management',
-        icon: '👥',
+        icon: ICON_CRM_CHAT,
         path: '/clientellme',
         color: 'bg-purple-500',
         status: 'Coming Soon'
@@ -192,7 +325,7 @@ const crmVerticals = [
         id: 'apexflow',
         name: 'ApexFlow CRM',
         description: 'Construction project management',
-        icon: '🏗️',
+        icon: ICON_CRM_DEFAULT,
         path: '/apexflow',
         color: 'bg-red-500',
         status: 'Coming Soon'
@@ -203,6 +336,33 @@ export function DashboardHome({ bundle }: DashboardHomeProps) {
     const activeServices = bundle?.status?.services || [];
     const federationStatus = bundle?.federation?.status || 'unknown';
     const alertCount = bundle?.alerts?.length || 0;
+
+    const [backendInfo, setBackendInfo] = useState<BackendInfo | null>(null);
+    const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
+    const [profile, setProfile] = useState<{ display_name: string; description: string } | null>(null);
+
+    useEffect(() => {
+        async function fetchBackendInfo() {
+            try {
+                const response = await fetch('http://localhost:8000/');
+                if (response.ok) {
+                    const data = await response.json();
+                    setBackendInfo(data);
+                }
+            } catch (error) {
+                console.warn('Failed to fetch backend info:', error);
+            }
+        }
+        fetchBackendInfo();
+    }, []);
+
+    useEffect(() => {
+        const currentTenant = selectedTenant ?? "GENERALDEMO";
+        fetch(`/beta/profile?tenant=${encodeURIComponent(currentTenant)}`)
+            .then(r => (r.ok ? r.json() : null))
+            .then(data => data && setProfile(data))
+            .catch(() => { });
+    }, [selectedTenant]);
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -235,6 +395,15 @@ export function DashboardHome({ bundle }: DashboardHomeProps) {
                 </div>
             </header>
 
+            {/* Profile Context Banner */}
+            {profile ? (
+                <div className="mb-3 rounded-lg bg-slate-900/40 border border-slate-800 px-4 py-2 mx-6">
+                    <p className="text-xs text-slate-400">
+                        Viewing demo data for <span className="text-slate-100">{profile.display_name}</span> — {profile.description}
+                    </p>
+                </div>
+            ) : null}
+
             {/* Main Content */}
             <main className="px-6 py-8">
                 <div className="max-w-7xl mx-auto">
@@ -248,10 +417,50 @@ export function DashboardHome({ bundle }: DashboardHomeProps) {
                         </p>
                     </div>
 
-                    {/* Scheduler Summary & Local Runs */}
-                    <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Version Compatibility Banner */}
+                    {backendInfo && backendInfo.version !== UI_VERSION && (
+                        <div className="mb-6 bg-yellow-100 text-yellow-900 text-sm px-4 py-3 rounded-lg border border-yellow-200">
+                            ⚠️ UI {UI_VERSION} ≠ API {backendInfo.version}. You may be talking to an older/newer Command Center.
+                        </div>
+                    )}
+
+                    {/* Scheduler Summary & Local Runs & Ops Health */}
+                    <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6">
                         <SchedulerSummaryCard />
                         <LocalRunsCard />
+                        <OpsMetricsCard />
+                    </div>
+
+                    {/* Analytics Snapshot */}
+                    <div className="mb-8">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Analytics & Controls</h2>
+                            <TenantScopeSelector
+                                selectedTenant={selectedTenant}
+                                onTenantChange={setSelectedTenant}
+                            />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <AnalyticsCard tenant={selectedTenant} />
+                            <JobsControlCard tenant={selectedTenant} />
+                            <QueueStatusCard tenant={selectedTenant} />
+                        </div>
+                    </div>
+
+                    {/* Live Operations Stream */}
+                    <div className="mb-8">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Live Operations Stream</h2>
+                            <TenantScopeSelector
+                                selectedTenant={selectedTenant}
+                                onTenantChange={setSelectedTenant}
+                            />
+                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <RecentOperatorActivity tenant={selectedTenant} />
+                            <LiveAlertStream alerts={bundle?.alerts || []} tenant={selectedTenant} />
+                            <AdaptiveRecommendations tenant={selectedTenant} />
+                        </div>
                     </div>
 
                     {/* Last Scheduler Activity */}
@@ -358,10 +567,25 @@ export function DashboardHome({ bundle }: DashboardHomeProps) {
 
                             {/* Command Center Status */}
                             <CommandCenterStatusCard />
+
+                            {/* AI Automation Status */}
+                            <AIAutomationStatusCard />
                         </div>
                     </div>
                 </div>
             </main>
+
+            {/* Footer */}
+            <footer className="bg-white border-t border-gray-200 px-6 py-4 mt-8">
+                <div className="text-center text-sm text-gray-500 flex items-center justify-center">
+                    {backendInfo ? (
+                        <>{ICON_COMMAND_CENTER} Command Center v{backendInfo.version}</>
+                    ) : (
+                        <>{ICON_COMMAND_CENTER} Command Center</>
+                    )}
+                    <FooterStatus />
+                </div>
+            </footer>
         </div>
     );
 }

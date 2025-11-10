@@ -3,21 +3,24 @@
 Quick server test
 """
 
-import subprocess
-import time
-import requests
-import sys
 import os
+import subprocess
+import sys
+import time
+
+import requests
+
 
 def test_server():
     # Set environment
     env = os.environ.copy()
-    env['PYTHONPATH'] = r"c:\Users\jonmi\OneDrive\Documents\AetherLink"
+    env["PYTHONPATH"] = r"c:\Users\jonmi\OneDrive\Documents\AetherLink"
 
     # Start server
     cmd = [
-        sys.executable, "-c",
-        "import sys; sys.path.insert(0, 'services/command-center'); import uvicorn; uvicorn.run('main:app', host='127.0.0.1', port=8000, log_level='info')"
+        sys.executable,
+        "-c",
+        "import sys; sys.path.insert(0, 'services/command-center'); import uvicorn; uvicorn.run('main:app', host='127.0.0.1', port=8000, log_level='info')",
     ]
 
     print("Starting server...")
@@ -29,7 +32,7 @@ def test_server():
 
         # Test health
         print("Testing health endpoint...")
-        r = requests.get('http://localhost:8000/ops/health', timeout=5)
+        r = requests.get("http://localhost:8000/ops/health", timeout=5)
         print(f"Status: {r.status_code}")
         print(r.json())
         return True
@@ -40,6 +43,7 @@ def test_server():
     finally:
         proc.terminate()
         proc.wait()
+
 
 if __name__ == "__main__":
     success = test_server()

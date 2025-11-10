@@ -1,0 +1,744 @@
+{
+  "alerts": [
+    {
+      "id": "alert_06c956c67e30414f",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-02T16:10:44.554462",
+      "category": "security",
+      "type": "Audit Log Anomaly",
+      "severity": "low",
+      "status": "active",
+      "title": "Audit Log Anomaly alert",
+      "description": "Detailed information for Audit Log Anomaly alert.",
+      "source": "system_7",
+      "tags": [
+        "security",
+        "audit_log_anomaly",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 81.20646085628447
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7414505523915458,
+        "predicted_impact": "low",
+        "recommended_action": "auto_restart_service",
+        "estimated_resolution_time": 571,
+        "similar_incidents": 0
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_71528e75582d4b41",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-02T17:32:45.554462",
+      "category": "security",
+      "type": "Access Violations",
+      "severity": "low",
+      "status": "resolved",
+      "title": "Access Violations alert",
+      "description": "Detailed information for Access Violations alert.",
+      "source": "system_4",
+      "tags": [
+        "access_violations",
+        "security",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 30.80368400794169
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7674771586040956,
+        "predicted_impact": "low",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 1696,
+        "similar_incidents": 3
+      },
+      "resolution_time": 669,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_59d22b10e0214beb",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-02T20:54:10.554462",
+      "category": "application",
+      "type": "Cache Hit Rate",
+      "severity": "low",
+      "status": "auto_resolved",
+      "title": "Cache Hit Rate alert",
+      "description": "Detailed information for Cache Hit Rate alert.",
+      "source": "system_1",
+      "tags": [
+        "service",
+        "application",
+        "app",
+        "cache_hit_rate"
+      ],
+      "metrics": {
+        "value": 52.79479457068905
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9267309961749141,
+        "predicted_impact": "low",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 1397,
+        "similar_incidents": 1
+      },
+      "resolution_time": 2809,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_b74fd215050b45b7",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-02T22:38:34.554462",
+      "category": "system",
+      "type": "Memory Usage",
+      "severity": "critical",
+      "status": "acknowledged",
+      "title": "CRITICAL: Memory usage critical",
+      "description": "Memory consumption is approaching critical levels, risking system stability.",
+      "source": "system_9",
+      "tags": [
+        "infrastructure",
+        "memory_usage",
+        "system",
+        "performance"
+      ],
+      "metrics": {
+        "memory_percent": 95.37383759827017,
+        "swap_percent": 1.3047240729992393
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7303638397196979,
+        "predicted_impact": "critical",
+        "recommended_action": "rollback_deployment",
+        "estimated_resolution_time": 455,
+        "similar_incidents": 2
+      },
+      "resolution_time": null,
+      "assigned_to": "auto_escalated"
+    },
+    {
+      "id": "alert_3ae2bc9516b84e75",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-02T23:53:48.554462",
+      "category": "security",
+      "type": "Data Encryption Failure",
+      "severity": "low",
+      "status": "auto_resolved",
+      "title": "Data Encryption Failure alert",
+      "description": "Detailed information for Data Encryption Failure alert.",
+      "source": "system_3",
+      "tags": [
+        "security",
+        "data_encryption_failure",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 19.39933228580093
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8615898389454358,
+        "predicted_impact": "low",
+        "recommended_action": "rollback_deployment",
+        "estimated_resolution_time": 1454,
+        "similar_incidents": 2
+      },
+      "resolution_time": 1817,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_3ba2e3ac27c247fb",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-03T02:49:54.554462",
+      "category": "system",
+      "type": "Memory Usage",
+      "severity": "low",
+      "status": "active",
+      "title": "Memory usage critical",
+      "description": "Memory consumption is approaching critical levels, risking system stability.",
+      "source": "system_3",
+      "tags": [
+        "infrastructure",
+        "memory_usage",
+        "system",
+        "performance"
+      ],
+      "metrics": {
+        "memory_percent": 93.59581343325075,
+        "swap_percent": 17.58752706524563
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8465069840382011,
+        "predicted_impact": "low",
+        "recommended_action": "reroute_traffic",
+        "estimated_resolution_time": 1250,
+        "similar_incidents": 0
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_9cefb7743bb64ff2",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-03T07:11:16.554462",
+      "category": "security",
+      "type": "Failed Login Attempts",
+      "severity": "low",
+      "status": "active",
+      "title": "Failed Login Attempts alert",
+      "description": "Detailed information for Failed Login Attempts alert.",
+      "source": "system_9",
+      "tags": [
+        "security",
+        "failed_login_attempts",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 49.94565971207031
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7414703198413628,
+        "predicted_impact": "low",
+        "recommended_action": "apply_config_change",
+        "estimated_resolution_time": 507,
+        "similar_incidents": 4
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_cf5c029ff92f4811",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-03T12:04:58.554462",
+      "category": "application",
+      "type": "Cache Hit Rate",
+      "severity": "low",
+      "status": "active",
+      "title": "Cache Hit Rate alert",
+      "description": "Detailed information for Cache Hit Rate alert.",
+      "source": "system_4",
+      "tags": [
+        "service",
+        "application",
+        "app",
+        "cache_hit_rate"
+      ],
+      "metrics": {
+        "value": 48.29633944815431
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9287652121600263,
+        "predicted_impact": "low",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 1263,
+        "similar_incidents": 0
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_42318d4deebd4f54",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-03T17:54:09.554462",
+      "category": "security",
+      "type": "PCI Compliance Alert",
+      "severity": "medium",
+      "status": "active",
+      "title": "PCI Compliance Alert alert",
+      "description": "Detailed information for PCI Compliance Alert alert.",
+      "source": "system_3",
+      "tags": [
+        "security",
+        "pci_compliance_alert",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 5.320377784258157
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8579597563936957,
+        "predicted_impact": "medium",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 998,
+        "similar_incidents": 4
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_bf98011d0067486d",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-03T20:56:14.554462",
+      "category": "infrastructure",
+      "type": "Database Replication",
+      "severity": "medium",
+      "status": "active",
+      "title": "Database Replication alert",
+      "description": "Detailed information for Database Replication alert.",
+      "source": "system_9",
+      "tags": [
+        "infrastructure",
+        "infra",
+        "platform",
+        "database_replication"
+      ],
+      "metrics": {
+        "value": 57.62902052673714
+      },
+      "ai_analysis": {
+        "confidence_score": 0.727802229654429,
+        "predicted_impact": "medium",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 376,
+        "similar_incidents": 1
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_5c34e08bcd124554",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-03T23:51:57.554462",
+      "category": "infrastructure",
+      "type": "Server Unreachable",
+      "severity": "low",
+      "status": "active",
+      "title": "Server Unreachable alert",
+      "description": "Detailed information for Server Unreachable alert.",
+      "source": "system_6",
+      "tags": [
+        "server_unreachable",
+        "infrastructure",
+        "infra",
+        "platform"
+      ],
+      "metrics": {
+        "value": 54.733508127171184
+      },
+      "ai_analysis": {
+        "confidence_score": 0.829191021556525,
+        "predicted_impact": "low",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 371,
+        "similar_incidents": 0
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_24783c442c98416b",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-04T00:27:44.554462",
+      "category": "security",
+      "type": "SSL Certificate Expiry",
+      "severity": "high",
+      "status": "acknowledged",
+      "title": "HIGH: SSL Certificate Expiry alert",
+      "description": "Detailed information for SSL Certificate Expiry alert.",
+      "source": "system_8",
+      "tags": [
+        "ssl_certificate_expiry",
+        "security",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 88.71164522368201
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7475692490775109,
+        "predicted_impact": "high",
+        "recommended_action": "send_notification",
+        "estimated_resolution_time": 1304,
+        "similar_incidents": 4
+      },
+      "resolution_time": null,
+      "assigned_to": "ai_system"
+    },
+    {
+      "id": "alert_529248eb86fe41da",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-05T07:46:09.554462",
+      "category": "application",
+      "type": "Error Rate",
+      "severity": "critical",
+      "status": "resolved",
+      "title": "CRITICAL: Error rate spike detected",
+      "description": "Application error rate has spiked above acceptable levels.",
+      "source": "system_4",
+      "tags": [
+        "service",
+        "application",
+        "error_rate",
+        "app"
+      ],
+      "metrics": {
+        "value": 41.21043207807706
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7830611773916816,
+        "predicted_impact": "critical",
+        "recommended_action": "scale_resources",
+        "estimated_resolution_time": 1779,
+        "similar_incidents": 3
+      },
+      "resolution_time": 3509,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_d9b50d95c36846b4",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-05T16:06:30.554462",
+      "category": "security",
+      "type": "SSL Certificate Expiry",
+      "severity": "high",
+      "status": "acknowledged",
+      "title": "HIGH: SSL Certificate Expiry alert",
+      "description": "Detailed information for SSL Certificate Expiry alert.",
+      "source": "system_3",
+      "tags": [
+        "ssl_certificate_expiry",
+        "security",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 13.172984651490982
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8574318569956965,
+        "predicted_impact": "high",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 742,
+        "similar_incidents": 3
+      },
+      "resolution_time": null,
+      "assigned_to": "auto_escalated"
+    },
+    {
+      "id": "alert_7348b7e34c104f00",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-05T17:00:26.554462",
+      "category": "system",
+      "type": "Memory Usage",
+      "severity": "medium",
+      "status": "resolved",
+      "title": "Memory usage critical",
+      "description": "Memory consumption is approaching critical levels, risking system stability.",
+      "source": "system_2",
+      "tags": [
+        "infrastructure",
+        "memory_usage",
+        "system",
+        "performance"
+      ],
+      "metrics": {
+        "memory_percent": 92.0065621523718,
+        "swap_percent": 1.6052912823396737
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8537112966520602,
+        "predicted_impact": "medium",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 1740,
+        "similar_incidents": 5
+      },
+      "resolution_time": 3251,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_ec1a5fe1c82e437e",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-05T22:25:47.554462",
+      "category": "security",
+      "type": "Data Encryption Failure",
+      "severity": "medium",
+      "status": "auto_resolved",
+      "title": "Data Encryption Failure alert",
+      "description": "Detailed information for Data Encryption Failure alert.",
+      "source": "system_8",
+      "tags": [
+        "security",
+        "data_encryption_failure",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 23.575912895135666
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8543232722703137,
+        "predicted_impact": "medium",
+        "recommended_action": "scale_resources",
+        "estimated_resolution_time": 342,
+        "similar_incidents": 0
+      },
+      "resolution_time": 138,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_80500c0218f84170",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-06T03:57:14.554462",
+      "category": "security",
+      "type": "Failed Login Attempts",
+      "severity": "low",
+      "status": "resolved",
+      "title": "Failed Login Attempts alert",
+      "description": "Detailed information for Failed Login Attempts alert.",
+      "source": "system_7",
+      "tags": [
+        "security",
+        "failed_login_attempts",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 96.96350043943721
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7603971715214489,
+        "predicted_impact": "low",
+        "recommended_action": "rollback_deployment",
+        "estimated_resolution_time": 1492,
+        "similar_incidents": 3
+      },
+      "resolution_time": 1323,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_72079726f09f43b0",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-07T04:35:58.554462",
+      "category": "security",
+      "type": "Audit Log Anomaly",
+      "severity": "high",
+      "status": "auto_resolved",
+      "title": "HIGH: Audit Log Anomaly alert",
+      "description": "Detailed information for Audit Log Anomaly alert.",
+      "source": "system_6",
+      "tags": [
+        "security",
+        "audit_log_anomaly",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 2.2403382486972823
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9720256414967616,
+        "predicted_impact": "high",
+        "recommended_action": "auto_restart_service",
+        "estimated_resolution_time": 580,
+        "similar_incidents": 1
+      },
+      "resolution_time": 1763,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_2e5204851c34451f",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-07T14:46:45.554462",
+      "category": "system",
+      "type": "Network Latency",
+      "severity": "medium",
+      "status": "active",
+      "title": "Network latency increased",
+      "description": "Network response times have increased significantly.",
+      "source": "system_10",
+      "tags": [
+        "infrastructure",
+        "system",
+        "network_latency",
+        "performance"
+      ],
+      "metrics": {
+        "latency_ms": 451.144023302804,
+        "packet_loss": 0.6599171895981548
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7222725362467074,
+        "predicted_impact": "medium",
+        "recommended_action": "reroute_traffic",
+        "estimated_resolution_time": 1471,
+        "similar_incidents": 1
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_3e7dd22408e647bb",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-08T00:12:36.554462",
+      "category": "application",
+      "type": "Throughput",
+      "severity": "low",
+      "status": "auto_resolved",
+      "title": "Throughput alert",
+      "description": "Detailed information for Throughput alert.",
+      "source": "system_6",
+      "tags": [
+        "service",
+        "application",
+        "throughput",
+        "app"
+      ],
+      "metrics": {
+        "value": 40.409467538708185
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9023568107323663,
+        "predicted_impact": "low",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 1205,
+        "similar_incidents": 1
+      },
+      "resolution_time": 2466,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_c269c347331a4234",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-08T04:47:46.554462",
+      "category": "security",
+      "type": "Failed Login Attempts",
+      "severity": "critical",
+      "status": "resolved",
+      "title": "CRITICAL: Failed Login Attempts alert",
+      "description": "Detailed information for Failed Login Attempts alert.",
+      "source": "system_3",
+      "tags": [
+        "security",
+        "failed_login_attempts",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 72.09570566283953
+      },
+      "ai_analysis": {
+        "confidence_score": 0.703569739784242,
+        "predicted_impact": "critical",
+        "recommended_action": "clear_cache",
+        "estimated_resolution_time": 1293,
+        "similar_incidents": 2
+      },
+      "resolution_time": 2810,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_3b5dcc53208242e4",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-08T14:15:45.554462",
+      "category": "security",
+      "type": "SSL Certificate Expiry",
+      "severity": "low",
+      "status": "auto_resolved",
+      "title": "SSL Certificate Expiry alert",
+      "description": "Detailed information for SSL Certificate Expiry alert.",
+      "source": "system_10",
+      "tags": [
+        "ssl_certificate_expiry",
+        "security",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 74.41768567456862
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9522160400709394,
+        "predicted_impact": "low",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 1304,
+        "similar_incidents": 4
+      },
+      "resolution_time": 937,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_87d67a5fa2f345c6",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-09T00:10:26.554462",
+      "category": "application",
+      "type": "Database Connections",
+      "severity": "low",
+      "status": "active",
+      "title": "Database connection pool exhausted",
+      "description": "Database connection pool is at maximum capacity.",
+      "source": "system_7",
+      "tags": [
+        "service",
+        "application",
+        "database_connections",
+        "app"
+      ],
+      "metrics": {
+        "value": 95.58527121254026
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7503550877053341,
+        "predicted_impact": "low",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 1279,
+        "similar_incidents": 0
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_13e21e6d6c9647c7",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-09T02:06:26.554462",
+      "category": "security",
+      "type": "Access Violations",
+      "severity": "medium",
+      "status": "acknowledged",
+      "title": "Access Violations alert",
+      "description": "Detailed information for Access Violations alert.",
+      "source": "system_10",
+      "tags": [
+        "access_violations",
+        "security",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 32.88328215797708
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8019937275552955,
+        "predicted_impact": "medium",
+        "recommended_action": "rollback_deployment",
+        "estimated_resolution_time": 910,
+        "similar_incidents": 5
+      },
+      "resolution_time": null,
+      "assigned_to": "auto_escalated"
+    },
+    {
+      "id": "alert_c40885c933514672",
+      "tenant_id": "FINTEST",
+      "timestamp": "2025-11-09T02:13:01.554462",
+      "category": "security",
+      "type": "Audit Log Anomaly",
+      "severity": "medium",
+      "status": "active",
+      "title": "Audit Log Anomaly alert",
+      "description": "Detailed information for Audit Log Anomaly alert.",
+      "source": "system_6",
+      "tags": [
+        "security",
+        "audit_log_anomaly",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 33.27149292369202
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7166663803755181,
+        "predicted_impact": "medium",
+        "recommended_action": "apply_config_change",
+        "estimated_resolution_time": 1615,
+        "similar_incidents": 1
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    }
+  ]
+}

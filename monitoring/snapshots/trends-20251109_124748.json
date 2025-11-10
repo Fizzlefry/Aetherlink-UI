@@ -1,0 +1,23 @@
+{
+  "timestamp": "2025-11-09T12:47:48.566528",
+  "tenant": null,
+  "window_days": 7,
+  "data": {
+    "current": {
+      "totals": {
+        "all_time": 0,
+        "last_24h": 0
+      },
+      "groups": {
+        "all_time": {},
+        "last_24h": {}
+      },
+      "trends": {}
+    },
+    "analysis": {
+      "rolling_averages": {},
+      "forecasts": {},
+      "anomalies": []
+    }
+  }
+}

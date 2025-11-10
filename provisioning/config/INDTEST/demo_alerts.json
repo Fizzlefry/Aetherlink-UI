@@ -1,0 +1,755 @@
+{
+  "alerts": [
+    {
+      "id": "alert_37f020dd6ed54afc",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-02T14:42:33.547610",
+      "category": "infrastructure",
+      "type": "SCADA System Alert",
+      "severity": "low",
+      "status": "resolved",
+      "title": "SCADA System Alert alert",
+      "description": "Detailed information for SCADA System Alert alert.",
+      "source": "system_5",
+      "tags": [
+        "scada_system_alert",
+        "platform",
+        "infrastructure",
+        "infra"
+      ],
+      "metrics": {
+        "value": 85.20388398449784
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8377397856737653,
+        "predicted_impact": "low",
+        "recommended_action": "reroute_traffic",
+        "estimated_resolution_time": 1314,
+        "similar_incidents": 3
+      },
+      "resolution_time": 1521,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_ea33572471e04251",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-02T17:16:10.547610",
+      "category": "infrastructure",
+      "type": "Load Balancer Issues",
+      "severity": "high",
+      "status": "acknowledged",
+      "title": "HIGH: Load Balancer Issues alert",
+      "description": "Detailed information for Load Balancer Issues alert.",
+      "source": "system_8",
+      "tags": [
+        "platform",
+        "load_balancer_issues",
+        "infrastructure",
+        "infra"
+      ],
+      "metrics": {
+        "value": 9.798110263608194
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7248036846801127,
+        "predicted_impact": "high",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 1217,
+        "similar_incidents": 3
+      },
+      "resolution_time": null,
+      "assigned_to": "ai_system"
+    },
+    {
+      "id": "alert_ec6ef2cb8b6a48e7",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-02T23:38:41.547610",
+      "category": "infrastructure",
+      "type": "SCADA System Alert",
+      "severity": "high",
+      "status": "resolved",
+      "title": "HIGH: SCADA System Alert alert",
+      "description": "Detailed information for SCADA System Alert alert.",
+      "source": "system_1",
+      "tags": [
+        "scada_system_alert",
+        "platform",
+        "infrastructure",
+        "infra"
+      ],
+      "metrics": {
+        "value": 66.02048633693933
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7347394872166926,
+        "predicted_impact": "high",
+        "recommended_action": "clear_cache",
+        "estimated_resolution_time": 1537,
+        "similar_incidents": 1
+      },
+      "resolution_time": 699,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_51696459f1364a70",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-03T04:03:50.547610",
+      "category": "security",
+      "type": "SSL Certificate Expiry",
+      "severity": "low",
+      "status": "resolved",
+      "title": "SSL Certificate Expiry alert",
+      "description": "Detailed information for SSL Certificate Expiry alert.",
+      "source": "system_9",
+      "tags": [
+        "security",
+        "ssl_certificate_expiry",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 97.62213706619224
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7602761545826106,
+        "predicted_impact": "low",
+        "recommended_action": "scale_resources",
+        "estimated_resolution_time": 1391,
+        "similar_incidents": 0
+      },
+      "resolution_time": 2446,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_4cd11038ecb545fa",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-03T10:32:23.547610",
+      "category": "infrastructure",
+      "type": "SCADA System Alert",
+      "severity": "medium",
+      "status": "active",
+      "title": "SCADA System Alert alert",
+      "description": "Detailed information for SCADA System Alert alert.",
+      "source": "system_2",
+      "tags": [
+        "scada_system_alert",
+        "platform",
+        "infrastructure",
+        "infra"
+      ],
+      "metrics": {
+        "value": 84.46412476221192
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7576442013127844,
+        "predicted_impact": "medium",
+        "recommended_action": "auto_restart_service",
+        "estimated_resolution_time": 761,
+        "similar_incidents": 5
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_7e36eb9340804ba1",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-03T11:50:12.547610",
+      "category": "infrastructure",
+      "type": "PLC Communication Failure",
+      "severity": "low",
+      "status": "active",
+      "title": "PLC Communication Failure alert",
+      "description": "Detailed information for PLC Communication Failure alert.",
+      "source": "system_4",
+      "tags": [
+        "infra",
+        "platform",
+        "infrastructure",
+        "plc_communication_failure"
+      ],
+      "metrics": {
+        "value": 42.796241544805504
+      },
+      "ai_analysis": {
+        "confidence_score": 0.712829754313898,
+        "predicted_impact": "low",
+        "recommended_action": "scale_resources",
+        "estimated_resolution_time": 1627,
+        "similar_incidents": 4
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_20bb45930ecb4188",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-03T18:18:27.547610",
+      "category": "application",
+      "type": "Throughput",
+      "severity": "high",
+      "status": "active",
+      "title": "HIGH: Throughput alert",
+      "description": "Detailed information for Throughput alert.",
+      "source": "system_6",
+      "tags": [
+        "app",
+        "application",
+        "service",
+        "throughput"
+      ],
+      "metrics": {
+        "value": 35.48298458565441
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8606019508497171,
+        "predicted_impact": "high",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 1348,
+        "similar_incidents": 1
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_6766ae323df64c9b",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-04T01:04:48.547610",
+      "category": "system",
+      "type": "Memory Usage",
+      "severity": "high",
+      "status": "acknowledged",
+      "title": "HIGH: Memory usage critical",
+      "description": "Memory consumption is approaching critical levels, risking system stability.",
+      "source": "system_3",
+      "tags": [
+        "memory_usage",
+        "performance",
+        "infrastructure",
+        "system"
+      ],
+      "metrics": {
+        "memory_percent": 93.5654559019069,
+        "swap_percent": 15.636086515061663
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8614587803268855,
+        "predicted_impact": "high",
+        "recommended_action": "apply_config_change",
+        "estimated_resolution_time": 1145,
+        "similar_incidents": 3
+      },
+      "resolution_time": null,
+      "assigned_to": "auto_escalated"
+    },
+    {
+      "id": "alert_1022ef3e1c4e4663",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-04T01:48:00.547610",
+      "category": "infrastructure",
+      "type": "Sensor Data Loss",
+      "severity": "high",
+      "status": "auto_resolved",
+      "title": "HIGH: Sensor Data Loss alert",
+      "description": "Detailed information for Sensor Data Loss alert.",
+      "source": "system_6",
+      "tags": [
+        "platform",
+        "sensor_data_loss",
+        "infrastructure",
+        "infra"
+      ],
+      "metrics": {
+        "value": 20.675326750508983
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9431928277428593,
+        "predicted_impact": "high",
+        "recommended_action": "rollback_deployment",
+        "estimated_resolution_time": 489,
+        "similar_incidents": 0
+      },
+      "resolution_time": 411,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_736d14bff58f4288",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-04T14:09:46.547610",
+      "category": "application",
+      "type": "Error Rate",
+      "severity": "low",
+      "status": "resolved",
+      "title": "Error rate spike detected",
+      "description": "Application error rate has spiked above acceptable levels.",
+      "source": "system_7",
+      "tags": [
+        "app",
+        "error_rate",
+        "application",
+        "service"
+      ],
+      "metrics": {
+        "value": 77.59160505097434
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7413451630213348,
+        "predicted_impact": "low",
+        "recommended_action": "rollback_deployment",
+        "estimated_resolution_time": 1388,
+        "similar_incidents": 1
+      },
+      "resolution_time": 3454,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_2aff91edbdb84407",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-04T18:39:31.547610",
+      "category": "infrastructure",
+      "type": "Server Unreachable",
+      "severity": "critical",
+      "status": "acknowledged",
+      "title": "CRITICAL: Server Unreachable alert",
+      "description": "Detailed information for Server Unreachable alert.",
+      "source": "system_6",
+      "tags": [
+        "server_unreachable",
+        "platform",
+        "infrastructure",
+        "infra"
+      ],
+      "metrics": {
+        "value": 1.2029976320645064
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9206894661576347,
+        "predicted_impact": "critical",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 1250,
+        "similar_incidents": 4
+      },
+      "resolution_time": null,
+      "assigned_to": "noc_team"
+    },
+    {
+      "id": "alert_a37deafd487f46d8",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-05T06:29:55.547610",
+      "category": "infrastructure",
+      "type": "Database Replication",
+      "severity": "low",
+      "status": "acknowledged",
+      "title": "Database Replication alert",
+      "description": "Detailed information for Database Replication alert.",
+      "source": "system_7",
+      "tags": [
+        "database_replication",
+        "platform",
+        "infrastructure",
+        "infra"
+      ],
+      "metrics": {
+        "value": 20.237950392460224
+      },
+      "ai_analysis": {
+        "confidence_score": 0.765383405846694,
+        "predicted_impact": "low",
+        "recommended_action": "rollback_deployment",
+        "estimated_resolution_time": 1360,
+        "similar_incidents": 5
+      },
+      "resolution_time": null,
+      "assigned_to": "auto_escalated"
+    },
+    {
+      "id": "alert_bbcb1f1d22fc427a",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-05T17:52:46.547610",
+      "category": "infrastructure",
+      "type": "Backup Failures",
+      "severity": "high",
+      "status": "resolved",
+      "title": "HIGH: Backup Failures alert",
+      "description": "Detailed information for Backup Failures alert.",
+      "source": "system_3",
+      "tags": [
+        "platform",
+        "backup_failures",
+        "infrastructure",
+        "infra"
+      ],
+      "metrics": {
+        "value": 53.614400119223134
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8512852179745042,
+        "predicted_impact": "high",
+        "recommended_action": "apply_config_change",
+        "estimated_resolution_time": 1447,
+        "similar_incidents": 2
+      },
+      "resolution_time": 1066,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_868db5c73bcb42d8",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-05T19:18:56.547610",
+      "category": "infrastructure",
+      "type": "Sensor Data Loss",
+      "severity": "low",
+      "status": "active",
+      "title": "Sensor Data Loss alert",
+      "description": "Detailed information for Sensor Data Loss alert.",
+      "source": "system_6",
+      "tags": [
+        "platform",
+        "sensor_data_loss",
+        "infrastructure",
+        "infra"
+      ],
+      "metrics": {
+        "value": 83.98159961694692
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8232885831149879,
+        "predicted_impact": "low",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 1403,
+        "similar_incidents": 3
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_f2be14bfeb844f1a",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-05T19:31:19.547610",
+      "category": "infrastructure",
+      "type": "Database Replication",
+      "severity": "low",
+      "status": "active",
+      "title": "Database Replication alert",
+      "description": "Detailed information for Database Replication alert.",
+      "source": "system_3",
+      "tags": [
+        "database_replication",
+        "platform",
+        "infrastructure",
+        "infra"
+      ],
+      "metrics": {
+        "value": 44.50200793310465
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8521596724946197,
+        "predicted_impact": "low",
+        "recommended_action": "scale_resources",
+        "estimated_resolution_time": 1726,
+        "similar_incidents": 5
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_5eabded6ac6b4a48",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-06T01:35:27.547610",
+      "category": "infrastructure",
+      "type": "Database Replication",
+      "severity": "high",
+      "status": "acknowledged",
+      "title": "HIGH: Database Replication alert",
+      "description": "Detailed information for Database Replication alert.",
+      "source": "system_4",
+      "tags": [
+        "database_replication",
+        "platform",
+        "infrastructure",
+        "infra"
+      ],
+      "metrics": {
+        "value": 55.11383755066599
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8783892505483107,
+        "predicted_impact": "high",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 1056,
+        "similar_incidents": 3
+      },
+      "resolution_time": null,
+      "assigned_to": "ai_system"
+    },
+    {
+      "id": "alert_d3d64794650343a4",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-06T07:29:26.547610",
+      "category": "system",
+      "type": "CPU Usage",
+      "severity": "low",
+      "status": "acknowledged",
+      "title": "High CPU usage detected on CPU Usage",
+      "description": "System CPU utilization has exceeded normal thresholds, potentially impacting performance.",
+      "source": "system_8",
+      "tags": [
+        "performance",
+        "cpu_usage",
+        "infrastructure",
+        "system"
+      ],
+      "metrics": {
+        "cpu_percent": 95.615869507124,
+        "load_average": 8.191073836278886
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8649336852925835,
+        "predicted_impact": "low",
+        "recommended_action": "apply_config_change",
+        "estimated_resolution_time": 495,
+        "similar_incidents": 0
+      },
+      "resolution_time": null,
+      "assigned_to": "ai_system"
+    },
+    {
+      "id": "alert_d909c03d6c8a420f",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-06T07:47:13.547610",
+      "category": "system",
+      "type": "CPU Usage",
+      "severity": "critical",
+      "status": "auto_resolved",
+      "title": "CRITICAL: High CPU usage detected on CPU Usage",
+      "description": "System CPU utilization has exceeded normal thresholds, potentially impacting performance.",
+      "source": "system_4",
+      "tags": [
+        "performance",
+        "cpu_usage",
+        "infrastructure",
+        "system"
+      ],
+      "metrics": {
+        "cpu_percent": 95.27272974686481,
+        "load_average": 11.703841939708472
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9384204517397203,
+        "predicted_impact": "critical",
+        "recommended_action": "reroute_traffic",
+        "estimated_resolution_time": 1695,
+        "similar_incidents": 5
+      },
+      "resolution_time": 2171,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_a26ada4bce574636",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-06T13:40:44.547610",
+      "category": "security",
+      "type": "SSL Certificate Expiry",
+      "severity": "high",
+      "status": "active",
+      "title": "HIGH: SSL Certificate Expiry alert",
+      "description": "Detailed information for SSL Certificate Expiry alert.",
+      "source": "system_7",
+      "tags": [
+        "security",
+        "ssl_certificate_expiry",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 95.90920720385479
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7261256194953426,
+        "predicted_impact": "high",
+        "recommended_action": "clear_cache",
+        "estimated_resolution_time": 938,
+        "similar_incidents": 3
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_2e32e922ca754da2",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-06T22:00:45.547610",
+      "category": "system",
+      "type": "Service Down",
+      "severity": "low",
+      "status": "resolved",
+      "title": "Service unavailable",
+      "description": "Critical service is not responding to health checks.",
+      "source": "system_8",
+      "tags": [
+        "infrastructure",
+        "performance",
+        "service_down",
+        "system"
+      ],
+      "metrics": {
+        "value": 28.399818266015586
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8045595044446591,
+        "predicted_impact": "low",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 725,
+        "similar_incidents": 3
+      },
+      "resolution_time": 1191,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_5c8ec980a9d04583",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-07T00:32:02.547610",
+      "category": "application",
+      "type": "Cache Hit Rate",
+      "severity": "medium",
+      "status": "acknowledged",
+      "title": "Cache Hit Rate alert",
+      "description": "Detailed information for Cache Hit Rate alert.",
+      "source": "system_1",
+      "tags": [
+        "app",
+        "application",
+        "cache_hit_rate",
+        "service"
+      ],
+      "metrics": {
+        "value": 83.2118848205014
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8462308671776053,
+        "predicted_impact": "medium",
+        "recommended_action": "scale_resources",
+        "estimated_resolution_time": 700,
+        "similar_incidents": 0
+      },
+      "resolution_time": null,
+      "assigned_to": "noc_team"
+    },
+    {
+      "id": "alert_34cb10dd02be473a",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-07T10:36:51.547610",
+      "category": "infrastructure",
+      "type": "Server Unreachable",
+      "severity": "medium",
+      "status": "acknowledged",
+      "title": "Server Unreachable alert",
+      "description": "Detailed information for Server Unreachable alert.",
+      "source": "system_1",
+      "tags": [
+        "server_unreachable",
+        "platform",
+        "infrastructure",
+        "infra"
+      ],
+      "metrics": {
+        "value": 32.82222723685384
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7233080859141143,
+        "predicted_impact": "medium",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 787,
+        "similar_incidents": 2
+      },
+      "resolution_time": null,
+      "assigned_to": "noc_team"
+    },
+    {
+      "id": "alert_f04f1be14ee64c19",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-07T10:44:45.547610",
+      "category": "infrastructure",
+      "type": "PLC Communication Failure",
+      "severity": "high",
+      "status": "active",
+      "title": "HIGH: PLC Communication Failure alert",
+      "description": "Detailed information for PLC Communication Failure alert.",
+      "source": "system_8",
+      "tags": [
+        "infra",
+        "platform",
+        "infrastructure",
+        "plc_communication_failure"
+      ],
+      "metrics": {
+        "value": 93.47568827973896
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8159323397558099,
+        "predicted_impact": "high",
+        "recommended_action": "scale_resources",
+        "estimated_resolution_time": 1261,
+        "similar_incidents": 1
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_5a35ac96c2cb4d38",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-08T02:12:20.547610",
+      "category": "infrastructure",
+      "type": "Backup Failures",
+      "severity": "medium",
+      "status": "active",
+      "title": "Backup Failures alert",
+      "description": "Detailed information for Backup Failures alert.",
+      "source": "system_9",
+      "tags": [
+        "platform",
+        "backup_failures",
+        "infrastructure",
+        "infra"
+      ],
+      "metrics": {
+        "value": 8.687620645928495
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8711623481294413,
+        "predicted_impact": "medium",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 1015,
+        "similar_incidents": 0
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_eee9fdc52ce34898",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-08T07:06:25.547610",
+      "category": "infrastructure",
+      "type": "Load Balancer Issues",
+      "severity": "high",
+      "status": "auto_resolved",
+      "title": "HIGH: Load Balancer Issues alert",
+      "description": "Detailed information for Load Balancer Issues alert.",
+      "source": "system_3",
+      "tags": [
+        "platform",
+        "load_balancer_issues",
+        "infrastructure",
+        "infra"
+      ],
+      "metrics": {
+        "value": 45.57015215306297
+      },
+      "ai_analysis": {
+        "confidence_score": 0.936352654373894,
+        "predicted_impact": "high",
+        "recommended_action": "scale_resources",
+        "estimated_resolution_time": 1692,
+        "similar_incidents": 3
+      },
+      "resolution_time": 2595,
+      "assigned_to": null
+    }
+  ]
+}

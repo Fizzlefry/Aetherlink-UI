@@ -1,23 +1,28 @@
-from fastapi import APIRouter, Depends, Query
 from datetime import datetime, timedelta
-from typing import Dict, Any, List
+from typing import Any
+
+from fastapi import APIRouter, Depends, Query
+
 
 # Replace with your actual admin dependency and DAL import paths
 def AdminRequired():
     # TODO: Replace with real admin check
     return True
 
-def get_deliveries_between(start: datetime, end: datetime) -> List[Dict[str, Any]]:
+
+def get_deliveries_between(start: datetime, end: datetime) -> list[dict[str, Any]]:
     # TODO: Replace with real DB query
     # Should return a list of deliveries with keys: tenant_id, endpoint, status, triage_label
     return []
+
 
 router = APIRouter(prefix="/tenant-analytics", tags=["tenant-analytics"])
 
 COST_PER_FAILED_DELIVERY = 0.03  # $0.03 per failed delivery
 
-def _aggregate(deliveries: List[Dict[str, Any]]):
-    tenants: Dict[str, Dict[str, Any]] = {}
+
+def _aggregate(deliveries: list[dict[str, Any]]):
+    tenants: dict[str, dict[str, Any]] = {}
     for d in deliveries:
         tenant_id = d.get("tenant_id") or "unknown"
         endpoint = d.get("endpoint") or "unknown"
@@ -39,11 +44,14 @@ def _aggregate(deliveries: List[Dict[str, Any]]):
             t["failed_deliveries"] += 1
 
         # endpoint stats
-        ep_stats = t["endpoints"].setdefault(endpoint, {
-            "endpoint": endpoint,
-            "total": 0,
-            "failures": 0,
-        })
+        ep_stats = t["endpoints"].setdefault(
+            endpoint,
+            {
+                "endpoint": endpoint,
+                "total": 0,
+                "failures": 0,
+            },
+        )
         ep_stats["total"] += 1
         if status and status >= 400:
             ep_stats["failures"] += 1

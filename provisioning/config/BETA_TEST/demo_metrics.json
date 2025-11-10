@@ -1,0 +1,25 @@
+{
+  "tenant_id": "BETA_TEST",
+  "period_start": "2025-11-02T08:51:18.123198",
+  "period_end": "2025-11-09T08:51:18.123198",
+  "summary": {
+    "total_alerts": 25,
+    "total_incidents": 3,
+    "auto_resolved_percentage": 0.32,
+    "average_resolution_time": 1773.7692307692307,
+    "ai_actions_taken": 15,
+    "system_uptime": 0.9811061820370365
+  },
+  "performance": {
+    "cpu_usage_avg": 0.354139356148111,
+    "memory_usage_avg": 0.5623595398735095,
+    "disk_usage_avg": 0.3745247001083368,
+    "network_latency_avg": 32.426115659723536
+  },
+  "ai_insights": {
+    "learning_iterations": 189,
+    "model_accuracy": 0.8923289573080827,
+    "false_positive_rate": 0.04946212710195655,
+    "prediction_accuracy": 0.9192883821129347
+  }
+}

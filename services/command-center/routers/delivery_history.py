@@ -7,7 +7,7 @@ Shows what happened to each alert delivery over time.
 
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any, Dict
+from typing import Any
 
 import event_store
 from auto_triage import classify_delivery  # Phase IX M1: Auto-Triage Engine
@@ -130,7 +130,7 @@ def list_delivery_history(
     status: str | None = None,
     triage: str | None = None,
     limit: int = Query(50, ge=1, le=200),
-    offset: int = 0
+    offset: int = 0,
 ):
     """
     List recent alert delivery history with optional filters.
@@ -155,7 +155,7 @@ def list_delivery_history(
         deliveries = [d for d in deliveries if d.get("triage") == triage]
 
     total = len(deliveries)
-    paged = deliveries[offset:offset+limit]
+    paged = deliveries[offset : offset + limit]
     return {"items": paged, "total": total}
     # Get live queue entries from Phase VII M5
     try:
@@ -401,6 +401,7 @@ def replay_delivery(delivery_id: str, request: Request):
 
         # Emit real-time event for dashboard updates
         import asyncio
+
         event = {
             "event_type": "delivery.replayed",
             "source": "command-center",
@@ -412,7 +413,7 @@ def replay_delivery(delivery_id: str, request: Request):
                 "tenant_id": new_delivery["tenant_id"],
                 "target": new_delivery["webhook_url"],
                 "operator": actor,
-            }
+            },
         }
         asyncio.create_task(publish_delivery_event(event))
 
@@ -443,11 +444,16 @@ def replay_delivery(delivery_id: str, request: Request):
         raise HTTPException(status_code=500, detail=f"Failed to replay delivery: {str(e)}")
 
 
-async def publish_delivery_event(event: Dict[str, Any]):
+async def publish_delivery_event(event: dict[str, Any]):
     """Publish delivery event to event stream for real-time updates."""
     try:
         import httpx
+
         async with httpx.AsyncClient() as client:
-            await client.post("http://localhost:8010/events/publish", json=event, headers={"X-User-Roles": "system"})
+            await client.post(
+                "http://localhost:8010/events/publish",
+                json=event,
+                headers={"X-User-Roles": "system"},
+            )
     except Exception as e:
         print(f"[delivery_history] Failed to publish event: {e}")

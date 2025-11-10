@@ -1,0 +1,183 @@
+{
+  "incidents": [
+    {
+      "id": "incident_1060ee87a1974f7b",
+      "tenant_id": "TEST_TENANT",
+      "title": "Incident: CRITICAL: Database Replication alert",
+      "description": "Critical incident triggered by CRITICAL: Database Replication alert. 1 related alerts detected in the same time window. Investigation and remediation in progress.",
+      "severity": "critical",
+      "status": "resolved",
+      "created_at": "2025-11-05T16:13:52.222458",
+      "updated_at": "2025-11-05T17:31:52.222458",
+      "resolved_at": "2025-11-05T17:31:52.222458",
+      "primary_alert": "alert_16b4befe605b4bf4",
+      "related_alerts": [
+        "alert_56ddb0050e934814"
+      ],
+      "ai_insights": {
+        "root_cause_probability": 0.6485501120354681,
+        "predicted_duration": 6596,
+        "impact_scope": "multiple_services",
+        "similar_incidents": 8,
+        "recommended_actions": [
+          "apply_config_change",
+          "kill_process",
+          "scale_resources"
+        ]
+      },
+      "actions_taken": [
+        {
+          "timestamp": "2025-11-08T13:34:05.223506",
+          "action": "rollback_deployment",
+          "actor": "AI System",
+          "result": "investigating"
+        },
+        {
+          "timestamp": "2025-11-09T00:34:05.223506",
+          "action": "run_diagnostic",
+          "actor": "Platform Team",
+          "result": "partially_successful"
+        }
+      ],
+      "impact_assessment": {
+        "user_impact": "severe",
+        "business_impact": "critical",
+        "duration_hours": 13
+      },
+      "assigned_team": "Platform Team",
+      "resolution_time": 6612
+    },
+    {
+      "id": "incident_eb594b768a9043ea",
+      "tenant_id": "TEST_TENANT",
+      "title": "Incident: HIGH: Database connection pool exhausted",
+      "description": "Critical incident triggered by HIGH: Database connection pool exhausted. 1 related alerts detected in the same time window. Investigation and remediation in progress.",
+      "severity": "high",
+      "status": "resolved",
+      "created_at": "2025-11-06T01:47:35.222458",
+      "updated_at": "2025-11-06T02:50:35.222458",
+      "resolved_at": "2025-11-06T02:50:35.222458",
+      "primary_alert": "alert_096fe291f1414f03",
+      "related_alerts": [
+        "alert_7cadf118d30b48e0"
+      ],
+      "ai_insights": {
+        "root_cause_probability": 0.6104604834425518,
+        "predicted_duration": 3423,
+        "impact_scope": "system_wide",
+        "similar_incidents": 5,
+        "recommended_actions": [
+          "run_diagnostic",
+          "reroute_traffic",
+          "auto_restart_service"
+        ]
+      },
+      "actions_taken": [
+        {
+          "timestamp": "2025-11-09T05:34:05.223506",
+          "action": "reroute_traffic",
+          "actor": "Platform Team",
+          "result": "partially_successful"
+        },
+        {
+          "timestamp": "2025-11-08T20:34:05.223506",
+          "action": "apply_config_change",
+          "actor": "NOC Engineer",
+          "result": "successful"
+        }
+      ],
+      "impact_assessment": {
+        "user_impact": "significant",
+        "business_impact": "high",
+        "duration_hours": 19
+      },
+      "assigned_team": "Database Team",
+      "resolution_time": 1979
+    },
+    {
+      "id": "incident_e9993ed231864760",
+      "tenant_id": "TEST_TENANT",
+      "title": "Incident: CRITICAL: Failed Login Attempts alert",
+      "description": "Critical incident triggered by CRITICAL: Failed Login Attempts alert. 1 related alerts detected in the same time window. Investigation and remediation in progress.",
+      "severity": "critical",
+      "status": "closed",
+      "created_at": "2025-11-02T13:28:08.222458",
+      "updated_at": "2025-11-02T20:58:08.222458",
+      "resolved_at": "2025-11-02T20:58:08.222458",
+      "primary_alert": "alert_9ea34e122061437b",
+      "related_alerts": [
+        "alert_36a1c4f4ff924dcb"
+      ],
+      "ai_insights": {
+        "root_cause_probability": 0.662773910458768,
+        "predicted_duration": 5510,
+        "impact_scope": "multiple_services",
+        "similar_incidents": 2,
+        "recommended_actions": [
+          "reroute_traffic",
+          "scale_resources",
+          "clear_cache"
+        ]
+      },
+      "actions_taken": [
+        {
+          "timestamp": "2025-11-08T10:34:05.223506",
+          "action": "auto_restart_service",
+          "actor": "NOC Engineer",
+          "result": "partially_successful"
+        },
+        {
+          "timestamp": "2025-11-08T14:34:05.223506",
+          "action": "apply_config_change",
+          "actor": "NOC Engineer",
+          "result": "partially_successful"
+        }
+      ],
+      "impact_assessment": {
+        "user_impact": "severe",
+        "business_impact": "critical",
+        "duration_hours": 23
+      },
+      "assigned_team": "Network Team",
+      "resolution_time": 5819
+    },
+    {
+      "id": "incident_5ad4a4362e5f487d",
+      "tenant_id": "TEST_TENANT",
+      "title": "Incident: CRITICAL: Suspicious Activity alert",
+      "description": "Critical incident triggered by CRITICAL: Suspicious Activity alert. Investigation and remediation in progress.",
+      "severity": "critical",
+      "status": "open",
+      "created_at": "2025-11-05T23:53:55.222458",
+      "updated_at": "2025-11-06T00:23:55.222458",
+      "resolved_at": null,
+      "primary_alert": "alert_159766a3b00642f8",
+      "related_alerts": [],
+      "ai_insights": {
+        "root_cause_probability": 0.7591639596605033,
+        "predicted_duration": 4140,
+        "impact_scope": "multiple_services",
+        "similar_incidents": 10,
+        "recommended_actions": [
+          "apply_config_change",
+          "run_diagnostic",
+          "clear_cache"
+        ]
+      },
+      "actions_taken": [
+        {
+          "timestamp": "2025-11-09T05:34:05.223506",
+          "action": "run_diagnostic",
+          "actor": "NOC Engineer",
+          "result": "investigating"
+        }
+      ],
+      "impact_assessment": {
+        "user_impact": "severe",
+        "business_impact": "critical",
+        "duration_hours": 48
+      },
+      "assigned_team": "AI Ops"
+    }
+  ]
+}

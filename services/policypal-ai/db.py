@@ -2,11 +2,13 @@
 Database helper for PolicyPal AI
 SQLite-based persistence layer
 """
+
 import os
 import sqlite3
 from contextlib import contextmanager
 
 DB_PATH = os.getenv("POLICYPAL_DB_PATH") or os.getenv("DB_PATH") or "./policypal.db"
+
 
 @contextmanager
 def get_db():
@@ -17,6 +19,7 @@ def get_db():
         yield conn
     finally:
         conn.close()
+
 
 def init_db():
     """Initialize database schema"""
@@ -45,7 +48,9 @@ def init_db():
             pass  # Column already exists
 
         # Performance indexes
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_policies_expiration ON policies(expiration_date)")
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_policies_expiration ON policies(expiration_date)"
+        )
         conn.execute("CREATE INDEX IF NOT EXISTS idx_policies_type ON policies(policy_type)")
 
         conn.commit()

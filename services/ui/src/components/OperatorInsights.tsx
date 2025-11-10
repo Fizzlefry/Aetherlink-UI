@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { makeRemediationWS } from "../lib/ws";
 
 type InsightPayload = {
   generated_at: string;
@@ -81,6 +82,15 @@ export const OperatorInsights: React.FC<OperatorInsightsProps> = ({
     fetchInsights();
     const id = setInterval(fetchInsights, 20000); // refresh every 20s
     return () => clearInterval(id);
+  }, [userRoles]);
+
+  useEffect(() => {
+    const teardown = makeRemediationWS((msg: { type?: string }) => {
+      if (msg?.type === "remediation_event") {
+        fetchInsights();
+      }
+    });
+    return teardown;
   }, [userRoles]);
 
   if (loading) {

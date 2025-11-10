@@ -2,13 +2,13 @@ global:
   scrape_interval: 5s
 
 rule_files:
-  - 'alert.rules.yml'
+  - "alert.rules.yml"
+  - "aetherlink-anomaly-rules.yaml"
 
 scrape_configs:
-  - job_name: 'aetherlink-api'
+  - job_name: "aetherlink-api"
     static_configs:
-      - targets: ['api:8000']
+      - targets: ["api:8000"]
         labels:
-          service: 'customer-ops'
-
+          service: "customer-ops"
 # Optionally scrape other services (redis exporter, postgres exporter) if added

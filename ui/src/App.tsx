@@ -20,7 +20,7 @@ function App() {
 
   const fetchBundle = async () => {
     try {
-      const response = await fetch('http://localhost:8011/ui/bundle');
+      const response = await fetch('http://localhost:8000/ui/bundle');
       if (!response.ok) throw new Error('Failed to fetch bundle');
       const data = await response.json();
       setBundle(data);

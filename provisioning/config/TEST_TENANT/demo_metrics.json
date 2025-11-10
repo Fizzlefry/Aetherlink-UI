@@ -1,0 +1,25 @@
+{
+  "tenant_id": "TEST_TENANT",
+  "period_start": "2025-11-02T08:34:05.223506",
+  "period_end": "2025-11-09T08:34:05.223506",
+  "summary": {
+    "total_alerts": 50,
+    "total_incidents": 4,
+    "auto_resolved_percentage": 0.32,
+    "average_resolution_time": 1740.8148148148148,
+    "ai_actions_taken": 29,
+    "system_uptime": 0.9839140545203481
+  },
+  "performance": {
+    "cpu_usage_avg": 0.42154541423839786,
+    "memory_usage_avg": 0.5783259218339232,
+    "disk_usage_avg": 0.39977274073417557,
+    "network_latency_avg": 40.804247013160165
+  },
+  "ai_insights": {
+    "learning_iterations": 475,
+    "model_accuracy": 0.9473394595866065,
+    "false_positive_rate": 0.07792518533129426,
+    "prediction_accuracy": 0.8857677844275995
+  }
+}

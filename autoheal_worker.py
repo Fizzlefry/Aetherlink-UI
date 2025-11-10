@@ -14,14 +14,12 @@ import asyncio
 import os
 import subprocess
 import sys
-import time
+
 import httpx
-from typing import Dict, Any
 
 # Add services/command-center to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'services', 'command-center'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "services", "command-center"))
 
-from alert_store import enqueue_autoheal_task  # We'll modify this to also dequeue
 
 # Configuration
 COMMAND_CENTER_URL = os.getenv("COMMAND_CENTER_URL", "http://localhost:8010")
@@ -32,19 +30,20 @@ HEALABLE_SERVICES = {
     "roofwonder": {
         "type": "docker-compose",
         "compose_file": "./deploy/docker-compose.dev.yml",
-        "service_name": "roofwonder"
+        "service_name": "roofwonder",
     },
     "peakpro-crm": {
         "type": "docker-compose",
         "compose_file": "./deploy/docker-compose.dev.yml",
-        "service_name": "crm-api"
+        "service_name": "crm-api",
     },
     "policypal-ai": {
         "type": "docker-compose",
         "compose_file": "./deploy/docker-compose.dev.yml",
-        "service_name": "policypal-ai"
-    }
+        "service_name": "policypal-ai",
+    },
 }
+
 
 async def poll_autoheal_tasks():
     """
@@ -65,11 +64,14 @@ async def poll_autoheal_tasks():
                     severity = alert.get("severity", "info")
                     fingerprint = alert.get("fingerprint")
 
-                    if (service in HEALABLE_SERVICES and
-                        severity in ("critical", "error") and
-                        not alert.get("autoheal_results")):  # Not already healed
-
-                        print(f"[auto-heal] 🚨 Detected critical alert for {service}, attempting heal...")
+                    if (
+                        service in HEALABLE_SERVICES
+                        and severity in ("critical", "error")
+                        and not alert.get("autoheal_results")
+                    ):  # Not already healed
+                        print(
+                            f"[auto-heal] 🚨 Detected critical alert for {service}, attempting heal..."
+                        )
                         success, message = await execute_heal(service)
 
                         # Report result back to Command Center
@@ -78,12 +80,11 @@ async def poll_autoheal_tasks():
                             "service": service,
                             "env": alert.get("env", "local"),
                             "status": "success" if success else "failed",
-                            "message": message
+                            "message": message,
                         }
 
                         result_response = await client.post(
-                            f"{COMMAND_CENTER_URL}/alerts/autoheal-result",
-                            json=result_payload
+                            f"{COMMAND_CENTER_URL}/alerts/autoheal-result", json=result_payload
                         )
 
                         if result_response.status_code == 200:
@@ -93,6 +94,7 @@ async def poll_autoheal_tasks():
 
     except Exception as e:
         print(f"[auto-heal] Error polling tasks: {e}")
+
 
 async def execute_heal(service: str) -> tuple[bool, str]:
     """
@@ -109,9 +111,12 @@ async def execute_heal(service: str) -> tuple[bool, str]:
         try:
             # Run docker compose restart
             cmd = [
-                "docker", "compose",
-                "-f", config["compose_file"],
-                "restart", config["service_name"]
+                "docker",
+                "compose",
+                "-f",
+                config["compose_file"],
+                "restart",
+                config["service_name"],
             ]
 
             print(f"[auto-heal] 🔄 Running: {' '.join(cmd)}")
@@ -122,7 +127,7 @@ async def execute_heal(service: str) -> tuple[bool, str]:
                 capture_output=True,
                 text=True,
                 timeout=60,
-                cwd=os.path.dirname(__file__)  # Run from project root
+                cwd=os.path.dirname(__file__),  # Run from project root
             )
 
             if result.returncode == 0:
@@ -138,9 +143,10 @@ async def execute_heal(service: str) -> tuple[bool, str]:
     else:
         return False, f"Unsupported heal type: {config['type']}"
 
+
 async def main():
     """Main auto-heal worker loop."""
-    print(f"[auto-heal] 🚀 Starting AetherLink Auto-Heal Worker")
+    print("[auto-heal] 🚀 Starting AetherLink Auto-Heal Worker")
     print(f"[auto-heal] 📡 Command Center: {COMMAND_CENTER_URL}")
     print(f"[auto-heal] ⏰ Poll interval: {POLL_INTERVAL}s")
     print(f"[auto-heal] 🔧 Healable services: {list(HEALABLE_SERVICES.keys())}")
@@ -148,6 +154,7 @@ async def main():
     while True:
         await poll_autoheal_tasks()
         await asyncio.sleep(POLL_INTERVAL)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

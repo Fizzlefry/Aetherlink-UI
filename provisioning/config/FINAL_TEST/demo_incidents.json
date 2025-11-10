@@ -1,0 +1,119 @@
+{
+  "incidents": [
+    {
+      "id": "incident_8204c520cebd4cc8",
+      "tenant_id": "FINAL_TEST",
+      "title": "Incident: HIGH: Service Degradation alert",
+      "description": "Critical incident triggered by HIGH: Service Degradation alert. Investigation and remediation in progress.",
+      "severity": "high",
+      "status": "investigating",
+      "created_at": "2025-11-06T17:47:23.032342",
+      "updated_at": "2025-11-06T21:40:23.032342",
+      "resolved_at": null,
+      "primary_alert": "alert_51ac0898e6744a30",
+      "related_alerts": [],
+      "ai_insights": {
+        "root_cause_probability": 0.8681117593883914,
+        "predicted_duration": 4053,
+        "impact_scope": "multiple_services",
+        "similar_incidents": 9,
+        "recommended_actions": [
+          "auto_restart_service",
+          "reroute_traffic",
+          "clear_cache"
+        ]
+      },
+      "actions_taken": [
+        {
+          "timestamp": "2025-11-08T15:56:38.033394",
+          "action": "create_ticket",
+          "actor": "NOC Engineer",
+          "result": "partially_successful"
+        }
+      ],
+      "impact_assessment": {
+        "user_impact": "significant",
+        "business_impact": "high",
+        "duration_hours": 21
+      },
+      "assigned_team": "Platform Team"
+    },
+    {
+      "id": "incident_430a7900e3634163",
+      "tenant_id": "FINAL_TEST",
+      "title": "Incident: CRITICAL: Database connection pool exhausted",
+      "description": "Critical incident triggered by CRITICAL: Database connection pool exhausted. Investigation and remediation in progress.",
+      "severity": "critical",
+      "status": "closed",
+      "created_at": "2025-11-03T10:36:37.032342",
+      "updated_at": "2025-11-03T14:51:37.032342",
+      "resolved_at": "2025-11-03T14:51:37.032342",
+      "primary_alert": "alert_f1d72c38ab6447d5",
+      "related_alerts": [],
+      "ai_insights": {
+        "root_cause_probability": 0.8629629777340387,
+        "predicted_duration": 6198,
+        "impact_scope": "multiple_services",
+        "similar_incidents": 2,
+        "recommended_actions": [
+          "auto_restart_service",
+          "send_notification",
+          "run_diagnostic"
+        ]
+      },
+      "actions_taken": [
+        {
+          "timestamp": "2025-11-09T03:56:38.033394",
+          "action": "rollback_deployment",
+          "actor": "AI System",
+          "result": "partially_successful"
+        }
+      ],
+      "impact_assessment": {
+        "user_impact": "severe",
+        "business_impact": "critical",
+        "duration_hours": 41
+      },
+      "assigned_team": "Database Team",
+      "resolution_time": 5203
+    },
+    {
+      "id": "incident_1ef725f6951f4e96",
+      "tenant_id": "FINAL_TEST",
+      "title": "Incident: HIGH: Backup Failures alert",
+      "description": "Critical incident triggered by HIGH: Backup Failures alert. Investigation and remediation in progress.",
+      "severity": "high",
+      "status": "open",
+      "created_at": "2025-11-04T02:06:34.032342",
+      "updated_at": "2025-11-04T04:05:34.032342",
+      "resolved_at": null,
+      "primary_alert": "alert_2aa5dd0bf12748e5",
+      "related_alerts": [],
+      "ai_insights": {
+        "root_cause_probability": 0.7039114377872709,
+        "predicted_duration": 2205,
+        "impact_scope": "multiple_services",
+        "similar_incidents": 8,
+        "recommended_actions": [
+          "auto_restart_service",
+          "run_diagnostic",
+          "reroute_traffic"
+        ]
+      },
+      "actions_taken": [
+        {
+          "timestamp": "2025-11-08T20:56:38.033394",
+          "action": "create_ticket",
+          "actor": "AI System",
+          "result": "partially_successful"
+        }
+      ],
+      "impact_assessment": {
+        "user_impact": "significant",
+        "business_impact": "high",
+        "duration_hours": 9
+      },
+      "assigned_team": "Security Team"
+    }
+  ]
+}

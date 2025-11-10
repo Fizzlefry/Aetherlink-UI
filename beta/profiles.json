@@ -1,0 +1,78 @@
+{
+    "profiles": {
+        "general": {
+            "name": "General NOC",
+            "description": "Balanced mix of system, application, infrastructure, and security alerts typical of a general-purpose NOC environment",
+            "target_audience": "General IT operations, mixed environments",
+            "alert_distribution": {
+                "system": "40%",
+                "application": "30%",
+                "infrastructure": "20%",
+                "security": "10%"
+            },
+            "severity_focus": "Balanced across all severity levels"
+        },
+        "finserv": {
+            "name": "Financial Services",
+            "description": "Security and compliance-focused alerts typical of banking, fintech, and regulated financial institutions",
+            "target_audience": "Banks, payment processors, financial technology companies",
+            "alert_distribution": {
+                "system": "20%",
+                "application": "20%",
+                "infrastructure": "10%",
+                "security": "50%"
+            },
+            "severity_focus": "Higher proportion of medium/high severity alerts",
+            "special_alerts": [
+                "PCI Compliance Alert",
+                "Data Encryption Failure",
+                "Audit Log Anomaly"
+            ]
+        },
+        "saas": {
+            "name": "Software-as-a-Service",
+            "description": "Application performance and scalability alerts typical of cloud platforms and SaaS providers",
+            "target_audience": "Cloud platforms, DevOps teams, SaaS companies",
+            "alert_distribution": {
+                "system": "30%",
+                "application": "50%",
+                "infrastructure": "10%",
+                "security": "10%"
+            },
+            "severity_focus": "Balanced with focus on application performance",
+            "special_alerts": [
+                "API Rate Limit Exceeded",
+                "Queue Backlog",
+                "Service Degradation"
+            ]
+        },
+        "industrial": {
+            "name": "Industrial/OT",
+            "description": "Infrastructure and operational technology alerts typical of manufacturing, utilities, and industrial IoT",
+            "target_audience": "Manufacturing plants, utilities, industrial IoT deployments",
+            "alert_distribution": {
+                "system": "20%",
+                "application": "10%",
+                "infrastructure": "60%",
+                "security": "10%"
+            },
+            "severity_focus": "Higher proportion of high severity infrastructure alerts",
+            "special_alerts": [
+                "SCADA System Alert",
+                "PLC Communication Failure",
+                "Sensor Data Loss"
+            ]
+        }
+    },
+    "usage": {
+        "command_line": "python beta/demo_data_generator.py --tenant-id TENANT --profile PROFILE",
+        "onboarding_script": "./beta-onboard.sh --company 'Company' --profile PROFILE --demo-data",
+        "powershell_script": ".\\beta-onboard.ps1 -Company 'Company' -Profile PROFILE -DemoData"
+    },
+    "notes": [
+        "Profiles affect alert category distribution and severity weighting",
+        "Special alerts are industry-specific and only appear in relevant profiles",
+        "All profiles generate the same data quality and AI insights",
+        "Profiles help demonstrate AetherLink's adaptability to different environments"
+    ]
+}

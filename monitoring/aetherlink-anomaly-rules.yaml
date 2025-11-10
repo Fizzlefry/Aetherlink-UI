@@ -1,0 +1,49 @@
+groups:
+  - name: aetherlink-anomaly-rules
+    rules:
+      # 1) Actual last 24h way below 7d rolling avg
+      - alert: AetherLink_AnalyticsVolumeDrop
+        expr: |
+          aetherlink_ops_analytics_last_24h
+            < (aetherlink_analytics_rolling_avg_7d * 0.5)
+        for: 10m
+        labels:
+          severity: warning
+          team: ops
+        annotations:
+          summary: "Analytics volume dropped below 50% of 7d average"
+          description: "Current 24h volume is {{ $value }} which is < 50% of the 7d rolling average. Check command-center ingestion."
+
+      # 2) Actual vs forecast mismatch
+      - alert: AetherLink_AnalyticsForecastMismatch
+        expr: |
+          (aetherlink_analytics_forecast_7d - aetherlink_ops_analytics_last_24h)
+            > (aetherlink_analytics_forecast_7d * 0.35)
+        for: 10m
+        labels:
+          severity: warning
+          team: ops
+        annotations:
+          summary: "Actual analytics lower than forecast"
+          description: "Actual 24h is significantly lower than the 7d forecast. Investigate upstream sources."
+
+      # 3) Cost budget getting hot
+      - alert: AetherLink_CostBudget80
+        expr: aetherlink_analytics_cost_budget_utilization > 0.8
+        for: 15m
+        labels:
+          severity: warning
+          team: billing
+        annotations:
+          summary: "Cost budget utilization above 80%"
+          description: 'Budget utilization is {{ $value | printf "%.2f" }}. Consider throttling or bumping budget.'
+
+      - alert: AetherLink_CostBudget95
+        expr: aetherlink_analytics_cost_budget_utilization > 0.95
+        for: 5m
+        labels:
+          severity: critical
+          team: billing
+        annotations:
+          summary: "Cost budget utilization above 95%"
+          description: "Analytics cost is about to exceed the defined budget. Immediate action recommended."

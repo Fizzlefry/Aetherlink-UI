@@ -1,0 +1,30 @@
+{
+  "tenant_id": "PROFILE_TEST",
+  "period_start": "2025-11-06T08:55:39.590684",
+  "period_end": "2025-11-09T08:55:39.590684",
+  "profile": {
+    "name": "finserv",
+    "description": "General NOC environment",
+    "generated_at": "2025-11-09T08:55:39.590684"
+  },
+  "summary": {
+    "total_alerts": 10,
+    "total_incidents": 1,
+    "auto_resolved_percentage": 0.4,
+    "average_resolution_time": 2086.0,
+    "ai_actions_taken": 6,
+    "system_uptime": 0.982567751155226
+  },
+  "performance": {
+    "cpu_usage_avg": 0.3232090834259799,
+    "memory_usage_avg": 0.7884901602302709,
+    "disk_usage_avg": 0.3175866495003961,
+    "network_latency_avg": 13.215925731788039
+  },
+  "ai_insights": {
+    "learning_iterations": 371,
+    "model_accuracy": 0.8964516202754057,
+    "false_positive_rate": 0.048217328470288034,
+    "prediction_accuracy": 0.927372754859679
+  }
+}

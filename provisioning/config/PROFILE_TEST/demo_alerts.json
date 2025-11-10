@@ -1,0 +1,303 @@
+{
+  "alerts": [
+    {
+      "id": "alert_5fae4704a6a6452e",
+      "tenant_id": "PROFILE_TEST",
+      "timestamp": "2025-11-06T09:59:29.589683",
+      "category": "system",
+      "type": "Memory Usage",
+      "severity": "medium",
+      "status": "resolved",
+      "title": "Memory usage critical",
+      "description": "Memory consumption is approaching critical levels, risking system stability.",
+      "source": "system_2",
+      "tags": [
+        "memory_usage",
+        "infrastructure",
+        "system",
+        "performance"
+      ],
+      "metrics": {
+        "memory_percent": 92.04220913486647,
+        "swap_percent": 14.911907972217502
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7007086455606613,
+        "predicted_impact": "medium",
+        "recommended_action": "reroute_traffic",
+        "estimated_resolution_time": 1740,
+        "similar_incidents": 1
+      },
+      "resolution_time": 2535,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_a15760da37db46d6",
+      "tenant_id": "PROFILE_TEST",
+      "timestamp": "2025-11-06T15:31:02.589683",
+      "category": "security",
+      "type": "Suspicious Activity",
+      "severity": "medium",
+      "status": "active",
+      "title": "Suspicious Activity alert",
+      "description": "Detailed information for Suspicious Activity alert.",
+      "source": "system_8",
+      "tags": [
+        "security",
+        "suspicious_activity",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 33.04316194989638
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7963983423366942,
+        "predicted_impact": "medium",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 1419,
+        "similar_incidents": 0
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_652e0601202e4fd2",
+      "tenant_id": "PROFILE_TEST",
+      "timestamp": "2025-11-06T21:30:32.589683",
+      "category": "system",
+      "type": "Disk Space",
+      "severity": "critical",
+      "status": "auto_resolved",
+      "title": "CRITICAL: Disk space running low",
+      "description": "Available disk space is below recommended thresholds.",
+      "source": "system_4",
+      "tags": [
+        "disk_space",
+        "infrastructure",
+        "system",
+        "performance"
+      ],
+      "metrics": {
+        "disk_percent": 89.26582475385523,
+        "available_gb": 14.275902865276493
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8995884368909113,
+        "predicted_impact": "critical",
+        "recommended_action": "rollback_deployment",
+        "estimated_resolution_time": 1246,
+        "similar_incidents": 3
+      },
+      "resolution_time": 2046,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_7a4e4eceb3394196",
+      "tenant_id": "PROFILE_TEST",
+      "timestamp": "2025-11-07T22:19:12.589683",
+      "category": "security",
+      "type": "Failed Login Attempts",
+      "severity": "medium",
+      "status": "active",
+      "title": "Failed Login Attempts alert",
+      "description": "Detailed information for Failed Login Attempts alert.",
+      "source": "system_9",
+      "tags": [
+        "security",
+        "failed_login_attempts",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 33.57046131799882
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8083766631359173,
+        "predicted_impact": "medium",
+        "recommended_action": "send_notification",
+        "estimated_resolution_time": 703,
+        "similar_incidents": 5
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_8afc7f355143416f",
+      "tenant_id": "PROFILE_TEST",
+      "timestamp": "2025-11-08T01:23:46.589683",
+      "category": "infrastructure",
+      "type": "Backup Failures",
+      "severity": "medium",
+      "status": "resolved",
+      "title": "Backup Failures alert",
+      "description": "Detailed information for Backup Failures alert.",
+      "source": "system_4",
+      "tags": [
+        "infra",
+        "infrastructure",
+        "backup_failures",
+        "platform"
+      ],
+      "metrics": {
+        "value": 7.336223564256283
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9486440794003949,
+        "predicted_impact": "medium",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 734,
+        "similar_incidents": 4
+      },
+      "resolution_time": 2417,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_3d1ad3298f1740f2",
+      "tenant_id": "PROFILE_TEST",
+      "timestamp": "2025-11-08T06:28:40.589683",
+      "category": "security",
+      "type": "Suspicious Activity",
+      "severity": "low",
+      "status": "resolved",
+      "title": "Suspicious Activity alert",
+      "description": "Detailed information for Suspicious Activity alert.",
+      "source": "system_10",
+      "tags": [
+        "security",
+        "suspicious_activity",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 48.012022955930064
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9421640561876475,
+        "predicted_impact": "low",
+        "recommended_action": "clear_cache",
+        "estimated_resolution_time": 909,
+        "similar_incidents": 2
+      },
+      "resolution_time": 2865,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_6b906c07ca3a4a98",
+      "tenant_id": "PROFILE_TEST",
+      "timestamp": "2025-11-08T13:39:02.589683",
+      "category": "application",
+      "type": "Throughput",
+      "severity": "medium",
+      "status": "acknowledged",
+      "title": "Throughput alert",
+      "description": "Detailed information for Throughput alert.",
+      "source": "system_2",
+      "tags": [
+        "app",
+        "application",
+        "throughput",
+        "service"
+      ],
+      "metrics": {
+        "value": 86.65413577373428
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7723317639073543,
+        "predicted_impact": "medium",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 1121,
+        "similar_incidents": 1
+      },
+      "resolution_time": null,
+      "assigned_to": "ai_system"
+    },
+    {
+      "id": "alert_e3b36d0f73394023",
+      "tenant_id": "PROFILE_TEST",
+      "timestamp": "2025-11-08T17:31:33.589683",
+      "category": "infrastructure",
+      "type": "Load Balancer Issues",
+      "severity": "medium",
+      "status": "auto_resolved",
+      "title": "Load Balancer Issues alert",
+      "description": "Detailed information for Load Balancer Issues alert.",
+      "source": "system_2",
+      "tags": [
+        "infra",
+        "load_balancer_issues",
+        "infrastructure",
+        "platform"
+      ],
+      "metrics": {
+        "value": 67.52960351572925
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8528511276458446,
+        "predicted_impact": "medium",
+        "recommended_action": "rollback_deployment",
+        "estimated_resolution_time": 303,
+        "similar_incidents": 4
+      },
+      "resolution_time": 1907,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_b13b1e1ea4934da8",
+      "tenant_id": "PROFILE_TEST",
+      "timestamp": "2025-11-08T20:06:45.589683",
+      "category": "application",
+      "type": "Database Connections",
+      "severity": "medium",
+      "status": "auto_resolved",
+      "title": "Database connection pool exhausted",
+      "description": "Database connection pool is at maximum capacity.",
+      "source": "system_7",
+      "tags": [
+        "application",
+        "app",
+        "database_connections",
+        "service"
+      ],
+      "metrics": {
+        "value": 1.1645798930575935
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8540254189901901,
+        "predicted_impact": "medium",
+        "recommended_action": "scale_resources",
+        "estimated_resolution_time": 1208,
+        "similar_incidents": 0
+      },
+      "resolution_time": 2029,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_65f2f26ee9e84027",
+      "tenant_id": "PROFILE_TEST",
+      "timestamp": "2025-11-08T22:33:26.589683",
+      "category": "application",
+      "type": "Throughput",
+      "severity": "medium",
+      "status": "auto_resolved",
+      "title": "Throughput alert",
+      "description": "Detailed information for Throughput alert.",
+      "source": "system_9",
+      "tags": [
+        "app",
+        "application",
+        "throughput",
+        "service"
+      ],
+      "metrics": {
+        "value": 58.251702247360605
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9508123976067466,
+        "predicted_impact": "medium",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 524,
+        "similar_incidents": 4
+      },
+      "resolution_time": 803,
+      "assigned_to": null
+    }
+  ]
+}

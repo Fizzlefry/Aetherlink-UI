@@ -2,11 +2,13 @@
 Database helper for RoofWonder
 SQLite-based persistence layer
 """
+
 import os
 import sqlite3
 from contextlib import contextmanager
 
 DB_PATH = os.getenv("ROOFWONDER_DB_PATH") or os.getenv("DB_PATH") or "./roofwonder.db"
+
 
 @contextmanager
 def get_db():
@@ -17,6 +19,7 @@ def get_db():
         yield conn
     finally:
         conn.close()
+
 
 def init_db():
     """Initialize database schema"""
@@ -80,17 +83,17 @@ def init_db():
             conn.execute("ALTER TABLE properties ADD COLUMN created_by_key TEXT")
         except sqlite3.OperationalError:
             pass  # Column already exists
-            
+
         try:
             conn.execute("ALTER TABLE jobs ADD COLUMN created_by_key TEXT")
         except sqlite3.OperationalError:
             pass  # Column already exists
-            
+
         try:
             conn.execute("ALTER TABLE job_photos ADD COLUMN created_by_key TEXT")
         except sqlite3.OperationalError:
             pass  # Column already exists
-            
+
         try:
             conn.execute("ALTER TABLE estimates ADD COLUMN created_by_key TEXT")
         except sqlite3.OperationalError:

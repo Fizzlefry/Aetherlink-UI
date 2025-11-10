@@ -4,15 +4,16 @@ Test script for Phase XXIII: Multi-Node Federation
 Tests federation between two Command Center instances.
 """
 
-import requests
-import time
 import os
 import subprocess
-from typing import Optional
+import time
+
+import requests
 
 BASE_URL_1 = "http://localhost:8010"
 BASE_URL_2 = "http://localhost:8013"
 FED_KEY = os.getenv("AETHERLINK_FEDERATION_KEY", "aetherlink-shared-key")
+
 
 def start_second_command_center():
     """Start a second Command Center instance on port 8011."""
@@ -20,26 +21,38 @@ def start_second_command_center():
 
     # Set environment variables for the second instance
     env = os.environ.copy()
-    env.update({
-        "AETHERLINK_NODE_ID": "cc-remote",
-        "AETHERLINK_FEDERATION_PEERS": f"{BASE_URL_1}",
-        "AETHERLINK_FEDERATION_KEY": FED_KEY,
-        "AETHERLINK_FEDERATION_ENABLED": "true",
-        "AETHERLINK_FEDERATION_INTERVAL": "5",  # Faster for testing
-    })
+    env.update(
+        {
+            "AETHERLINK_NODE_ID": "cc-remote",
+            "AETHERLINK_FEDERATION_PEERS": f"{BASE_URL_1}",
+            "AETHERLINK_FEDERATION_KEY": FED_KEY,
+            "AETHERLINK_FEDERATION_ENABLED": "true",
+            "AETHERLINK_FEDERATION_INTERVAL": "5",  # Faster for testing
+        }
+    )
 
     # Start the second instance
     cmd = [
-        "docker", "run", "-d",
-        "--name", f"aether-command-center-test-{int(time.time())}",
-        "--network", "aetherlink_default",
-        "-p", "8013:8010",
-        "-e", f"AETHERLINK_NODE_ID=cc-remote",
-        "-e", f"AETHERLINK_FEDERATION_PEERS={BASE_URL_1}",
-        "-e", f"AETHERLINK_FEDERATION_KEY={FED_KEY}",
-        "-e", "AETHERLINK_FEDERATION_ENABLED=true",
-        "-e", "AETHERLINK_FEDERATION_INTERVAL=5",
-        "deploy-command-center"
+        "docker",
+        "run",
+        "-d",
+        "--name",
+        f"aether-command-center-test-{int(time.time())}",
+        "--network",
+        "aetherlink_default",
+        "-p",
+        "8013:8010",
+        "-e",
+        "AETHERLINK_NODE_ID=cc-remote",
+        "-e",
+        f"AETHERLINK_FEDERATION_PEERS={BASE_URL_1}",
+        "-e",
+        f"AETHERLINK_FEDERATION_KEY={FED_KEY}",
+        "-e",
+        "AETHERLINK_FEDERATION_ENABLED=true",
+        "-e",
+        "AETHERLINK_FEDERATION_INTERVAL=5",
+        "deploy-command-center",
     ]
 
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -64,6 +77,7 @@ def start_second_command_center():
 
     print("❌ Second Command Center failed to become healthy")
     return None
+
 
 def test_multi_node_federation():
     """Test federation between two nodes."""
@@ -129,13 +143,15 @@ def test_multi_node_federation():
 
     return True
 
-def cleanup_second_command_center(container_id: Optional[str]):
+
+def cleanup_second_command_center(container_id: str | None):
     """Clean up the second Command Center instance."""
     if container_id:
         print(f"\n🧹 Cleaning up second Command Center ({container_id[:12]})...")
         subprocess.run(["docker", "stop", container_id], capture_output=True)
         subprocess.run(["docker", "rm", container_id], capture_output=True)
         print("✅ Cleanup complete")
+
 
 def main():
     print("🌐 Phase XXIII: Multi-Node Federation Test")
@@ -172,6 +188,7 @@ def main():
 
     finally:
         cleanup_second_command_center(container_id)
+
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,34 @@
+{
+    "schemaVersion": 2,
+    "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+    "config": {
+        "mediaType": "application/vnd.docker.container.image.v1+json",
+        "size": 1469,
+        "digest": "sha256:1234567890abcdef"
+    },
+    "layers": [
+        {
+            "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+            "size": 32654,
+            "digest": "sha256:abcdef1234567890"
+        }
+    ],
+    "annotations": {
+        "com.aetherlink.service": "command-center",
+        "com.aetherlink.version": "1.0.0",
+        "com.aetherlink.maintainer": "AetherLink Team",
+        "com.aetherlink.description": "AI-Ops Platform with Guarded Automation",
+        "com.aetherlink.security.rbac": "enabled",
+        "com.aetherlink.security.guardrails": "enabled",
+        "com.aetherlink.features.ai-automation": "guarded",
+        "com.aetherlink.features.multi-tenant": "enabled",
+        "com.aetherlink.features.metrics": "prometheus",
+        "org.opencontainers.image.created": "2025-11-09T16:51:13Z",
+        "org.opencontainers.image.title": "AetherLink Command Center",
+        "org.opencontainers.image.description": "Production-ready AI-Ops platform with comprehensive security controls",
+        "org.opencontainers.image.vendor": "AetherLink",
+        "org.opencontainers.image.version": "1.0.0",
+        "org.opencontainers.image.licenses": "Commercial",
+        "org.opencontainers.image.source": "https://github.com/aetherlink/command-center"
+    }
+}

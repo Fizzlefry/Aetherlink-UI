@@ -1,0 +1,48 @@
+{
+    "tenants": [
+        {
+            "id": "FINTEST",
+            "name": "Financial Services Demo",
+            "status": "active",
+            "profile": "finserv",
+            "created_at": "2025-11-09T18:30:00Z",
+            "demo": true,
+            "env": "staging",
+            "ai_auto_enabled": true,
+            "auto_budget_per_hour": 5
+        },
+        {
+            "id": "SAASDEMO",
+            "name": "SaaS Platform Demo",
+            "status": "active",
+            "profile": "saas",
+            "created_at": "2025-11-09T18:30:00Z",
+            "demo": true,
+            "env": "staging",
+            "ai_auto_enabled": true,
+            "auto_budget_per_hour": 10
+        },
+        {
+            "id": "THE-EXPERT-CO",
+            "name": "Expert Company Production",
+            "status": "active",
+            "profile": "enterprise",
+            "created_at": "2025-11-09T18:30:00Z",
+            "demo": false,
+            "env": "prod",
+            "ai_auto_enabled": true,
+            "auto_budget_per_hour": 50
+        },
+        {
+            "id": "TESTTENANT",
+            "status": "active",
+            "created_at": "2025-11-09T17:03:38.144748+00:00",
+            "name": "Test Tenant",
+            "profile": "test",
+            "demo": true,
+            "env": "dev",
+            "ai_auto_enabled": false,
+            "auto_budget_per_hour": 0
+        }
+    ]
+}

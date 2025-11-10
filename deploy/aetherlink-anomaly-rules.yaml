@@ -1,0 +1,121 @@
+groups:
+  - name: aetherlink_anomaly_detection
+    rules:
+      # Operation volume anomalies - detect significant drops in operations
+      - alert: AetherLink_Operation_Volume_Drop
+        expr: |
+          (
+            aetherlink_analytics_rolling_avg_7d{operation_group=~".+"} < 0.5 * aetherlink_analytics_forecast_7d{operation_group=~".+"}
+            and
+            aetherlink_analytics_forecast_confidence{operation_group=~".+"} > 0.7
+          )
+          or
+          (
+            rate(aetherlink_ops_analytics_last_24h{label=~".+"}[1h]) < 0.3 * avg_over_time(aetherlink_ops_analytics_last_24h{label=~".+"}[7d])
+          )
+        for: 15m
+        labels:
+          severity: warning
+          category: operations
+        annotations:
+          summary: "Operation volume significantly below forecast"
+          description: |
+            Operation group {{ $labels.operation_group }} for tenant {{ $labels.tenant }}
+            has volume {{ $value }} which is below 50% of forecasted value.
+            This may indicate system issues or reduced activity.
+
+      # Cost overrun alerts - detect when costs exceed budget forecasts
+      - alert: AetherLink_Cost_Overrun_Warning
+        expr: |
+          aetherlink_analytics_cost_budget_utilization{tenant=~".+"} > 0.8
+          and
+          aetherlink_analytics_cost_forecast{tenant=~".+"} > 1.2 * aetherlink_analytics_cost_total{tenant=~".+"}
+        for: 30m
+        labels:
+          severity: warning
+          category: costs
+        annotations:
+          summary: "Cost budget utilization over 80%"
+          description: |
+            Tenant {{ $labels.tenant }} budget utilization is {{ $value | printf "%.1f" }}%
+            with forecasted costs exceeding current totals by 20%.
+
+      - alert: AetherLink_Cost_Overrun_Critical
+        expr: |
+          aetherlink_analytics_cost_budget_utilization{tenant=~".+"} > 0.95
+          and
+          aetherlink_analytics_cost_forecast_confidence{tenant=~".+"} > 0.8
+        for: 10m
+        labels:
+          severity: critical
+          category: costs
+        annotations:
+          summary: "Critical cost budget overrun"
+          description: |
+            Tenant {{ $labels.tenant }} is at {{ $value | printf "%.1f" }}% budget utilization
+            with high confidence forecast. Immediate action required.
+
+      # Rate delta anomalies - detect sudden changes in operation rates
+      - alert: AetherLink_Rate_Change_Anomaly
+        expr: |
+          abs(aetherlink_analytics_rate_delta_7d{operation_group=~".+"}) > 2 * avg_over_time(abs(aetherlink_analytics_rate_delta_7d{operation_group=~".+"})[7d])
+          and
+          abs(aetherlink_analytics_rate_delta_7d{operation_group=~".+"}) > 5
+        for: 20m
+        labels:
+          severity: warning
+          category: trends
+        annotations:
+          summary: "Unusual operation rate change detected"
+          description: |
+            Operation group {{ $labels.operation_group }} for tenant {{ $labels.tenant }}
+            shows rate delta of {{ $value | printf "%.1f" }} operations/day,
+            which is unusually high compared to recent trends.
+
+      # Forecast confidence degradation - detect when forecasts become unreliable
+      - alert: AetherLink_Forecast_Unreliable
+        expr: |
+          aetherlink_analytics_forecast_confidence{operation_group=~".+"} < 0.3
+          and
+          aetherlink_analytics_rolling_avg_7d{operation_group=~".+"} > 10
+        for: 1h
+        labels:
+          severity: info
+          category: reliability
+        annotations:
+          summary: "Forecast confidence degraded"
+          description: |
+            Forecast confidence for {{ $labels.operation_group }} (tenant: {{ $labels.tenant }})
+            has dropped below 30%. Predictions may be unreliable.
+
+      # Tenant activity anomalies - detect inactive tenants
+      - alert: AetherLink_Tenant_Inactive
+        expr: |
+          aetherlink_analytics_tenants_active{tenant=~".+"} == 0
+          and
+          aetherlink_analytics_tenants_total{tenant=~".+"} > 0
+        for: 2h
+        labels:
+          severity: info
+          category: tenant_health
+        annotations:
+          summary: "Tenant appears inactive"
+          description: |
+            Tenant {{ $labels.tenant }} shows no active operations for 2+ hours
+            despite having configured schedules.
+
+      # Operation ingestion drops - detect when new operations stop being recorded
+      - alert: AetherLink_Ingestion_Stalled
+        expr: |
+          rate(aetherlink_ops_analytics_last_24h{label=~".+"}[30m]) == 0
+          and
+          sum(aetherlink_ops_analytics_last_24h{label=~".+"}) > 0
+        for: 30m
+        labels:
+          severity: critical
+          category: ingestion
+        annotations:
+          summary: "Operation ingestion appears stalled"
+          description: |
+            No new operations recorded for 30+ minutes across all operation types.
+            This may indicate system issues or data pipeline problems.

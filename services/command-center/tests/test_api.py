@@ -1,9 +1,10 @@
 import os
+
 import requests
-import time
 
 BASE_URL = os.getenv("CC_BASE_URL", "http://localhost:8011")
 HEADERS = {"X-User-Roles": "admin"}
+
 
 def test_healthz():
     """Test health check endpoint returns healthy status"""
@@ -14,10 +15,12 @@ def test_healthz():
     assert "timestamp" in body
     assert body.get("service") == "command-center"
 
+
 def test_healthz_requires_auth():
     """Test health check requires X-User-Roles header"""
     r = requests.get(f"{BASE_URL}/healthz")
     assert r.status_code == 422  # FastAPI validation error
+
 
 def test_meta():
     """Test meta endpoint returns API information"""
@@ -28,6 +31,7 @@ def test_meta():
     assert isinstance(body["endpoints"], list)
     assert "/alerts/deliveries/history" in body["endpoints"]
 
+
 def test_alerts_history():
     """Test alerts history endpoint returns proper structure"""
     r = requests.get(f"{BASE_URL}/alerts/deliveries/history?limit=5", headers=HEADERS)
@@ -37,6 +41,7 @@ def test_alerts_history():
     assert "total" in body
     assert isinstance(body["items"], list)
     assert isinstance(body["total"], int)
+
 
 def test_metrics():
     """Test Prometheus metrics endpoint"""
@@ -52,13 +57,14 @@ def test_metrics():
     # The API requests counter might not be present if no requests were made yet
     # assert "command_center_api_requests_total" in content
 
+
 def test_service_registration():
     """Test service registration and listing"""
     # Register a test service
     service_data = {
         "name": "test-service",
         "url": "http://test:8080/health",
-        "description": "Test service for E2E testing"
+        "description": "Test service for E2E testing",
     }
     r = requests.post(f"{BASE_URL}/ops/register", json=service_data, headers=HEADERS)
     assert r.status_code == 200
@@ -74,6 +80,7 @@ def test_service_registration():
     service_names = [s["name"] for s in body["services"]]
     assert "test-service" in service_names
 
+
 def test_events_stream():
     """Test Server-Sent Events endpoint accepts connection"""
     # This is a basic connectivity test - full SSE testing would require async handling
@@ -83,13 +90,14 @@ def test_events_stream():
     # Close the connection quickly
     r.close()
 
+
 def test_rbac_enforcement():
     """Test that RBAC headers are properly enforced"""
     endpoints_to_test = [
         "/healthz",  # Returns 422 for missing required header
-        "/meta",     # Returns 422 for missing required header
+        "/meta",  # Returns 422 for missing required header
         "/alerts/deliveries/history",  # Has RBAC, returns 403 for missing/invalid roles
-        "/metrics"   # Returns 422 for missing required header
+        "/metrics",  # Returns 422 for missing required header
     ]
 
     for endpoint in endpoints_to_test:
@@ -108,6 +116,7 @@ def test_rbac_enforcement():
             # This endpoint has specific RBAC requirements
             assert r.status_code == 403, f"Endpoint {endpoint} should reject invalid roles"
 
+
 def test_container_startup():
     """Test that container started within reasonable time"""
     # This test assumes the container was started recently
@@ -119,70 +128,86 @@ def test_container_startup():
     # This is more of a sanity check than a strict test
     assert "timestamp" in body
 
+
 def test_federation_predict():
     """Test federation predictive endpoint"""
     # Test without auth header - should fail
     r = requests.get(f"{BASE_URL}/federation/predict")
     assert r.status_code == 401
-    
-    # Test with invalid auth header - should fail  
+
+    # Test with invalid auth header - should fail
     r = requests.get(f"{BASE_URL}/federation/predict", headers={"x-fed-key": "invalid"})
     assert r.status_code == 401
-    
+
     # Test with valid auth header - should work
-    r = requests.get(f"{BASE_URL}/federation/predict", headers={"x-fed-key": "aetherlink-shared-key"})
+    r = requests.get(
+        f"{BASE_URL}/federation/predict", headers={"x-fed-key": "aetherlink-shared-key"}
+    )
     assert r.status_code == 200
     body = r.json()
     assert "risk" in body
     assert "peers" in body
     assert isinstance(body["risk"], (int, float))
     assert "fresh" in body["peers"]
-    assert "at_risk" in body["peers"] 
+    assert "at_risk" in body["peers"]
     assert "stale" in body["peers"]
+
 
 def test_federation_forecast_explain():
     """Test federation forecast explain endpoint"""
     # Test with valid auth header
-    r = requests.get(f"{BASE_URL}/federation/forecast/explain", headers={"x-fed-key": "aetherlink-shared-key"})
+    r = requests.get(
+        f"{BASE_URL}/federation/forecast/explain", headers={"x-fed-key": "aetherlink-shared-key"}
+    )
     assert r.status_code == 200
     body = r.json()
     assert "explanation" in body
     assert "data" in body
     assert isinstance(body["explanation"], str)
 
+
 def test_federation_actions_preempt():
     """Test federation preemptive actions endpoint"""
     # Test sync_now action
     payload = {"action": "sync_now", "peers": ["peer1", "peer2"]}
-    r = requests.post(f"{BASE_URL}/federation/actions/preempt", 
-                     json=payload, 
-                     headers={"x-fed-key": "aetherlink-shared-key"})
+    r = requests.post(
+        f"{BASE_URL}/federation/actions/preempt",
+        json=payload,
+        headers={"x-fed-key": "aetherlink-shared-key"},
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["action"] == "sync_now"
     assert "results" in body
-    
+
     # Test health_check action
     payload = {"action": "health_check", "peers": ["peer1"]}
-    r = requests.post(f"{BASE_URL}/federation/actions/preempt", 
-                     json=payload, 
-                     headers={"x-fed-key": "aetherlink-shared-key"})
+    r = requests.post(
+        f"{BASE_URL}/federation/actions/preempt",
+        json=payload,
+        headers={"x-fed-key": "aetherlink-shared-key"},
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["action"] == "health_check"
     assert "results" in body
-    
+
     # Test unknown action - should fail
     payload = {"action": "unknown_action"}
-    r = requests.post(f"{BASE_URL}/federation/actions/preempt", 
-                     json=payload, 
-                     headers={"x-fed-key": "aetherlink-shared-key"})
+    r = requests.post(
+        f"{BASE_URL}/federation/actions/preempt",
+        json=payload,
+        headers={"x-fed-key": "aetherlink-shared-key"},
+    )
     assert r.status_code == 400
+
 
 def test_federation_coord_state():
     """Test federation coordination state endpoint"""
     # Test with valid auth header
-    r = requests.get(f"{BASE_URL}/federation/coord/state", headers={"x-fed-key": "aetherlink-shared-key"})
+    r = requests.get(
+        f"{BASE_URL}/federation/coord/state", headers={"x-fed-key": "aetherlink-shared-key"}
+    )
     assert r.status_code == 200
     body = r.json()
     assert "node_id" in body
@@ -190,60 +215,75 @@ def test_federation_coord_state():
     assert "timestamp" in body
     assert isinstance(body["claims"], list)
 
+
 def test_federation_coord_claim():
     """Test federation coordination claim endpoint"""
     # Test claiming a target
     payload = {"target_id": "peer:test-peer", "ttl": 30}
-    r = requests.post(f"{BASE_URL}/federation/coord/claim", 
-                     json=payload, 
-                     headers={"x-fed-key": "aetherlink-shared-key"})
+    r = requests.post(
+        f"{BASE_URL}/federation/coord/claim",
+        json=payload,
+        headers={"x-fed-key": "aetherlink-shared-key"},
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "claimed"
     assert body["target_id"] == "peer:test-peer"
-    
+
     # Test claiming the same target again - should fail
-    r = requests.post(f"{BASE_URL}/federation/coord/claim", 
-                     json=payload, 
-                     headers={"x-fed-key": "aetherlink-shared-key"})
+    r = requests.post(
+        f"{BASE_URL}/federation/coord/claim",
+        json=payload,
+        headers={"x-fed-key": "aetherlink-shared-key"},
+    )
     assert r.status_code == 409
-    
+
     # Check state shows the claim
-    r = requests.get(f"{BASE_URL}/federation/coord/state", headers={"x-fed-key": "aetherlink-shared-key"})
+    r = requests.get(
+        f"{BASE_URL}/federation/coord/state", headers={"x-fed-key": "aetherlink-shared-key"}
+    )
     assert r.status_code == 200
     body = r.json()
     claims = [c for c in body["claims"] if c["target"] == "peer:test-peer"]
     assert len(claims) == 1
     assert claims[0]["owner"] == "cc-local"  # default owner
 
+
 def test_federation_actions_report():
     """Test federation actions report endpoint"""
     # Report a successful action
     payload = {
-        "target_id": "peer:test-peer", 
+        "target_id": "peer:test-peer",
         "action": "force-resync",
         "status": "success",
-        "message": "completed in 120ms"
+        "message": "completed in 120ms",
     }
-    r = requests.post(f"{BASE_URL}/federation/actions/report", 
-                     json=payload, 
-                     headers={"x-fed-key": "aetherlink-shared-key"})
+    r = requests.post(
+        f"{BASE_URL}/federation/actions/report",
+        json=payload,
+        headers={"x-fed-key": "aetherlink-shared-key"},
+    )
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "recorded"
     assert "peer:test-peer|force-resync" in body["action_key"]
-    
+
     # Report a failed action
     payload["status"] = "failure"
     payload["message"] = "timeout error"
-    r = requests.post(f"{BASE_URL}/federation/actions/report", 
-                     json=payload, 
-                     headers={"x-fed-key": "aetherlink-shared-key"})
+    r = requests.post(
+        f"{BASE_URL}/federation/actions/report",
+        json=payload,
+        headers={"x-fed-key": "aetherlink-shared-key"},
+    )
     assert r.status_code == 200
+
 
 def test_federation_opt_state():
     """Test federation optimization state endpoint"""
-    r = requests.get(f"{BASE_URL}/federation/opt/state", headers={"x-fed-key": "aetherlink-shared-key"})
+    r = requests.get(
+        f"{BASE_URL}/federation/opt/state", headers={"x-fed-key": "aetherlink-shared-key"}
+    )
     assert r.status_code == 200
     body = r.json()
     assert "node_id" in body
@@ -251,14 +291,18 @@ def test_federation_opt_state():
     assert "timestamp" in body
     assert isinstance(body["policies"], dict)
 
+
 def test_federation_opt_explain():
     """Test federation optimization explain endpoint"""
-    r = requests.get(f"{BASE_URL}/federation/opt/explain", headers={"x-fed-key": "aetherlink-shared-key"})
+    r = requests.get(
+        f"{BASE_URL}/federation/opt/explain", headers={"x-fed-key": "aetherlink-shared-key"}
+    )
     assert r.status_code == 200
     body = r.json()
     assert "explanation" in body
     assert "data" in body
     assert isinstance(body["explanation"], str)
+
 
 def test_federation_policy_propose():
     """Test federation policy proposal endpoint"""
@@ -266,24 +310,30 @@ def test_federation_policy_propose():
         "key": "alerts.autoheal.max_retries",
         "value": 5,
         "reason": "Testing policy evolution",
-        "proposer": "test-node"
+        "proposer": "test-node",
     }
-    r = requests.post(f"{BASE_URL}/federation/policy/propose", 
-                     json=payload, 
-                     headers={"x-fed-key": "aetherlink-shared-key"})
+    r = requests.post(
+        f"{BASE_URL}/federation/policy/propose",
+        json=payload,
+        headers={"x-fed-key": "aetherlink-shared-key"},
+    )
     assert r.status_code == 200
     body = r.json()
     assert "proposal_id" in body
     assert "status" in body
     assert body["status"] == "proposed"
 
+
 def test_federation_policy_pending():
     """Test federation policy pending endpoint"""
-    r = requests.get(f"{BASE_URL}/federation/policy/pending", headers={"x-fed-key": "aetherlink-shared-key"})
+    r = requests.get(
+        f"{BASE_URL}/federation/policy/pending", headers={"x-fed-key": "aetherlink-shared-key"}
+    )
     assert r.status_code == 200
     body = r.json()
     assert "pending" in body
     assert isinstance(body["pending"], list)
+
 
 def test_federation_policy_apply():
     """Test federation policy apply endpoint"""
@@ -292,29 +342,32 @@ def test_federation_policy_apply():
         "key": "alerts.autoheal.max_retries",
         "value": 5,
         "reason": "Testing policy evolution",
-        "proposer": "test-node"
+        "proposer": "test-node",
     }
-    r = requests.post(f"{BASE_URL}/federation/policy/propose", 
-                     json=payload, 
-                     headers={"x-fed-key": "aetherlink-shared-key"})
+    r = requests.post(
+        f"{BASE_URL}/federation/policy/propose",
+        json=payload,
+        headers={"x-fed-key": "aetherlink-shared-key"},
+    )
     proposal_id = r.json()["proposal_id"]
-    
+
     # Now vote on it
-    vote_payload = {
-        "proposal_id": proposal_id,
-        "vote": "approve",
-        "voter": "test-voter"
-    }
-    r = requests.post(f"{BASE_URL}/federation/policy/apply", 
-                     json=vote_payload, 
-                     headers={"x-fed-key": "aetherlink-shared-key"})
+    vote_payload = {"proposal_id": proposal_id, "vote": "approve", "voter": "test-voter"}
+    r = requests.post(
+        f"{BASE_URL}/federation/policy/apply",
+        json=vote_payload,
+        headers={"x-fed-key": "aetherlink-shared-key"},
+    )
     assert r.status_code == 200
     body = r.json()
     assert "status" in body
 
+
 def test_federation_policy_explain():
     """Test federation policy explain endpoint"""
-    r = requests.get(f"{BASE_URL}/federation/policy/explain", headers={"x-fed-key": "aetherlink-shared-key"})
+    r = requests.get(
+        f"{BASE_URL}/federation/policy/explain", headers={"x-fed-key": "aetherlink-shared-key"}
+    )
     assert r.status_code == 200
     body = r.json()
     assert "explanation" in body

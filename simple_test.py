@@ -1,5 +1,7 @@
-from fastapi import FastAPI
 from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -7,7 +9,9 @@ async def lifespan(app: FastAPI):
     yield
     print("Lifespan shutting down")
 
+
 app = FastAPI(lifespan=lifespan)
+
 
 @app.get("/test")
 def test():

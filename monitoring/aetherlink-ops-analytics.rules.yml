@@ -1,0 +1,127 @@
+# AetherLink Command Center Analytics Alert Rules
+# Place this file in your Prometheus alerting rules directory
+# (e.g., /etc/prometheus/rules/aetherlink-analytics.yml)
+
+groups:
+  - name: aetherlink_ops_analytics
+    rules:
+      # Alert when Data Changes operations drop to zero (indicates pipeline issues)
+      - alert: AetherlinkDataChangesStopped
+        expr: aetherlink_ops_analytics_last_24h{label="Data Changes"} == 0
+        for: 30m
+        labels:
+          severity: warning
+          service: aetherlink
+          component: analytics
+        annotations:
+          summary: "Data Changes operations stopped"
+          description: "No 'Data Changes' operations detected in the last 24 hours for {{ $labels.env }}. This may indicate issues with data import pipelines."
+          runbook_url: "https://docs.aetherlink.com/ops/data-pipeline-troubleshooting"
+
+      # Alert when Auto-Healing operations spike (indicates system instability)
+      - alert: AetherlinkAutoHealingSpike
+        expr: increase(aetherlink_ops_analytics_last_24h{label="Auto-Healing"}[1h]) > 5
+        for: 15m
+        labels:
+          severity: warning
+          service: aetherlink
+          component: health
+        annotations:
+          summary: "Auto-healing operations spiking"
+          description: "Auto-healing operations increased by {{ $value }} in the last hour for {{ $labels.env }}. This may indicate system instability requiring attention."
+          runbook_url: "https://docs.aetherlink.com/ops/health-monitoring"
+
+      # Alert when Schedule Updates drop significantly
+      - alert: AetherlinkScheduleUpdatesLow
+        expr: aetherlink_ops_analytics_last_24h{label="Schedule Updates"} < 1
+        for: 2h
+        labels:
+          severity: info
+          service: aetherlink
+          component: scheduling
+        annotations:
+          summary: "Schedule operations are low"
+          description: "Less than 1 'Schedule Updates' operation in the last 24 hours for {{ $labels.env }}. Check if scheduled tasks are running properly."
+          runbook_url: "https://docs.aetherlink.com/ops/scheduler-monitoring"
+
+      # Critical alert for complete operational silence
+      - alert: AetherlinkNoOperations
+        expr: sum(aetherlink_ops_analytics_last_24h) == 0
+        for: 1h
+        labels:
+          severity: critical
+          service: aetherlink
+          component: operations
+        annotations:
+          summary: "No operations detected"
+          description: "Zero operations detected across all categories in the last 24 hours for {{ $labels.env }}. The Command Center may be experiencing issues."
+          runbook_url: "https://docs.aetherlink.com/ops/emergency-response"
+
+      # ============================================================================
+      # PREDICTIVE ANALYTICS ANOMALY DETECTION (Phase XXXIII)
+      # ============================================================================
+
+      # Alert on sudden operation drops (predictive anomaly detection)
+      - alert: AetherlinkOperationDropAnomaly
+        expr: analytics_rate_delta_gauge < -0.5
+        for: 15m
+        labels:
+          severity: warning
+          service: aetherlink
+          component: predictive_analytics
+        annotations:
+          summary: "Operation volume dropping anomalously"
+          description: 'Operation rate delta is {{ $value | printf "%.2f" }} for tenant {{ $labels.tenant }}, operation {{ $labels.operation_group }}. This indicates a >50% drop from expected trend.'
+          runbook_url: "https://docs.aetherlink.com/ops/predictive-monitoring#operation-drops"
+
+      # Alert on operation spikes (predictive anomaly detection)
+      - alert: AetherlinkOperationSpikeAnomaly
+        expr: analytics_rate_delta_gauge > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          service: aetherlink
+          component: predictive_analytics
+        annotations:
+          summary: "Operation volume spiking anomalously"
+          description: 'Operation rate delta is {{ $value | printf "%.2f" }} for tenant {{ $labels.tenant }}, operation {{ $labels.operation_group }}. This indicates a >50% increase from expected trend.'
+          runbook_url: "https://docs.aetherlink.com/ops/predictive-monitoring#operation-spikes"
+
+      # Alert on low forecast confidence (unreliable predictions)
+      - alert: AetherlinkLowForecastConfidence
+        expr: analytics_forecast_confidence_gauge < 0.7
+        for: 30m
+        labels:
+          severity: info
+          service: aetherlink
+          component: predictive_analytics
+        annotations:
+          summary: "Low forecast confidence for operations"
+          description: 'Forecast confidence is {{ $value | printf "%.2f" }} for tenant {{ $labels.tenant }}, operation {{ $labels.operation_group }}. Predictions may be unreliable due to insufficient historical data.'
+          runbook_url: "https://docs.aetherlink.com/ops/predictive-monitoring#forecast-confidence"
+
+      # Critical alert for forecast vs actual divergence (prediction failure)
+      - alert: AetherlinkForecastDivergence
+        expr: abs(analytics_forecast_gauge - analytics_rolling_avg_gauge) / analytics_rolling_avg_gauge > 0.8
+        for: 20m
+        labels:
+          severity: critical
+          service: aetherlink
+          component: predictive_analytics
+        annotations:
+          summary: "Forecast significantly diverged from actual"
+          description: "Forecast value diverges by >80% from actual rolling average for tenant {{ $labels.tenant }}, operation {{ $labels.operation_group }}. The forecasting model may need recalibration."
+          runbook_url: "https://docs.aetherlink.com/ops/predictive-monitoring#forecast-divergence"
+
+      # Alert on sustained operation decline (trending downward)
+      - alert: AetherlinkOperationDeclineTrend
+        expr: analytics_rate_delta_gauge < -0.2
+        for: 2h
+        labels:
+          severity: info
+          service: aetherlink
+          component: predictive_analytics
+        annotations:
+          summary: "Sustained operation volume decline"
+          description: "Operation rate delta has been < -20% for 2+ hours for tenant {{ $labels.tenant }}, operation {{ $labels.operation_group }}. Monitor for potential service degradation."
+          runbook_url: "https://docs.aetherlink.com/ops/predictive-monitoring#operation-trends"

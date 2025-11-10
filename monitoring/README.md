@@ -357,3 +357,111 @@ curl http://localhost:9093/api/v2/alerts
 ```powershell
 .\scripts\tenant-smoke-test.ps1
 ```
+
+---
+
+## 📈 Phase XIX: Command Center Analytics Monitoring
+
+**Status**: ✅ Complete - Analytics metrics exposed via Prometheus for alerting and monitoring.
+
+### Overview
+
+The Command Center now exposes operational analytics as Prometheus metrics, enabling monitoring and alerting on grouped operation data (e.g., alert when "Data Changes" operations drop to zero).
+
+### Metrics Exposed
+
+- `aetherlink_ops_analytics_all_time{label="...", env="..."}` - Total operations by category since startup
+- `aetherlink_ops_analytics_last_24h{label="...", env="..."}` - Operations in the last 24 hours
+
+**Operation Categories:**
+- Schedule Updates
+- Data Changes
+- Auto-Healing
+- Lead Enrichment
+- Chat Interactions
+- Lead Outcomes
+- And more...
+
+### Alert Rules
+
+The `aetherlink-ops-analytics.rules.yml` file includes production-ready alerts:
+
+- **Data Changes Stopped** (Warning): Alerts when data import operations cease (30min threshold)
+- **Auto-Healing Spike** (Warning): Alerts when auto-healing operations increase significantly (15min threshold)
+- **Schedule Updates Low** (Info): Alerts when scheduled operations are low (2h threshold)
+- **No Operations** (Critical): Alerts when all operations stop (1h threshold)
+
+### Setup
+
+1. **Install and Configure Prometheus:**
+   ```powershell
+   .\setup-monitoring.ps1 -Install -Configure
+   ```
+
+2. **Start Command Center:**
+   ```powershell
+   .\run-command-center.ps1
+   ```
+
+3. **Start Prometheus:**
+   ```powershell
+   & 'C:\ProgramData\prometheus\prometheus.exe' --config.file='C:\ProgramData\prometheus\prometheus.yml'
+   ```
+
+4. **Test Setup:**
+   ```powershell
+   .\setup-monitoring.ps1 -Test
+   ```
+
+### Accessing Metrics
+
+- **Metrics Endpoint**: `http://localhost:8000/metrics`
+- **Analytics API**: `http://localhost:8000/ops/analytics` (requires API key)
+- **Prometheus UI**: `http://localhost:9090`
+
+### Integration Details
+
+- **ASGI Mounting**: `/metrics` endpoint mounted using `prometheus_client.make_asgi_app()` for proper async support
+- **Data Structure**: Analytics API returns combined `groups` structure with `all_time` and `last_24h` counts
+- **UI Updates**: AnalyticsCard.tsx updated to consume new data format while maintaining trend indicators
+- **Environment Labeling**: Metrics include `env` label (defaults to "dev" if `AETHER_ENV` not set)
+
+---
+
+## 🎛️ Phase XX: Operator Control Deck
+
+**Status**: ✅ Complete - Production-ready operator dashboard with tenant-scoped controls and monitoring.
+
+### Overview
+
+The Command Center now provides a comprehensive operator control deck with tenant-aware analytics, job management, and queue monitoring. All controls are scoped by tenant for multi-tenant operations.
+
+### Endpoints
+
+- **`/ops/operator/jobs`** → List schedulable/managed jobs (tenant-aware)
+- **`/ops/operator/jobs/{id}/pause`** → Pause a job
+- **`/ops/operator/jobs/{id}/resume`** → Resume a paused job
+- **`/ops/operator/queues`** → Current queue/alerts snapshot (tenant-aware)
+
+### UI Components
+
+- **`TenantScopeSelector.tsx`** - Dropdown for tenant selection with active/inactive status
+- **`AnalyticsCard.tsx`** - Now tenant-aware with filtered operation data
+- **`JobsControlCard.tsx`** - Job pause/resume controls with optimistic UI updates
+- **`QueueStatusCard.tsx`** - Queue monitoring with issue detection and alerts
+
+### Features
+
+- **Tenant Filtering**: All components respect tenant selection for scoped operations
+- **Defensive JSON Shapes**: Components handle malformed responses gracefully with defaults
+- **Optimistic UI**: Job controls update immediately with rollback on API failure
+- **Error Handling**: User-friendly error messages prevent silent failures
+- **Operator Audit Trail**: Pause/resume actions are logged and appear in analytics as "Operator Controls"
+
+### Integration Details
+
+- **Query Parameters**: All operator endpoints accept optional `tenant` parameter
+- **Response Structure**: Endpoints return `tenant` field in response for consistency
+- **UI State Management**: Centralized tenant state in `DashboardHome.tsx`
+- **TypeScript Safety**: Updated interfaces with optional properties for backward compatibility
+- **Audit Integration**: Operator actions logged to scheduler audit trail and grouped as "Operator Controls" in analytics

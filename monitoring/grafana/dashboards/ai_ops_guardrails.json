@@ -1,0 +1,560 @@
+{
+    "dashboard": {
+        "title": "AetherLink - AI Ops & Guardrails",
+        "tags": [
+            "aetherlink",
+            "ai",
+            "guardrails",
+            "observability"
+        ],
+        "timezone": "browser",
+        "refresh": "30s",
+        "time": {
+            "from": "now-1h",
+            "to": "now"
+        },
+        "panels": [
+            {
+                "type": "row",
+                "title": "AI Automation Status",
+                "gridPos": {
+                    "h": 1,
+                    "w": 24,
+                    "x": 0,
+                    "y": 0
+                }
+            },
+            {
+                "type": "table",
+                "title": "Environment Configuration",
+                "gridPos": {
+                    "h": 6,
+                    "w": 12,
+                    "x": 0,
+                    "y": 1
+                },
+                "targets": [
+                    {
+                        "expr": "up{job=\"aetherlink-command-center\"}",
+                        "refId": "A",
+                        "instant": true
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "mappings": []
+                    }
+                },
+                "options": {
+                    "showHeader": true
+                },
+                "transformations": [
+                    {
+                        "id": "labelsToFields",
+                        "options": {}
+                    }
+                ]
+            },
+            {
+                "type": "stat",
+                "title": "Auto Actions (5m)",
+                "gridPos": {
+                    "h": 3,
+                    "w": 4,
+                    "x": 12,
+                    "y": 1
+                },
+                "targets": [
+                    {
+                        "expr": "sum(rate(aetherlink_adaptive_actions_executed_total{mode=\"auto\",tenant=~\"$tenant\"}[5m]))",
+                        "refId": "A"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "mappings": [],
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green",
+                                    "value": 0
+                                },
+                                {
+                                    "color": "orange",
+                                    "value": 10
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 20
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "type": "stat",
+                "title": "Actions Skipped (5m)",
+                "gridPos": {
+                    "h": 3,
+                    "w": 4,
+                    "x": 16,
+                    "y": 1
+                },
+                "targets": [
+                    {
+                        "expr": "sum(rate(aetherlink_adaptive_actions_skipped_total{mode=\"auto\",tenant=~\"$tenant\"}[5m]))",
+                        "refId": "A"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "mappings": [],
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green",
+                                    "value": 0
+                                },
+                                {
+                                    "color": "yellow",
+                                    "value": 5
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 15
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "type": "stat",
+                "title": "Guardrail Effectiveness",
+                "gridPos": {
+                    "h": 3,
+                    "w": 4,
+                    "x": 20,
+                    "y": 1
+                },
+                "targets": [
+                    {
+                        "expr": "avg(aetherlink:adaptive:guardrail_effectiveness_5m{tenant=~\"$tenant\"}) * 100",
+                        "refId": "A"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "mappings": [],
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "red",
+                                    "value": 0
+                                },
+                                {
+                                    "color": "orange",
+                                    "value": 30
+                                },
+                                {
+                                    "color": "green",
+                                    "value": 70
+                                }
+                            ]
+                        },
+                        "unit": "percent"
+                    }
+                }
+            },
+            {
+                "type": "row",
+                "title": "Auto Actions by Tenant",
+                "gridPos": {
+                    "h": 1,
+                    "w": 24,
+                    "x": 0,
+                    "y": 7
+                }
+            },
+            {
+                "type": "graph",
+                "title": "Auto Actions Over Time",
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 0,
+                    "y": 8
+                },
+                "targets": [
+                    {
+                        "expr": "aetherlink:adaptive:auto_actions_5m{tenant=~\"$tenant\"}",
+                        "refId": "A",
+                        "legendFormat": "{{tenant}}"
+                    }
+                ],
+                "yAxes": [
+                    {
+                        "unit": "ops",
+                        "min": 0
+                    },
+                    {
+                        "unit": "short"
+                    }
+                ]
+            },
+            {
+                "type": "graph",
+                "title": "Skipped Actions by Reason",
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 12,
+                    "y": 8
+                },
+                "targets": [
+                    {
+                        "expr": "aetherlink:adaptive:skips_5m{tenant=~\"$tenant\"}",
+                        "refId": "A",
+                        "legendFormat": "{{tenant}} - {{reason}}"
+                    }
+                ],
+                "yAxes": [
+                    {
+                        "unit": "ops",
+                        "min": 0
+                    },
+                    {
+                        "unit": "short"
+                    }
+                ]
+            },
+            {
+                "type": "row",
+                "title": "Confidence & Success Metrics",
+                "gridPos": {
+                    "h": 1,
+                    "w": 24,
+                    "x": 0,
+                    "y": 16
+                }
+            },
+            {
+                "type": "graph",
+                "title": "Confidence Floors by Tenant",
+                "gridPos": {
+                    "h": 6,
+                    "w": 12,
+                    "x": 0,
+                    "y": 17
+                },
+                "targets": [
+                    {
+                        "expr": "aetherlink_adaptive_confidence_floor{tenant=~\"$tenant\"}",
+                        "refId": "A",
+                        "legendFormat": "{{tenant}}"
+                    }
+                ],
+                "yAxes": [
+                    {
+                        "unit": "percentunit",
+                        "min": 0,
+                        "max": 1
+                    },
+                    {
+                        "unit": "short"
+                    }
+                ]
+            },
+            {
+                "type": "graph",
+                "title": "Success Ratio (Auto/Total Actions)",
+                "gridPos": {
+                    "h": 6,
+                    "w": 12,
+                    "x": 12,
+                    "y": 17
+                },
+                "targets": [
+                    {
+                        "expr": "aetherlink:adaptive:success_ratio_5m{tenant=~\"$tenant\"}",
+                        "refId": "A",
+                        "legendFormat": "{{tenant}}"
+                    }
+                ],
+                "yAxes": [
+                    {
+                        "unit": "percentunit",
+                        "min": 0,
+                        "max": 1
+                    },
+                    {
+                        "unit": "short"
+                    }
+                ]
+            },
+            {
+                "type": "row",
+                "title": "Alerting & Anomalies",
+                "gridPos": {
+                    "h": 1,
+                    "w": 24,
+                    "x": 0,
+                    "y": 23
+                }
+            },
+            {
+                "type": "table",
+                "title": "Recent Guardrail Blocks",
+                "gridPos": {
+                    "h": 8,
+                    "w": 24,
+                    "x": 0,
+                    "y": 24
+                },
+                "targets": [
+                    {
+                        "expr": "sum by (tenant, reason) (increase(aetherlink_adaptive_actions_skipped_total{tenant=~\"$tenant\"}[5m])) > 0",
+                        "refId": "A",
+                        "instant": true
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "mappings": []
+                    }
+                },
+                "options": {
+                    "showHeader": true,
+                    "sortBy": [
+                        {
+                            "desc": true,
+                            "displayName": "Value"
+                        }
+                    ]
+                },
+                "transformations": [
+                    {
+                        "id": "labelsToFields",
+                        "options": {}
+                    }
+                ]
+            },
+            {
+                "type": "row",
+                "title": "Predictive Analytics & Forecasting",
+                "gridPos": {
+                    "h": 1,
+                    "w": 24,
+                    "x": 0,
+                    "y": 32
+                }
+            },
+            {
+                "type": "graph",
+                "title": "Operation Trends - Rolling 7-Day Average",
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 0,
+                    "y": 33
+                },
+                "targets": [
+                    {
+                        "expr": "aetherlink_analytics_rolling_avg_7d{tenant=~\"$tenant\"}",
+                        "refId": "A",
+                        "legendFormat": "{{operation_group}} - 7d avg"
+                    }
+                ],
+                "yAxes": [
+                    {
+                        "unit": "ops",
+                        "min": 0
+                    },
+                    {
+                        "unit": "short"
+                    }
+                ]
+            },
+            {
+                "type": "graph",
+                "title": "Rate of Change (Operations/Day)",
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 12,
+                    "y": 33
+                },
+                "targets": [
+                    {
+                        "expr": "aetherlink_analytics_rate_delta_7d{tenant=~\"$tenant\"}",
+                        "refId": "A",
+                        "legendFormat": "{{operation_group}} - daily change"
+                    }
+                ],
+                "yAxes": [
+                    {
+                        "unit": "ops",
+                        "min": null
+                    },
+                    {
+                        "unit": "short"
+                    }
+                ]
+            },
+            {
+                "type": "table",
+                "title": "7-Day Forecast & Confidence",
+                "gridPos": {
+                    "h": 8,
+                    "w": 24,
+                    "x": 0,
+                    "y": 41
+                },
+                "targets": [
+                    {
+                        "expr": "aetherlink_analytics_forecast_7d{tenant=~\"$tenant\"}",
+                        "refId": "A",
+                        "instant": true
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "mappings": []
+                    }
+                },
+                "options": {
+                    "showHeader": true,
+                    "sortBy": [
+                        {
+                            "desc": true,
+                            "displayName": "forecast_value"
+                        }
+                    ]
+                },
+                "transformations": [
+                    {
+                        "id": "labelsToFields",
+                        "options": {}
+                    }
+                ]
+            },
+            {
+                "type": "table",
+                "title": "Anomaly Alerts & Warnings",
+                "gridPos": {
+                    "h": 8,
+                    "w": 24,
+                    "x": 0,
+                    "y": 49
+                },
+                "targets": [
+                    {
+                        "expr": "ALERTS{alertname=~\"AetherLink_.*\", alertstate=\"firing\"}",
+                        "refId": "A",
+                        "instant": true,
+                        "legendFormat": "{{alertname}}"
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "mappings": [],
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green",
+                                    "value": null
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 1
+                                }
+                            ]
+                        },
+                        "noValue": "No anomalies detected"
+                    },
+                    "overrides": [
+                        {
+                            "matcher": {
+                                "id": "byName",
+                                "options": "severity"
+                            },
+                            "properties": [
+                                {
+                                    "id": "mappings",
+                                    "value": [
+                                        {
+                                            "options": {
+                                                "critical": {
+                                                    "color": "red",
+                                                    "index": 0
+                                                },
+                                                "warning": {
+                                                    "color": "orange",
+                                                    "index": 1
+                                                },
+                                                "info": {
+                                                    "color": "blue",
+                                                    "index": 2
+                                                }
+                                            },
+                                            "type": "value"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "options": {
+                    "showHeader": true,
+                    "sortBy": [
+                        {
+                            "desc": true,
+                            "displayName": "Value"
+                        }
+                    ]
+                },
+                "transformations": [
+                    {
+                        "id": "labelsToFields",
+                        "options": {}
+                    }
+                ]
+            }
+        ],
+        "timepicker": {
+            "refresh_intervals": [
+                "5s",
+                "10s",
+                "30s",
+                "1m",
+                "5m",
+                "15m",
+                "30m",
+                "1h",
+                "2h",
+                "1d"
+            ]
+        },
+        "templating": {
+            "list": [
+                {
+                    "name": "tenant",
+                    "type": "query",
+                    "query": "label_values(aetherlink_adaptive_actions_executed_total, tenant)",
+                    "label": "Tenant",
+                    "multi": true,
+                    "includeAll": true
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,385 @@
+{
+  "actions": [
+    {
+      "id": "action_9c0be45e69f24aa0",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-02T14:44:29.547610",
+      "type": "rollback_deployment",
+      "trigger": "alert",
+      "trigger_id": "alert_37f020dd6ed54afc",
+      "confidence_score": 0.7364552265882278,
+      "action_taken": "Created incident ticket in service management system",
+      "expected_outcome": "Issue resolved with minimal impact",
+      "actual_outcome": "partially_successful",
+      "rollback_available": true,
+      "audit_trail": [
+        {
+          "timestamp": "2025-11-09T08:23:47.548612",
+          "event": "outcome_verified",
+          "details": "Automated system check 1",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:18:47.548612",
+          "event": "validation_check",
+          "details": "Automated system check 2",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:42:47.548612",
+          "event": "validation_check",
+          "details": "Automated system check 3",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "action_22dc13822bac4d1f",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-03T04:06:36.547610",
+      "type": "clear_cache",
+      "trigger": "alert",
+      "trigger_id": "alert_51696459f1364a70",
+      "confidence_score": 0.7009829801342675,
+      "action_taken": "Rolled back recent deployment to previous version",
+      "expected_outcome": "Issue resolved with minimal impact",
+      "actual_outcome": "failed",
+      "rollback_available": true,
+      "audit_trail": [
+        {
+          "timestamp": "2025-11-09T08:33:47.548612",
+          "event": "action_started",
+          "details": "Automated system check 1",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:46:47.548612",
+          "event": "action_started",
+          "details": "Automated system check 2",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "action_b7cc1c8546d646e9",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-03T10:36:42.547610",
+      "type": "reroute_traffic",
+      "trigger": "alert",
+      "trigger_id": "alert_4cd11038ecb545fa",
+      "confidence_score": 0.8544534861158147,
+      "action_taken": "Automatically restarted the affected service",
+      "expected_outcome": "Service performance restored to normal levels",
+      "actual_outcome": "partially_successful",
+      "rollback_available": true,
+      "audit_trail": [
+        {
+          "timestamp": "2025-11-09T08:18:47.548612",
+          "event": "action_started",
+          "details": "Automated system check 1",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T07:57:47.548612",
+          "event": "outcome_verified",
+          "details": "Automated system check 2",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:44:47.548612",
+          "event": "action_started",
+          "details": "Automated system check 3",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:20:47.548612",
+          "event": "validation_check",
+          "details": "Automated system check 4",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:39:47.548612",
+          "event": "outcome_verified",
+          "details": "Automated system check 5",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "action_70f7a8ed33d244cd",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-04T01:52:35.547610",
+      "type": "clear_cache",
+      "trigger": "alert",
+      "trigger_id": "alert_1022ef3e1c4e4663",
+      "confidence_score": 0.7914255388646422,
+      "action_taken": "Applied configuration changes to resolve issue",
+      "expected_outcome": "Critical service availability maintained",
+      "actual_outcome": "failed",
+      "rollback_available": true,
+      "audit_trail": [
+        {
+          "timestamp": "2025-11-09T08:25:47.548612",
+          "event": "action_started",
+          "details": "Automated system check 1",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:50:47.548612",
+          "event": "action_started",
+          "details": "Automated system check 2",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "action_5053a24e48bb4aa2",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-04T18:41:20.547610",
+      "type": "create_ticket",
+      "trigger": "alert",
+      "trigger_id": "alert_2aff91edbdb84407",
+      "confidence_score": 0.888488583041661,
+      "action_taken": "Executed automated diagnostic scripts",
+      "expected_outcome": "System stability and availability restored",
+      "actual_outcome": "failed",
+      "rollback_available": true,
+      "audit_trail": [
+        {
+          "timestamp": "2025-11-09T08:38:47.548612",
+          "event": "validation_check",
+          "details": "Automated system check 1",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:03:47.548612",
+          "event": "outcome_verified",
+          "details": "Automated system check 2",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "action_fc1b5cea213b4962",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-06T00:42:46.547610",
+      "type": "clear_cache",
+      "trigger": "incident",
+      "trigger_id": "incident_32b1f6c3f2614c38",
+      "confidence_score": 0.8462524972476239,
+      "action_taken": "Rerouted traffic to healthy instances",
+      "expected_outcome": "Incident resolution and service restoration",
+      "actual_outcome": "successful",
+      "rollback_available": true,
+      "audit_trail": [
+        {
+          "timestamp": "2025-11-09T08:04:47.548612",
+          "event": "action_started",
+          "details": "Automated system check 1",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:06:47.548612",
+          "event": "rollback_prepared",
+          "details": "Automated system check 2",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:31:47.548612",
+          "event": "outcome_verified",
+          "details": "Automated system check 3",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:39:47.548612",
+          "event": "rollback_prepared",
+          "details": "Automated system check 4",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "action_a0a3c5b866e74f8a",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-06T07:48:55.547610",
+      "type": "create_ticket",
+      "trigger": "alert",
+      "trigger_id": "alert_d909c03d6c8a420f",
+      "confidence_score": 0.7899122543910941,
+      "action_taken": "Rolled back recent deployment to previous version",
+      "expected_outcome": "System stability and availability restored",
+      "actual_outcome": "partially_successful",
+      "rollback_available": false,
+      "audit_trail": [
+        {
+          "timestamp": "2025-11-09T08:52:47.548612",
+          "event": "rollback_prepared",
+          "details": "Automated system check 1",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:41:47.548612",
+          "event": "validation_check",
+          "details": "Automated system check 2",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:23:47.548612",
+          "event": "outcome_verified",
+          "details": "Automated system check 3",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "action_9d394f86cb894122",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-06T08:23:27.547610",
+      "type": "apply_config_change",
+      "trigger": "incident",
+      "trigger_id": "incident_cffbba02e18f4bb7",
+      "confidence_score": 0.9658279288960246,
+      "action_taken": "Terminated unresponsive process",
+      "expected_outcome": "Incident resolution and service restoration",
+      "actual_outcome": "successful",
+      "rollback_available": true,
+      "audit_trail": [
+        {
+          "timestamp": "2025-11-09T08:23:47.548612",
+          "event": "validation_check",
+          "details": "Automated system check 1",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:23:47.548612",
+          "event": "validation_check",
+          "details": "Automated system check 2",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:15:47.548612",
+          "event": "rollback_prepared",
+          "details": "Automated system check 3",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:32:47.548612",
+          "event": "action_started",
+          "details": "Automated system check 4",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "action_886439b9daed43a0",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-07T00:33:25.547610",
+      "type": "kill_process",
+      "trigger": "alert",
+      "trigger_id": "alert_5c8ec980a9d04583",
+      "confidence_score": 0.7452114225596103,
+      "action_taken": "Automatically restarted the affected service",
+      "expected_outcome": "Service performance restored to normal levels",
+      "actual_outcome": "failed",
+      "rollback_available": true,
+      "audit_trail": [
+        {
+          "timestamp": "2025-11-09T07:55:47.548612",
+          "event": "validation_check",
+          "details": "Automated system check 1",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:27:47.548612",
+          "event": "action_started",
+          "details": "Automated system check 2",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:27:47.548612",
+          "event": "rollback_prepared",
+          "details": "Automated system check 3",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:16:47.548612",
+          "event": "validation_check",
+          "details": "Automated system check 4",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:09:47.548612",
+          "event": "validation_check",
+          "details": "Automated system check 5",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "action_37356ffd9e0f463d",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-07T18:37:45.547610",
+      "type": "send_notification",
+      "trigger": "incident",
+      "trigger_id": "incident_472476e9fc654adf",
+      "confidence_score": 0.8479261759372193,
+      "action_taken": "Executed automated diagnostic scripts",
+      "expected_outcome": "Incident resolution and service restoration",
+      "actual_outcome": "successful",
+      "rollback_available": true,
+      "audit_trail": [
+        {
+          "timestamp": "2025-11-09T08:39:47.548612",
+          "event": "action_started",
+          "details": "Automated system check 1",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T07:55:47.548612",
+          "event": "action_started",
+          "details": "Automated system check 2",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "action_771e6374d1a646ae",
+      "tenant_id": "INDTEST",
+      "timestamp": "2025-11-08T07:11:08.547610",
+      "type": "auto_restart_service",
+      "trigger": "alert",
+      "trigger_id": "alert_eee9fdc52ce34898",
+      "confidence_score": 0.9471916274206518,
+      "action_taken": "Cleared application cache to resolve performance issues",
+      "expected_outcome": "Critical service availability maintained",
+      "actual_outcome": "successful",
+      "rollback_available": true,
+      "audit_trail": [
+        {
+          "timestamp": "2025-11-09T08:28:47.548612",
+          "event": "validation_check",
+          "details": "Automated system check 1",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:13:47.548612",
+          "event": "validation_check",
+          "details": "Automated system check 2",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:13:47.548612",
+          "event": "rollback_prepared",
+          "details": "Automated system check 3",
+          "status": "completed"
+        },
+        {
+          "timestamp": "2025-11-09T08:41:47.548612",
+          "event": "rollback_prepared",
+          "details": "Automated system check 4",
+          "status": "completed"
+        }
+      ]
+    }
+  ]
+}

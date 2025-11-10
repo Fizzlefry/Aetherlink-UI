@@ -1,0 +1,144 @@
+{
+  "incidents": [
+    {
+      "id": "incident_472476e9fc654adf",
+      "tenant_id": "INDTEST",
+      "title": "Incident: HIGH: PLC Communication Failure alert",
+      "description": "Critical incident triggered by HIGH: PLC Communication Failure alert. 1 related alerts detected in the same time window. Investigation and remediation in progress.",
+      "severity": "high",
+      "status": "resolved",
+      "created_at": "2025-11-07T10:44:45.547610",
+      "updated_at": "2025-11-07T18:37:45.547610",
+      "resolved_at": "2025-11-07T18:37:45.547610",
+      "primary_alert": "alert_f04f1be14ee64c19",
+      "related_alerts": [
+        "alert_34cb10dd02be473a"
+      ],
+      "ai_insights": {
+        "root_cause_probability": 0.6576519802582754,
+        "predicted_duration": 2798,
+        "impact_scope": "multiple_services",
+        "similar_incidents": 6,
+        "recommended_actions": [
+          "auto_restart_service",
+          "run_diagnostic",
+          "create_ticket"
+        ]
+      },
+      "actions_taken": [
+        {
+          "timestamp": "2025-11-08T11:53:47.548612",
+          "action": "send_notification",
+          "actor": "NOC Engineer",
+          "result": "investigating"
+        },
+        {
+          "timestamp": "2025-11-08T08:53:47.548612",
+          "action": "create_ticket",
+          "actor": "NOC Engineer",
+          "result": "successful"
+        }
+      ],
+      "impact_assessment": {
+        "user_impact": "significant",
+        "business_impact": "high",
+        "duration_hours": 12
+      },
+      "assigned_team": "Network Team",
+      "resolution_time": 4267
+    },
+    {
+      "id": "incident_32b1f6c3f2614c38",
+      "tenant_id": "INDTEST",
+      "title": "Incident: HIGH: Backup Failures alert",
+      "description": "Critical incident triggered by HIGH: Backup Failures alert. 2 related alerts detected in the same time window. Investigation and remediation in progress.",
+      "severity": "high",
+      "status": "closed",
+      "created_at": "2025-11-05T17:52:46.547610",
+      "updated_at": "2025-11-06T00:42:46.547610",
+      "resolved_at": "2025-11-06T00:42:46.547610",
+      "primary_alert": "alert_bbcb1f1d22fc427a",
+      "related_alerts": [
+        "alert_868db5c73bcb42d8",
+        "alert_f2be14bfeb844f1a"
+      ],
+      "ai_insights": {
+        "root_cause_probability": 0.6028542754298722,
+        "predicted_duration": 2488,
+        "impact_scope": "multiple_services",
+        "similar_incidents": 10,
+        "recommended_actions": [
+          "send_notification",
+          "clear_cache",
+          "reroute_traffic"
+        ]
+      },
+      "actions_taken": [
+        {
+          "timestamp": "2025-11-09T05:53:47.548612",
+          "action": "send_notification",
+          "actor": "NOC Engineer",
+          "result": "partially_successful"
+        },
+        {
+          "timestamp": "2025-11-08T22:53:47.548612",
+          "action": "reroute_traffic",
+          "actor": "Platform Team",
+          "result": "successful"
+        },
+        {
+          "timestamp": "2025-11-08T22:53:47.548612",
+          "action": "clear_cache",
+          "actor": "NOC Engineer",
+          "result": "partially_successful"
+        }
+      ],
+      "impact_assessment": {
+        "user_impact": "significant",
+        "business_impact": "high",
+        "duration_hours": 17
+      },
+      "assigned_team": "Security Team",
+      "resolution_time": 5374
+    },
+    {
+      "id": "incident_cffbba02e18f4bb7",
+      "tenant_id": "INDTEST",
+      "title": "Incident: HIGH: Database Replication alert",
+      "description": "Critical incident triggered by HIGH: Database Replication alert. Investigation and remediation in progress.",
+      "severity": "high",
+      "status": "closed",
+      "created_at": "2025-11-06T01:35:27.547610",
+      "updated_at": "2025-11-06T08:23:27.547610",
+      "resolved_at": "2025-11-06T08:23:27.547610",
+      "primary_alert": "alert_5eabded6ac6b4a48",
+      "related_alerts": [],
+      "ai_insights": {
+        "root_cause_probability": 0.7291884049095414,
+        "predicted_duration": 6333,
+        "impact_scope": "single_service",
+        "similar_incidents": 5,
+        "recommended_actions": [
+          "auto_restart_service",
+          "scale_resources",
+          "reroute_traffic"
+        ]
+      },
+      "actions_taken": [
+        {
+          "timestamp": "2025-11-08T10:53:47.548612",
+          "action": "run_diagnostic",
+          "actor": "NOC Engineer",
+          "result": "successful"
+        }
+      ],
+      "impact_assessment": {
+        "user_impact": "significant",
+        "business_impact": "high",
+        "duration_hours": 7
+      },
+      "assigned_team": "Database Team",
+      "resolution_time": 6713
+    }
+  ]
+}

@@ -24,4 +24,3 @@ class Store:
 
     def append_local_run(self, record: dict[str, Any]) -> None:
         raise NotImplementedError
-

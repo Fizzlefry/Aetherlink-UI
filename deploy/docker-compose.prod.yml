@@ -22,10 +22,20 @@ services:
     environment:
       # Phase VII M1: Alert webhook notifications
       - ALERT_WEBHOOKS=${ALERT_WEBHOOKS}
+      # AI Operations Brain Configuration
+      - ADAPTIVE_AI_ENABLED=true
+      - LEARNING_OPTIMIZER_ENABLED=true
+      - AUTO_RESPONSE_ENABLED=true
+      - LEARNING_UPDATE_INTERVAL=300  # 5 minutes
+      - ADAPTIVE_CONFIDENCE_THRESHOLD=0.8
+      - AUDIT_RETENTION_DAYS=90
     ports:
-      - "8010:8010"
+      - "8000:8000"  # Updated to match current port
+    volumes:
+      - command-center-data:/app/data
+      - command-center-audit:/app/audit
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8010/ops/ping"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/ops/ping"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -93,3 +103,9 @@ services:
 networks:
   aetherlink:
     driver: bridge
+
+volumes:
+  command-center-data:
+    driver: local
+  command-center-audit:
+    driver: local

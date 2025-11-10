@@ -298,3 +298,85 @@ groups:
       # Action failure rate (15m window)
       - record: autoheal:action_fail_rate_15m
         expr: sum(rate(autoheal_action_failures_total[15m]))
+
+  # ============================================================================
+  # AI Operations Brain Recording Rules
+  # ============================================================================
+  - name: ai_operations_brain.recording
+    interval: 30s
+    rules:
+      # Overall adaptive actions metrics
+      - record: aetherlink_adaptive_actions_total
+        expr: sum(aetherlink_adaptive_actions_total)
+
+      - record: aetherlink_adaptive_auto_actions_total
+        expr: sum(aetherlink_adaptive_auto_actions_total)
+
+      - record: aetherlink_adaptive_success_rate
+        expr: sum(aetherlink_adaptive_success_total) / sum(aetherlink_adaptive_actions_total)
+
+      - record: aetherlink_adaptive_auto_success_rate
+        expr: sum(aetherlink_adaptive_auto_success_total) / sum(aetherlink_adaptive_auto_actions_total)
+
+      # Success rate trends
+      - record: aetherlink_adaptive_success_rate_1h
+        expr: sum(rate(aetherlink_adaptive_success_total[1h])) / sum(rate(aetherlink_adaptive_actions_total[1h]))
+
+      - record: aetherlink_adaptive_success_rate_24h
+        expr: sum(rate(aetherlink_adaptive_success_total[24h])) / sum(rate(aetherlink_adaptive_actions_total[24h]))
+
+      - record: aetherlink_adaptive_success_rate_7d
+        expr: sum(rate(aetherlink_adaptive_success_total[7d])) / sum(rate(aetherlink_adaptive_actions_total[7d]))
+
+      # Dynamic thresholds
+      - record: aetherlink_adaptive_dynamic_thresholds
+        expr: aetherlink_adaptive_current_threshold{alert_type=~".+"}
+
+  # ============================================================================
+  # Phase XXXI: AI Guardrails Observability
+  # ============================================================================
+  - name: aetherlink-adaptive-guardrails
+    interval: 30s
+    rules:
+      # Auto actions per tenant (5m rolling window)
+      - record: aetherlink:adaptive:auto_actions_5m
+        expr: sum(rate(aetherlink_adaptive_actions_executed_total{mode="auto"}[5m])) by (tenant)
+        labels:
+          team: aetherlink
+
+      # Skipped actions by reason (5m rolling window)
+      - record: aetherlink:adaptive:skips_5m
+        expr: sum(rate(aetherlink_adaptive_actions_skipped_total[5m])) by (tenant, reason)
+        labels:
+          team: aetherlink
+
+      # Success ratio: auto actions / total actions (5m rolling window)
+      - record: aetherlink:adaptive:success_ratio_5m
+        expr: |
+          (
+            sum(rate(aetherlink_adaptive_actions_executed_total{mode="auto"}[5m])) by (tenant)
+          )
+          /
+          clamp_min(
+            sum(rate(aetherlink_adaptive_actions_executed_total[5m])) by (tenant),
+            1
+          )
+        labels:
+          team: aetherlink
+
+      # Guardrail effectiveness: skips / (skips + executed) (5m rolling window)
+      - record: aetherlink:adaptive:guardrail_effectiveness_5m
+        expr: |
+          (
+            sum(rate(aetherlink_adaptive_actions_skipped_total[5m])) by (tenant)
+          )
+          /
+          clamp_min(
+            (
+              sum(rate(aetherlink_adaptive_actions_skipped_total[5m])) by (tenant) +
+              sum(rate(aetherlink_adaptive_actions_executed_total[5m])) by (tenant)
+            ),
+            1
+          )
+        labels:
+          team: aetherlink

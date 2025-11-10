@@ -1,0 +1,42 @@
+{
+  "incidents": [
+    {
+      "id": "incident_92c030cb1d7342bd",
+      "tenant_id": "PROFILE_TEST",
+      "title": "Incident: CRITICAL: Disk space running low",
+      "description": "Critical incident triggered by CRITICAL: Disk space running low. Investigation and remediation in progress.",
+      "severity": "critical",
+      "status": "open",
+      "created_at": "2025-11-06T21:30:32.589683",
+      "updated_at": "2025-11-07T01:27:32.589683",
+      "resolved_at": null,
+      "primary_alert": "alert_652e0601202e4fd2",
+      "related_alerts": [],
+      "ai_insights": {
+        "root_cause_probability": 0.8504526280514433,
+        "predicted_duration": 5998,
+        "impact_scope": "multiple_services",
+        "similar_incidents": 8,
+        "recommended_actions": [
+          "send_notification",
+          "auto_restart_service",
+          "kill_process"
+        ]
+      },
+      "actions_taken": [
+        {
+          "timestamp": "2025-11-08T11:55:39.589683",
+          "action": "rollback_deployment",
+          "actor": "NOC Engineer",
+          "result": "partially_successful"
+        }
+      ],
+      "impact_assessment": {
+        "user_impact": "severe",
+        "business_impact": "critical",
+        "duration_hours": 49
+      },
+      "assigned_team": "AI Ops"
+    }
+  ]
+}

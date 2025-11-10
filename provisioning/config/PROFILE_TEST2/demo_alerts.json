@@ -1,0 +1,297 @@
+{
+  "alerts": [
+    {
+      "id": "alert_a60d2ae39f5f47e9",
+      "tenant_id": "PROFILE_TEST2",
+      "timestamp": "2025-11-07T02:15:43.139135",
+      "category": "security",
+      "type": "Suspicious Activity",
+      "severity": "high",
+      "status": "auto_resolved",
+      "title": "HIGH: Suspicious Activity alert",
+      "description": "Detailed information for Suspicious Activity alert.",
+      "source": "system_8",
+      "tags": [
+        "compliance",
+        "suspicious_activity",
+        "security"
+      ],
+      "metrics": {
+        "value": 89.2896234723546
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8534700857127223,
+        "predicted_impact": "high",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 1118,
+        "similar_incidents": 1
+      },
+      "resolution_time": 2478,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_aeb3b2981baa49de",
+      "tenant_id": "PROFILE_TEST2",
+      "timestamp": "2025-11-07T17:32:31.139135",
+      "category": "security",
+      "type": "SSL Certificate Expiry",
+      "severity": "medium",
+      "status": "active",
+      "title": "SSL Certificate Expiry alert",
+      "description": "Detailed information for SSL Certificate Expiry alert.",
+      "source": "system_4",
+      "tags": [
+        "ssl_certificate_expiry",
+        "compliance",
+        "security"
+      ],
+      "metrics": {
+        "value": 78.32479494951471
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7628645947161387,
+        "predicted_impact": "medium",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 1732,
+        "similar_incidents": 4
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_e7d2f2b9cf534fc9",
+      "tenant_id": "PROFILE_TEST2",
+      "timestamp": "2025-11-07T22:46:09.139135",
+      "category": "security",
+      "type": "SSL Certificate Expiry",
+      "severity": "medium",
+      "status": "auto_resolved",
+      "title": "SSL Certificate Expiry alert",
+      "description": "Detailed information for SSL Certificate Expiry alert.",
+      "source": "system_8",
+      "tags": [
+        "ssl_certificate_expiry",
+        "compliance",
+        "security"
+      ],
+      "metrics": {
+        "value": 10.880893358370514
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9707192905316789,
+        "predicted_impact": "medium",
+        "recommended_action": "rollback_deployment",
+        "estimated_resolution_time": 834,
+        "similar_incidents": 0
+      },
+      "resolution_time": 2251,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_ea6c0aff2fa44364",
+      "tenant_id": "PROFILE_TEST2",
+      "timestamp": "2025-11-08T13:00:48.139135",
+      "category": "security",
+      "type": "PCI Compliance Alert",
+      "severity": "low",
+      "status": "acknowledged",
+      "title": "PCI Compliance Alert alert",
+      "description": "Detailed information for PCI Compliance Alert alert.",
+      "source": "system_7",
+      "tags": [
+        "pci_compliance_alert",
+        "compliance",
+        "security"
+      ],
+      "metrics": {
+        "value": 18.126202876073783
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7730160517989404,
+        "predicted_impact": "low",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 1356,
+        "similar_incidents": 4
+      },
+      "resolution_time": null,
+      "assigned_to": "ai_system"
+    },
+    {
+      "id": "alert_055d576eac564cfd",
+      "tenant_id": "PROFILE_TEST2",
+      "timestamp": "2025-11-08T13:18:39.139135",
+      "category": "application",
+      "type": "Response Time",
+      "severity": "medium",
+      "status": "resolved",
+      "title": "Slow response times",
+      "description": "Application response times are slower than expected.",
+      "source": "system_9",
+      "tags": [
+        "service",
+        "application",
+        "app",
+        "response_time"
+      ],
+      "metrics": {
+        "response_time_ms": 5032.252353471169,
+        "requests_per_second": 26.29557764712394
+      },
+      "ai_analysis": {
+        "confidence_score": 0.773445166841247,
+        "predicted_impact": "medium",
+        "recommended_action": "auto_restart_service",
+        "estimated_resolution_time": 1089,
+        "similar_incidents": 1
+      },
+      "resolution_time": 928,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_8537b37f39104a47",
+      "tenant_id": "PROFILE_TEST2",
+      "timestamp": "2025-11-08T16:25:16.139135",
+      "category": "security",
+      "type": "SSL Certificate Expiry",
+      "severity": "medium",
+      "status": "auto_resolved",
+      "title": "SSL Certificate Expiry alert",
+      "description": "Detailed information for SSL Certificate Expiry alert.",
+      "source": "system_3",
+      "tags": [
+        "ssl_certificate_expiry",
+        "compliance",
+        "security"
+      ],
+      "metrics": {
+        "value": 58.89258158958434
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8586469078481168,
+        "predicted_impact": "medium",
+        "recommended_action": "auto_restart_service",
+        "estimated_resolution_time": 309,
+        "similar_incidents": 3
+      },
+      "resolution_time": 113,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_b7cd4c4c014c4bcb",
+      "tenant_id": "PROFILE_TEST2",
+      "timestamp": "2025-11-08T21:08:38.139135",
+      "category": "security",
+      "type": "Access Violations",
+      "severity": "low",
+      "status": "active",
+      "title": "Access Violations alert",
+      "description": "Detailed information for Access Violations alert.",
+      "source": "system_4",
+      "tags": [
+        "compliance",
+        "access_violations",
+        "security"
+      ],
+      "metrics": {
+        "value": 85.44929967827073
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9196922776033435,
+        "predicted_impact": "low",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 1210,
+        "similar_incidents": 3
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_05b9fc79e1914993",
+      "tenant_id": "PROFILE_TEST2",
+      "timestamp": "2025-11-08T23:00:48.139135",
+      "category": "security",
+      "type": "Access Violations",
+      "severity": "low",
+      "status": "acknowledged",
+      "title": "Access Violations alert",
+      "description": "Detailed information for Access Violations alert.",
+      "source": "system_10",
+      "tags": [
+        "compliance",
+        "access_violations",
+        "security"
+      ],
+      "metrics": {
+        "value": 36.0222442290826
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9103758369459874,
+        "predicted_impact": "low",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 895,
+        "similar_incidents": 2
+      },
+      "resolution_time": null,
+      "assigned_to": "ai_system"
+    },
+    {
+      "id": "alert_b3b6ef56862b4b5c",
+      "tenant_id": "PROFILE_TEST2",
+      "timestamp": "2025-11-08T23:25:56.139135",
+      "category": "security",
+      "type": "Access Violations",
+      "severity": "high",
+      "status": "auto_resolved",
+      "title": "HIGH: Access Violations alert",
+      "description": "Detailed information for Access Violations alert.",
+      "source": "system_1",
+      "tags": [
+        "compliance",
+        "access_violations",
+        "security"
+      ],
+      "metrics": {
+        "value": 84.12115065903781
+      },
+      "ai_analysis": {
+        "confidence_score": 0.87554909924576,
+        "predicted_impact": "high",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 990,
+        "similar_incidents": 1
+      },
+      "resolution_time": 3429,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_09ce9b600bce4313",
+      "tenant_id": "PROFILE_TEST2",
+      "timestamp": "2025-11-09T05:41:07.139135",
+      "category": "application",
+      "type": "Error Rate",
+      "severity": "medium",
+      "status": "auto_resolved",
+      "title": "Error rate spike detected",
+      "description": "Application error rate has spiked above acceptable levels.",
+      "source": "system_8",
+      "tags": [
+        "error_rate",
+        "service",
+        "application",
+        "app"
+      ],
+      "metrics": {
+        "value": 21.55631385758867
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8791038149624365,
+        "predicted_impact": "medium",
+        "recommended_action": "apply_config_change",
+        "estimated_resolution_time": 1657,
+        "similar_incidents": 0
+      },
+      "resolution_time": 2116,
+      "assigned_to": null
+    }
+  ]
+}

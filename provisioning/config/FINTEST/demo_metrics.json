@@ -1,0 +1,25 @@
+{
+  "tenant_id": "FINTEST",
+  "period_start": "2025-11-02T08:53:22.555001",
+  "period_end": "2025-11-09T08:53:22.555001",
+  "summary": {
+    "total_alerts": 25,
+    "total_incidents": 3,
+    "auto_resolved_percentage": 0.24,
+    "average_resolution_time": 1953.8181818181818,
+    "ai_actions_taken": 11,
+    "system_uptime": 0.9571979984945473
+  },
+  "performance": {
+    "cpu_usage_avg": 0.6065767783527944,
+    "memory_usage_avg": 0.4871893153856145,
+    "disk_usage_avg": 0.45028954881828304,
+    "network_latency_avg": 13.050344549596042
+  },
+  "ai_insights": {
+    "learning_iterations": 360,
+    "model_accuracy": 0.8927418753888451,
+    "false_positive_rate": 0.022797542675236558,
+    "prediction_accuracy": 0.9436095869697739
+  }
+}

@@ -2,16 +2,16 @@
 AetherLink Media Service
 Handles file uploads and storage for all vertical apps
 """
+
 import os
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Optional
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query
-from fastapi.staticfiles import StaticFiles
+from db import get_db, init_db
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from db import init_db, get_db
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="AetherLink Media Service", version="1.0.0")
 
@@ -47,8 +47,8 @@ def health():
 @app.post("/upload")
 async def upload_file(
     file: UploadFile = File(...),
-    job_id: Optional[str] = Form(None),
-    tag: Optional[str] = Form(None),
+    job_id: str | None = Form(None),
+    tag: str | None = Form(None),
 ):
     """
     Simple single-shot upload.
@@ -73,22 +73,25 @@ async def upload_file(
 
     # Track upload in database
     with get_db() as conn:
-        conn.execute("""
+        conn.execute(
+            """
             INSERT INTO uploads (
                 media_id, filename, original_filename, url,
                 mime_type, size_bytes, job_id, tag, created_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            media_id,
-            filename,
-            file.filename,
-            url,
-            file.content_type,
-            file_size,
-            job_id,
-            tag,
-            now
-        ))
+        """,
+            (
+                media_id,
+                filename,
+                file.filename,
+                url,
+                file.content_type,
+                file_size,
+                job_id,
+                tag,
+                now,
+            ),
+        )
         conn.commit()
 
     return {
@@ -102,31 +105,27 @@ async def upload_file(
 
 @app.get("/uploads")
 def list_uploads(
-    job_id: Optional[str] = Query(None),
-    tag: Optional[str] = Query(None),
-    limit: int = Query(50, le=500)
+    job_id: str | None = Query(None), tag: str | None = Query(None), limit: int = Query(50, le=500)
 ):
     """List uploaded media, optionally filtered by job_id or tag"""
     with get_db() as conn:
         if job_id and tag:
             rows = conn.execute(
                 "SELECT * FROM uploads WHERE job_id = ? AND tag = ? ORDER BY created_at DESC LIMIT ?",
-                (job_id, tag, limit)
+                (job_id, tag, limit),
             ).fetchall()
         elif job_id:
             rows = conn.execute(
                 "SELECT * FROM uploads WHERE job_id = ? ORDER BY created_at DESC LIMIT ?",
-                (job_id, limit)
+                (job_id, limit),
             ).fetchall()
         elif tag:
             rows = conn.execute(
-                "SELECT * FROM uploads WHERE tag = ? ORDER BY created_at DESC LIMIT ?",
-                (tag, limit)
+                "SELECT * FROM uploads WHERE tag = ? ORDER BY created_at DESC LIMIT ?", (tag, limit)
             ).fetchall()
         else:
             rows = conn.execute(
-                "SELECT * FROM uploads ORDER BY created_at DESC LIMIT ?",
-                (limit,)
+                "SELECT * FROM uploads ORDER BY created_at DESC LIMIT ?", (limit,)
             ).fetchall()
 
     return [dict(row) for row in rows]
@@ -135,7 +134,7 @@ def list_uploads(
 @app.get("/uploads/stats")
 def upload_stats():
     """Get storage and upload statistics (summary/details + flat for backwards-compat)."""
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.now(UTC)
     today_utc = now_utc.date().isoformat()
     since_24h = (now_utc - timedelta(hours=24)).isoformat()
 
@@ -161,7 +160,7 @@ def upload_stats():
         mime_rows = conn.execute(
             "SELECT mime_type, COUNT(*) as c FROM uploads GROUP BY mime_type"
         ).fetchall()
-        by_mime_type = { (row[0] or "unknown"): row[1] for row in mime_rows }
+        by_mime_type = {(row[0] or "unknown"): row[1] for row in mime_rows}
 
     total_files = total_files or 0
     total_size_bytes = total_size_bytes or 0
@@ -196,5 +195,6 @@ def upload_stats():
 
 if __name__ == "__main__":
     import uvicorn
+
     port = int(os.getenv("PORT", 9109))
     uvicorn.run(app, host="0.0.0.0", port=port)

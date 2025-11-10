@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 import os
 import time
 import uuid
@@ -15,7 +15,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import Counter
 from pydantic import BaseModel, Field
 from rbac import require_roles
-from routers import alert_templates, alerts, delivery_history, events, operator_audit_router
+from routers import (
+    alert_templates,
+    alerts,
+    delivery_history,
+    events,
+    operator_audit_router,
+)
 from starlette.middleware.base import BaseHTTPMiddleware
 
 
@@ -378,7 +384,7 @@ async def local_run(request: Request):
         action = body.get("action")
         if not action:
             return {"ok": False, "error": "action is required"}
-        
+
         # Record the run
         run_rec = {
             "action": action,
@@ -387,20 +393,21 @@ async def local_run(request: Request):
             "ok": True,
             "stdout": f"Executed {action}",
             "stderr": "",
-            "error": None
+            "error": None,
         }
-        
+
         LOCAL_ACTION_RUNS.insert(0, run_rec)
         if len(LOCAL_ACTION_RUNS) > MAX_LOCAL_ACTION_RUNS:
             LOCAL_ACTION_RUNS.pop()
-        
+
         # Increment Prometheus counter
         local_actions_total.labels(tenant=tenant, action=action).inc()
-        
+
         return {"ok": True, "stdout": f"Executed {action}", "stderr": "", "error": None}
     except Exception as e:
         print(f"Error in local_run: {e}")
         return {"ok": False, "error": str(e)}
+
 
 @app.get("/api/local/runs")
 async def list_local_runs():

@@ -67,6 +67,7 @@ const CommandCenter: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
     const [userRoles, setUserRoles] = useLocalStorage<string>("cc.userRoles", "operator");
+    const [selectedTenant, setSelectedTenant] = useState<string>("all");
 
     const fetchHealth = async () => {
         try {
@@ -526,10 +527,18 @@ const CommandCenter: React.FC = () => {
             )}
 
             {/* Recent Remediations */}
-            <RecentRemediations userRoles={userRoles} />
+            <RecentRemediations
+                userRoles={userRoles}
+                selectedTenant={selectedTenant}
+                onSelectTenant={setSelectedTenant}
+            />
 
             {/* Operator Insights */}
-            <OperatorInsights userRoles={userRoles} />
+            <OperatorInsights
+                userRoles={userRoles}
+                selectedTenant={selectedTenant}
+                onSelectTenant={setSelectedTenant}
+            />
 
             {/* Footer Info */}
             <div style={{ marginTop: "3rem", padding: "1.5rem", background: "white", borderRadius: "12px", border: "1px solid #e5e7eb" }}>

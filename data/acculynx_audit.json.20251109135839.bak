@@ -1,0 +1,12 @@
+[
+  {
+    "ts": 1762696719.1291056,
+    "ts_iso": "2025-11-09T13:58:39.129105Z",
+    "tenant": "system",
+    "operation": "event_emit",
+    "source": "command-center",
+    "metadata": {
+      "type": "system.health.degraded"
+    }
+  }
+]

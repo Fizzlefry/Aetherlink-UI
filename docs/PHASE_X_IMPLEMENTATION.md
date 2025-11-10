@@ -503,11 +503,11 @@ Predictors use triage labels for decision-making:
 # autoheal/predictors.py
 def choose_strategy(incident, context):
     triage_dist = analyze_triage_distribution(context["recent_deliveries"])
-    
+
     # High transient ratio → REPLAY_RECENT
     if triage_dist["transient_ratio"] > 0.7:
         return "REPLAY_RECENT"
-    
+
     # High permanent ratio → ESCALATE_OPERATOR
     if triage_dist["permanent_ratio"] > 0.8:
         return "ESCALATE_OPERATOR"
@@ -523,13 +523,13 @@ Engine fetches incidents from anomaly detector:
 # autoheal/engine.py
 def run_autoheal_cycle():
     from anomaly_detector import detect_anomalies
-    
+
     incidents = detect_anomalies(
         recent_deliveries=...,
         baseline_deliveries=...,
         timestamp=now
     )
-    
+
     for incident in incidents:
         # Choose strategy and execute
         ...
@@ -545,11 +545,11 @@ Probability predictions use endpoint success rates:
 # autoheal/predictors.py
 def predict_outcome_probability(incident, strategy, context):
     base_prob = 0.75  # REPLAY_RECENT baseline
-    
+
     # Adjust based on historical success rate
     endpoint_success_rate = context.get("endpoint_success_rate", 0.5)
     adjusted = (base_prob + endpoint_success_rate) / 2
-    
+
     return adjusted
 ```
 
@@ -567,7 +567,7 @@ def _get_recent_deliveries_for_incident(incident, time_window_minutes):
     # Replace with actual DB query:
     from session import get_session
     from sqlalchemy import text
-    
+
     async with get_session() as session:
         query = text("""
             SELECT id, tenant_id, target, status, triage_label, triage_score
@@ -625,11 +625,11 @@ def _log_autoheal_action(action, incident, strategy, details):
 # autoheal/engine.py (line 344)
 def run_autoheal_cycle():
     from anomaly_detector import detect_anomalies
-    
+
     # Wire up actual delivery queries for recent + baseline
     recent_deliveries = ...  # Last 5 minutes
     baseline_deliveries = ... # Last 60 minutes
-    
+
     incidents = detect_anomalies(recent_deliveries, baseline_deliveries, now)
 ```
 
@@ -642,11 +642,11 @@ def run_autoheal_cycle():
 def require_admin_role():
     # Replace with actual RBAC check:
     from auth import get_current_user, verify_role
-    
+
     user = get_current_user()
     if not verify_role(user, ["admin", "operator"]):
         raise HTTPException(status_code=403, detail="Admin role required")
-    
+
     return user
 ```
 
@@ -688,14 +688,14 @@ _last_heal_by_endpoint: Dict[str, datetime] = {}  # Replace with Redis
 def test_choose_strategy_high_transient():
     incident = {"failures": 10, "severity": "low"}
     context = {"transient_ratio": 0.8, "permanent_ratio": 0.1}
-    
+
     strategy = choose_strategy(incident, context)
     assert strategy == "REPLAY_RECENT"
 
 def test_choose_strategy_massive_failure():
     incident = {"failures": 100, "severity": "critical"}
     context = {"transient_ratio": 0.5, "permanent_ratio": 0.5}
-    
+
     strategy = choose_strategy(incident, context)
     assert strategy == "ESCALATE_OPERATOR"
 ```
@@ -743,8 +743,8 @@ wait
 
 **1. Healing Success Rate**
 ```sql
-SELECT 
-  COUNT(CASE WHEN actions_taken IS NOT NULL THEN 1 END)::float / 
+SELECT
+  COUNT(CASE WHEN actions_taken IS NOT NULL THEN 1 END)::float /
   COUNT(*) as success_rate
 FROM autoheal_history
 WHERE run_at >= NOW() - INTERVAL '24 hours';
@@ -752,7 +752,7 @@ WHERE run_at >= NOW() - INTERVAL '24 hours';
 
 **2. Strategy Distribution**
 ```sql
-SELECT 
+SELECT
   action->>'strategy' as strategy,
   COUNT(*) as count
 FROM autoheal_history,
@@ -764,7 +764,7 @@ ORDER BY count DESC;
 
 **3. Replay Effectiveness**
 ```sql
-SELECT 
+SELECT
   AVG(CASE WHEN new_status = 'delivered' THEN 1 ELSE 0 END) as replay_success_rate
 FROM deliveries
 WHERE meta->>'autoheal' = 'true'
@@ -777,7 +777,7 @@ WHERE meta->>'autoheal' = 'true'
 ```yaml
 alert: AutohealHighSkipRate
 expr: |
-  (sum(rate(autoheal_actions_skipped_total[5m])) / 
+  (sum(rate(autoheal_actions_skipped_total[5m])) /
    sum(rate(autoheal_incidents_detected_total[5m]))) > 0.5
 annotations:
   description: "More than 50% of incidents are being skipped"
@@ -802,10 +802,10 @@ Replace rule-based `choose_strategy()` with ML model:
 # autoheal/predictors.py
 def choose_strategy_ml(incident, context):
     from ml_models import StrategyClassifier
-    
+
     features = extract_features(incident, context)
     model = StrategyClassifier.load()
-    
+
     strategy, confidence = model.predict(features)
     return strategy if confidence > 0.7 else "DEFER_AND_MONITOR"
 ```
@@ -818,10 +818,10 @@ def choose_strategy_ml(incident, context):
 ```python
 def _execute_rate_limit_strategy(incident, limits):
     tenant_id = incident["tenant_id"]
-    
+
     # Apply throttle via API gateway
     apply_tenant_throttle(tenant_id, factor=0.5, duration_minutes=30)
-    
+
     # Log action
     _log_autoheal_action("autoheal_rate_limit", incident, "RATE_LIMIT_SOURCE", {...})
 ```
@@ -830,10 +830,10 @@ def _execute_rate_limit_strategy(incident, limits):
 ```python
 def _execute_silence_strategy(incident, limits):
     error_signature = hash_error_message(incident["message"])
-    
+
     # Suppress duplicate alerts
     set_alert_silence(error_signature, duration_minutes=15)
-    
+
     # Log action
     _log_autoheal_action("autoheal_silence", incident, "SILENCE_DUPES", {...})
 ```
@@ -877,7 +877,7 @@ redis = Redis(host="redis-master")
 
 def run_autoheal_cycle():
     lock_key = f"autoheal:lock:{region}"
-    
+
     if redis.set(lock_key, "1", nx=True, ex=300):  # 5min lock
         try:
             # Execute healing
@@ -938,9 +938,9 @@ curl -X DELETE "http://localhost:8010/autoheal/cooldown/https://api.example.com/
 **Debug:**
 ```python
 # Check triage labels
-SELECT triage_label, COUNT(*) 
-FROM deliveries 
-WHERE status = 'failed' 
+SELECT triage_label, COUNT(*)
+FROM deliveries
+WHERE status = 'failed'
   AND created_at >= NOW() - INTERVAL '10 minutes'
 GROUP BY triage_label;
 

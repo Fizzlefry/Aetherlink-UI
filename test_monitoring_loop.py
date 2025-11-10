@@ -14,11 +14,9 @@ This test verifies:
 """
 
 import asyncio
+
 import httpx
-import time
-import subprocess
-import sys
-import os
+
 
 async def test_roofwonder_monitoring_loop():
     """Test the complete monitoring loop for RoofWonder."""
@@ -54,7 +52,9 @@ async def test_roofwonder_monitoring_loop():
                             print("✅ Prometheus scraping RoofWonder successfully")
                             roofwonder_found = True
                         else:
-                            print(f"❌ RoofWonder target unhealthy: {target.get('lastError', 'unknown')}")
+                            print(
+                                f"❌ RoofWonder target unhealthy: {target.get('lastError', 'unknown')}"
+                            )
                         break
 
                 if not roofwonder_found:
@@ -80,12 +80,12 @@ async def test_roofwonder_monitoring_loop():
                     if service.get("name") == "roofwonder":
                         roofwonder_service = service
                         break
-                
+
                 if roofwonder_service:
                     if roofwonder_service.get("up"):
                         print("✅ Command Center shows RoofWonder as UP")
                     else:
-                        print(f"⚠️ Command Center shows RoofWonder as DOWN")
+                        print("⚠️ Command Center shows RoofWonder as DOWN")
                 else:
                     print("❌ RoofWonder not found in Command Center status")
             else:
@@ -104,7 +104,9 @@ async def test_roofwonder_monitoring_loop():
                 alerts = response.json()
                 print(f"✅ Retrieved {len(alerts)} recent alerts")
                 # Look for any RoofWonder alerts
-                roofwonder_alerts = [a for a in alerts if a.get("labels", {}).get("service") == "roofwonder"]
+                roofwonder_alerts = [
+                    a for a in alerts if a.get("labels", {}).get("service") == "roofwonder"
+                ]
                 if roofwonder_alerts:
                     print(f"📋 Found {len(roofwonder_alerts)} RoofWonder alerts")
                     for alert in roofwonder_alerts[:2]:  # Show first 2
@@ -128,6 +130,7 @@ async def test_roofwonder_monitoring_loop():
     print("   3. Check alerts: curl http://localhost:8010/alerts/operator-view")
     print("   4. Run auto-heal worker: python autoheal_worker.py")
     print("   5. Check results in alerts")
+
 
 if __name__ == "__main__":
     asyncio.run(test_roofwonder_monitoring_loop())

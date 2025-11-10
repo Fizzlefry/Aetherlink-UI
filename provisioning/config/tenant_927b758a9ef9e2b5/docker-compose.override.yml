@@ -1,0 +1,23 @@
+version: '3.8'
+
+# Tenant-specific configuration for Test
+# Apply with: docker compose -f docker-compose.yml -f tenant_927b758a9ef9e2b5/docker-compose.override.yml up
+
+services:
+  command-center:
+    environment:
+      - TENANT_ID=tenant_927b758a9ef9e2b5
+      - TENANT_NAME=Test
+      - TENANT_DOMAIN=test.com
+      - API_KEY=z9D0dQQWUjNQ5NVjwcT0uSxa1bRGq0ct
+      - ADMIN_KEY=M4IEENO73qwVIsI2BZ5Xj1XlKDRMcmpd
+      - PLAN_ID=starter
+      - MAX_OPERATIONS_PER_MONTH=10000
+      - MAX_AI_ACTIONS_PER_MONTH=1000
+      - MAX_ALERTS_PER_DAY=1000
+      - MAX_API_CALLS_PER_MINUTE=60
+      - MAX_STORAGE_GB=10
+      - MAX_USERS=5
+    volumes:
+      - ./data/tenant_927b758a9ef9e2b5:/app/data
+      - ./audit/tenant_927b758a9ef9e2b5:/app/audit

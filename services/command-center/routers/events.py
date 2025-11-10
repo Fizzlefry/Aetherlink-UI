@@ -155,24 +155,25 @@ async def publish_event(event: dict, request: Request):
 async def event_stream():
     """
     Server-Sent Events stream for real-time event updates.
-    
+
     Phase VI M2: Live event streaming for dashboards and monitoring.
     """
+
     async def event_generator():
         # Create queue for this client
         queue = asyncio.Queue()
         subscribers.append(queue)
-        
+
         try:
             # Send initial connection message
             yield f"data: {json.dumps({'type': 'connected', 'timestamp': datetime.now(UTC).isoformat()})}\n\n"
-            
+
             while True:
                 try:
                     # Wait for event with timeout
                     event = await asyncio.wait_for(queue.get(), timeout=30.0)
                     yield f"data: {json.dumps(event)}\n\n"
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     # Send heartbeat
                     yield f"data: {json.dumps({'type': 'heartbeat', 'timestamp': datetime.now(UTC).isoformat()})}\n\n"
         except Exception as e:
@@ -181,7 +182,7 @@ async def event_stream():
             # Remove from subscribers
             if queue in subscribers:
                 subscribers.remove(queue)
-    
+
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
@@ -190,7 +191,7 @@ async def event_stream():
             "Connection": "keep-alive",
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Headers": "Cache-Control",
-        }
+        },
     )
 
 
@@ -198,24 +199,25 @@ async def event_stream():
 async def event_stream():
     """
     Server-Sent Events stream for real-time event updates.
-    
+
     Phase VI M2: Live event streaming for dashboards and monitoring.
     """
+
     async def event_generator():
         # Create queue for this client
         queue = asyncio.Queue()
         subscribers.append(queue)
-        
+
         try:
             # Send initial connection message
             yield f"data: {json.dumps({'type': 'connected', 'timestamp': datetime.now(UTC).isoformat()})}\n\n"
-            
+
             while True:
                 try:
                     # Wait for event with timeout
                     event = await asyncio.wait_for(queue.get(), timeout=30.0)
                     yield f"data: {json.dumps(event)}\n\n"
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     # Send heartbeat
                     yield f"data: {json.dumps({'type': 'heartbeat', 'timestamp': datetime.now(UTC).isoformat()})}\n\n"
         except Exception as e:
@@ -224,7 +226,7 @@ async def event_stream():
             # Remove from subscribers
             if queue in subscribers:
                 subscribers.remove(queue)
-    
+
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
@@ -233,7 +235,7 @@ async def event_stream():
             "Connection": "keep-alive",
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Headers": "Cache-Control",
-        }
+        },
     )
 
 
@@ -540,7 +542,9 @@ async def list_tenant_retention():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/retention/tenants/{tenant_id}", dependencies=[Depends(require_roles(["operator", "admin"]))])
+@router.put(
+    "/retention/tenants/{tenant_id}", dependencies=[Depends(require_roles(["operator", "admin"]))]
+)
 async def set_tenant_retention_policy(tenant_id: str, retention_days: int):
     """
     Set or update tenant-specific retention policy.
@@ -577,7 +581,9 @@ async def set_tenant_retention_policy(tenant_id: str, retention_days: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/retention/tenants/{tenant_id}", dependencies=[Depends(require_roles(["operator", "admin"]))])
+@router.delete(
+    "/retention/tenants/{tenant_id}", dependencies=[Depends(require_roles(["operator", "admin"]))]
+)
 async def delete_tenant_retention_policy(tenant_id: str):
     """
     Delete tenant-specific retention policy (reverts to global default).

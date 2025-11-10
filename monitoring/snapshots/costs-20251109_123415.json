@@ -1,0 +1,77 @@
+{
+  "ok": true,
+  "tenant": null,
+  "current_costs": {
+    "FINTEST": {
+      "operations_count_30d": 0,
+      "base_operations_cost": 0.0,
+      "ai_processing_cost": 0.0,
+      "infrastructure_cost": 0.0,
+      "total_cost": 0.0,
+      "budget_remaining": 0,
+      "budget_utilization_pct": 0
+    },
+    "SAASDEMO": {
+      "operations_count_30d": 0,
+      "base_operations_cost": 0.0,
+      "ai_processing_cost": 0.0,
+      "infrastructure_cost": 0.0,
+      "total_cost": 0.0,
+      "budget_remaining": 0,
+      "budget_utilization_pct": 0
+    },
+    "THE-EXPERT-CO": {
+      "operations_count_30d": 0,
+      "base_operations_cost": 0.0,
+      "ai_processing_cost": 0.0,
+      "infrastructure_cost": 0.0,
+      "total_cost": 0.0,
+      "budget_remaining": 0,
+      "budget_utilization_pct": 0
+    },
+    "TESTTENANT": {
+      "operations_count_30d": 0,
+      "base_operations_cost": 0.0,
+      "ai_processing_cost": 0.0,
+      "infrastructure_cost": 0.0,
+      "total_cost": 0.0,
+      "budget_remaining": 0,
+      "budget_utilization_pct": 0
+    }
+  },
+  "forecasts": {
+    "FINTEST": {
+      "forecasted_operations": 0.0,
+      "forecasted_cost": 0,
+      "forecast_period_months": 1,
+      "confidence": 0.0,
+      "current_monthly_cost": 0.0
+    },
+    "SAASDEMO": {
+      "forecasted_operations": 0.0,
+      "forecasted_cost": 0,
+      "forecast_period_months": 1,
+      "confidence": 0.0,
+      "current_monthly_cost": 0.0
+    },
+    "THE-EXPERT-CO": {
+      "forecasted_operations": 0.0,
+      "forecasted_cost": 0,
+      "forecast_period_months": 1,
+      "confidence": 0.0,
+      "current_monthly_cost": 0.0
+    },
+    "TESTTENANT": {
+      "forecasted_operations": 0.0,
+      "forecasted_cost": 0,
+      "forecast_period_months": 1,
+      "confidence": 0.0,
+      "current_monthly_cost": 0.0
+    }
+  },
+  "summary": {
+    "total_tenants": 4,
+    "total_cost_all_tenants": 0.0,
+    "tenants_over_budget": 0
+  }
+}

@@ -268,9 +268,9 @@ def update_rule_enabled(rule_id: int, enabled: bool) -> bool:
 def enqueue_autoheal_task(service: str, env: str, alertname: str, payload: dict[str, Any]) -> None:
     """
     Enqueue an auto-heal task for critical alerts from vertical services.
-    
+
     Phase XVII M1: Auto-heal hook implementation.
-    
+
     Args:
         service: Service name (roofwonder, peakpro, policypal)
         env: Environment (dev, staging, prod)
@@ -281,7 +281,7 @@ def enqueue_autoheal_task(service: str, env: str, alertname: str, payload: dict[
     # like Celery, RQ, or a simple SQLite queue table
     print(f"[auto-heal] 🚑 Enqueuing heal task for {service} in {env}: {alertname}")
     print(f"[auto-heal] 📋 Payload: {payload}")
-    
+
     # TODO: Implement actual task queue integration
     # - Create autoheal_tasks table in SQLite
     # - Add task status tracking (pending, running, completed, failed)
@@ -292,15 +292,15 @@ def enqueue_autoheal_task(service: str, env: str, alertname: str, payload: dict[
 def save_alert(alert: dict[str, Any]) -> None:
     """
     Persist an alert to SQLite for durability across restarts.
-    
+
     Phase XVIII: Alert persistence.
-    
+
     Args:
         alert: Normalized alert dict with fingerprint, env, service, severity, etc.
     """
     conn = get_conn()
     now = datetime.now(UTC).isoformat()
-    
+
     # Extract key fields from the alert record
     fingerprint = alert.get("fingerprint")
     env = alert.get("env", "unknown")
@@ -308,11 +308,12 @@ def save_alert(alert: dict[str, Any]) -> None:
     severity = alert.get("severity")
     alertname = alert.get("alertname") or (alert.get("labels") or {}).get("alertname")
     tenant = alert.get("tenant") or (alert.get("labels") or {}).get("tenant")
-    
+
     # Convert payload to JSON string
     import json
+
     payload_json = json.dumps(alert)
-    
+
     try:
         conn.execute(
             """
@@ -340,67 +341,72 @@ def save_alert(alert: dict[str, Any]) -> None:
         conn.close()
 
 
-def get_persisted_alerts(limit: int = 100, env: str | None = None, service: str | None = None, tenant: str | None = None) -> list[dict[str, Any]]:
+def get_persisted_alerts(
+    limit: int = 100, env: str | None = None, service: str | None = None, tenant: str | None = None
+) -> list[dict[str, Any]]:
     """
     Retrieve persisted alerts from SQLite.
-    
+
     Phase XVIII: Alert persistence.
-    
+
     Args:
         limit: Maximum number of alerts to return
         env: Filter by environment
         service: Filter by service
         tenant: Filter by tenant
-        
+
     Returns:
         List of alert dictionaries
     """
     conn = get_conn()
-    
+
     query = """
         SELECT fingerprint, env, service, severity, alertname, received_at, payload, tenant, created_at
         FROM alerts
         WHERE 1=1
     """
     params = []
-    
+
     if env:
         query += " AND env = ?"
         params.append(env)
-    
+
     if service:
         query += " AND service = ?"
         params.append(service)
-        
+
     if tenant:
         query += " AND tenant = ?"
         params.append(tenant)
-    
+
     query += " ORDER BY received_at DESC LIMIT ?"
     params.append(limit)
-    
+
     cur = conn.execute(query, params)
     rows = cur.fetchall()
     conn.close()
-    
+
     import json
+
     alerts = []
     for row in rows:
         try:
             alert = json.loads(row["payload"])
             # Ensure we have the database fields
-            alert.update({
-                "fingerprint": row["fingerprint"],
-                "env": row["env"],
-                "service": row["service"],
-                "severity": row["severity"],
-                "alertname": row["alertname"],
-                "received_at": row["received_at"],
-                "tenant": row["tenant"],
-                "created_at": row["created_at"],
-            })
+            alert.update(
+                {
+                    "fingerprint": row["fingerprint"],
+                    "env": row["env"],
+                    "service": row["service"],
+                    "severity": row["severity"],
+                    "alertname": row["alertname"],
+                    "received_at": row["received_at"],
+                    "tenant": row["tenant"],
+                    "created_at": row["created_at"],
+                }
+            )
             alerts.append(alert)
         except json.JSONDecodeError:
             print(f"[alert_store] ⚠️  Failed to decode alert payload for {row['fingerprint']}")
-    
+
     return alerts

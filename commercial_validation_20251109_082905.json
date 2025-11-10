@@ -1,0 +1,207 @@
+{
+  "summary": {
+    "total_tests": 21,
+    "passed": 18,
+    "failed": 3,
+    "success_rate": 0.8571428571428571,
+    "duration_seconds": 12.366979122161865
+  },
+  "results": [
+    {
+      "test": "Tenant Creation - Starter",
+      "success": true,
+      "message": "Created tenant tenant_05f625700803348d",
+      "timestamp": "2025-11-09T08:28:53.596755",
+      "details": {
+        "tenant_id": "tenant_05f625700803348d"
+      }
+    },
+    {
+      "test": "Tenant Creation - Enterprise",
+      "success": true,
+      "message": "Created tenant tenant_85a237a41d270de9",
+      "timestamp": "2025-11-09T08:28:53.598755",
+      "details": {
+        "tenant_id": "tenant_85a237a41d270de9"
+      }
+    },
+    {
+      "test": "Tenant Config - tenant_05f625700803348d",
+      "success": true,
+      "message": "Configuration file created",
+      "timestamp": "2025-11-09T08:28:53.607016",
+      "details": {
+        "file": "provisioning/config/tenant_05f625700803348d/.env",
+        "size": 482
+      }
+    },
+    {
+      "test": "Tenant Config - tenant_85a237a41d270de9",
+      "success": true,
+      "message": "Configuration file created",
+      "timestamp": "2025-11-09T08:28:53.611518",
+      "details": {
+        "file": "provisioning/config/tenant_85a237a41d270de9/.env",
+        "size": 538
+      }
+    },
+    {
+      "test": "Billing Subscription",
+      "success": true,
+      "message": "Created subscription",
+      "timestamp": "2025-11-09T08:28:53.613662",
+      "details": {
+        "subscription_id": "sub_1",
+        "customer_id": "cus_1",
+        "plan_id": "starter",
+        "status": "active",
+        "current_period_end": "2025-12-09T08:28:53.611518"
+      }
+    },
+    {
+      "test": "Usage Recording",
+      "success": true,
+      "message": "Recorded usage metrics",
+      "timestamp": "2025-11-09T08:28:53.614663",
+      "details": {}
+    },
+    {
+      "test": "Usage Summary",
+      "success": true,
+      "message": "Retrieved usage summary",
+      "timestamp": "2025-11-09T08:28:53.614663",
+      "details": {
+        "plan_id": "starter",
+        "current_period_start": "2025-11-09T08:28:53.611518",
+        "current_period_end": "2025-12-09T08:28:53.611518",
+        "usage": {
+          "operations": 500,
+          "ai_actions": 50,
+          "api_calls": 0,
+          "storage_used_gb": 0
+        },
+        "limits": {
+          "operations": 10000,
+          "ai_actions": 1000
+        },
+        "overage": {},
+        "estimated_cost": 499.0
+      }
+    },
+    {
+      "test": "Invoice Generation",
+      "success": true,
+      "message": "Generated invoice",
+      "timestamp": "2025-11-09T08:28:53.615662",
+      "details": {
+        "invoice_id": "inv_VALIDATION_STARTER_20251109_082853",
+        "tenant_id": "VALIDATION_STARTER",
+        "period_start": "2025-11-09T08:28:53.611518",
+        "period_end": "2025-12-09T08:28:53.611518",
+        "plan_id": "starter",
+        "base_cost": 499.0,
+        "usage": {
+          "operations": 500,
+          "ai_actions": 50,
+          "api_calls": 0,
+          "storage_used_gb": 0
+        },
+        "overage": {},
+        "total_cost": 499.0,
+        "status": "pending",
+        "generated_at": "2025-11-09T08:28:53.614663"
+      }
+    },
+    {
+      "test": "Tenant Files - tenant_05f625700803348d",
+      "success": true,
+      "message": "All required files present",
+      "timestamp": "2025-11-09T08:28:53.615662",
+      "details": {}
+    },
+    {
+      "test": "Tenant Files - tenant_85a237a41d270de9",
+      "success": true,
+      "message": "All required files present",
+      "timestamp": "2025-11-09T08:28:53.615662",
+      "details": {}
+    },
+    {
+      "test": "Resource Limits - tenant_05f625700803348d",
+      "success": true,
+      "message": "Limits configured: ['operations', 'ai_actions', 'users']",
+      "timestamp": "2025-11-09T08:28:53.615662",
+      "details": {}
+    },
+    {
+      "test": "Resource Limits - tenant_85a237a41d270de9",
+      "success": true,
+      "message": "Limits configured: ['operations', 'ai_actions', 'users']",
+      "timestamp": "2025-11-09T08:28:53.615662",
+      "details": {}
+    },
+    {
+      "test": "API Health Check",
+      "success": false,
+      "message": "API health check failed: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /health (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001FD87EC6190>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+      "timestamp": "2025-11-09T08:28:57.685001",
+      "details": {}
+    },
+    {
+      "test": "API Chat - tenant_05f625700803348d",
+      "success": false,
+      "message": "Chat test failed: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001FD87EC8CD0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+      "timestamp": "2025-11-09T08:29:01.753003",
+      "details": {}
+    },
+    {
+      "test": "API Chat - tenant_85a237a41d270de9",
+      "success": false,
+      "message": "Chat test failed: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /chat (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001FD87EB6750>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+      "timestamp": "2025-11-09T08:29:05.874051",
+      "details": {}
+    },
+    {
+      "test": "Documentation - COMMERCIAL_LICENSING.md",
+      "success": true,
+      "message": "Documentation exists (7500 bytes)",
+      "timestamp": "2025-11-09T08:29:05.874051",
+      "details": {}
+    },
+    {
+      "test": "Documentation - ENTERPRISE_SUPPORT_PLAN.md",
+      "success": true,
+      "message": "Documentation exists (8749 bytes)",
+      "timestamp": "2025-11-09T08:29:05.874051",
+      "details": {}
+    },
+    {
+      "test": "Documentation - COMMERCIAL_PRESENTATION.md",
+      "success": true,
+      "message": "Documentation exists (12053 bytes)",
+      "timestamp": "2025-11-09T08:29:05.874051",
+      "details": {}
+    },
+    {
+      "test": "Documentation - README.md",
+      "success": true,
+      "message": "Documentation exists (14629 bytes)",
+      "timestamp": "2025-11-09T08:29:05.874051",
+      "details": {}
+    },
+    {
+      "test": "Script Validation - provisioning/tenant_provisioning.py",
+      "success": true,
+      "message": "Script compiles successfully",
+      "timestamp": "2025-11-09T08:29:05.919159",
+      "details": {}
+    },
+    {
+      "test": "Script Validation - provisioning/billing_integration.py",
+      "success": true,
+      "message": "Script compiles successfully",
+      "timestamp": "2025-11-09T08:29:05.961734",
+      "details": {}
+    }
+  ]
+}

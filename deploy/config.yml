@@ -1,0 +1,50 @@
+# AetherLink Multi-Environment Configuration
+# Phase XXX: Multi-Env Packaging & Marketplace Readiness
+
+# Environment tier (dev | staging | prod)
+environment: "dev"
+
+# Feature toggles
+features:
+  demo_data: true
+  adaptive_dry_run: true
+  beta_endpoints: true
+  ai_guardrails: true
+  tenant_metrics: true
+  audit_logging: true
+
+# External service URLs
+services:
+  prometheus: "http://localhost:9090"
+  grafana: "http://localhost:3000"
+  mailer: "smtp://localhost:587"
+  database: "postgresql://localhost:5432/aetherlink"
+  redis: "redis://localhost:6379"
+
+# Tenant defaults
+tenants:
+  default_confidence_floor: 0.8
+  max_actions_per_window: 5
+  protected_jobs:
+    - "prod-replication"
+    - "daily-billing"
+    - "security-alerts"
+
+# Security settings
+security:
+  rbac_enabled: true
+  audit_retention_days: 90
+  api_key_rotation_days: 30
+
+# Observability
+observability:
+  metrics_enabled: true
+  tracing_enabled: false
+  log_level: "INFO"
+
+# Marketplace metadata
+marketplace:
+  version: "1.0.0"
+  service: "aetherlink"
+  maintainer: "AetherLink Team"
+  description: "AI-Ops Platform with Guarded Automation"

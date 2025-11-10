@@ -577,7 +577,7 @@ const OperatorDashboard: React.FC = () => {
     return (
         <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-semibold text-white">🎛️ Operator Dashboard</h1>
+                <h1 className="text-2xl font-semibold text-white">⚙️ Operator Dashboard</h1>
                 <div className="flex items-center gap-4 flex-wrap">
                     <MediaStatsBadge />
                     <div className="flex items-center gap-2">

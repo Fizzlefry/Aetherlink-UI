@@ -2,13 +2,15 @@
 PolicyPal AI - Insurance Policy Management & Analysis Service
 Can run independently or integrate with AetherLink
 """
-from fastapi import FastAPI, Depends, HTTPException, Header, status, Request, Response
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta, timezone
+
 import os
-from db import init_db, get_db
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+from db import get_db, init_db
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response, status
 from prometheus_client import CONTENT_TYPE_LATEST, Gauge, generate_latest
+from pydantic import BaseModel
 
 app = FastAPI(title="PolicyPal AI", version="1.0.0")
 
@@ -17,9 +19,7 @@ SERVICE_NAME = os.getenv("SERVICE_NAME", "policypal")
 SERVICE_ENV = os.getenv("AETHER_ENV", "local")
 
 aether_service_up = Gauge(
-    "aether_service_up",
-    "Service reachability flag for AetherLink monitoring",
-    ["service", "env"]
+    "aether_service_up", "Service reachability flag for AetherLink monitoring", ["service", "env"]
 )
 
 # Initialize database on startup
@@ -33,10 +33,8 @@ APP_KEY = os.getenv("APP_KEY", "local-dev-key")  # Backward compatibility
 APP_KEYS = os.getenv("APP_KEYS", APP_KEY)  # Support multiple keys
 VALID_KEYS = set(key.strip() for key in APP_KEYS.split(",") if key.strip())
 
-async def verify_app_key(
-    request: Request,
-    x_app_key: Optional[str] = Header(default=None)
-):
+
+async def verify_app_key(request: Request, x_app_key: str | None = Header(default=None)):
     """Verify API key for write operations"""
     if not x_app_key or x_app_key not in VALID_KEYS:
         raise HTTPException(
@@ -47,43 +45,48 @@ async def verify_app_key(
     # Stash key for downstream handlers (per-key attribution)
     request.state.app_key = x_app_key
 
+
 # Models
 class Policy(BaseModel):
-    id: Optional[int] = None
+    id: int | None = None
     policy_number: str
     policy_type: str  # auto, home, life, health, business
     carrier: str
     policyholder: str
     effective_date: str
     expiration_date: str
-    premium_amount: Optional[float] = None
-    coverage_amount: Optional[float] = None
-    coverage_details: Optional[Dict[str, Any]] = None
-    exclusions: Optional[List[str]] = None
-    requirements: Optional[List[str]] = None
-    documents: List[str] = []  # URLs or file paths
-    summary: Optional[str] = None
-    created_at: Optional[str] = None
+    premium_amount: float | None = None
+    coverage_amount: float | None = None
+    coverage_details: dict[str, Any] | None = None
+    exclusions: list[str] | None = None
+    requirements: list[str] | None = None
+    documents: list[str] = []  # URLs or file paths
+    summary: str | None = None
+    created_at: str | None = None
+
 
 class PolicyIngest(BaseModel):
-    policy_data: Dict[str, Any]  # Raw policy data to parse
+    policy_data: dict[str, Any]  # Raw policy data to parse
+
 
 class AIActionRequest(BaseModel):
     action: str  # summarize_policy, extract_coverage, compare_policies
-    policy_id: Optional[int] = None
-    policy_ids: Optional[List[int]] = None
-    parameters: Optional[Dict[str, Any]] = None
+    policy_id: int | None = None
+    policy_ids: list[int] | None = None
+    parameters: dict[str, Any] | None = None
+
 
 # Health endpoint
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "policypal-ai"}
 
+
 # AI Snapshot endpoint
 @app.get("/ai/snapshot")
 def ai_snapshot():
     """AI-friendly view of policy data"""
-    from datetime import datetime, timedelta
+    from datetime import datetime
 
     now = datetime.now()
 
@@ -116,28 +119,34 @@ def ai_snapshot():
     recommendations = []
 
     if expiring_soon:
-        recommendations.append({
-            "priority": "high",
-            "category": "expiration",
-            "message": f"{len(expiring_soon)} policies expiring within 30 days",
-            "action": "Review and renew expiring policies"
-        })
+        recommendations.append(
+            {
+                "priority": "high",
+                "category": "expiration",
+                "message": f"{len(expiring_soon)} policies expiring within 30 days",
+                "action": "Review and renew expiring policies",
+            }
+        )
 
     if needs_summary:
-        recommendations.append({
-            "priority": "low",
-            "category": "documentation",
-            "message": f"{len(needs_summary)} policies missing AI summaries",
-            "action": "Generate summaries using /ai/action"
-        })
+        recommendations.append(
+            {
+                "priority": "low",
+                "category": "documentation",
+                "message": f"{len(needs_summary)} policies missing AI summaries",
+                "action": "Generate summaries using /ai/action",
+            }
+        )
 
     if not recommendations:
-        recommendations.append({
-            "priority": "low",
-            "category": "status",
-            "message": "All policies are up to date",
-            "action": "No action required"
-        })
+        recommendations.append(
+            {
+                "priority": "low",
+                "category": "status",
+                "message": "All policies are up to date",
+                "action": "No action required",
+            }
+        )
 
     return {
         "timestamp": now.isoformat(),
@@ -146,10 +155,11 @@ def ai_snapshot():
             "recent": recent,
             "expiring_soon": expiring_soon[:5],
             "needs_summary": needs_summary[:3],
-            "by_type": _group_by_type(policies)
+            "by_type": _group_by_type(policies),
         },
-        "recommendations": recommendations
+        "recommendations": recommendations,
     }
+
 
 def _group_by_type(policies):
     """Group policies by type"""
@@ -161,6 +171,7 @@ def _group_by_type(policies):
         result[policy_type] += 1
     return result
 
+
 # Policy Endpoints
 @app.get("/pp/policies")
 def list_policies():
@@ -170,35 +181,39 @@ def list_policies():
         rows = cursor.fetchall()
         return [dict(row) for row in rows]
 
+
 @app.post("/pp/policies", dependencies=[Depends(verify_app_key)])
 def create_policy(policy: Policy, request: Request):
     # Per-key attribution: log which key was used
     used_key = getattr(request.state, "app_key", None)
     print(f"[PolicyPal AI] Policy created via key: {used_key}")
-    
+
     now = datetime.now().isoformat()
 
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO policies (
                 policy_number, policy_type, carrier, policyholder,
                 effective_date, expiration_date, premium_amount,
                 coverage_amount, summary, created_at, created_by_key
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            policy.policy_number,
-            policy.policy_type,
-            policy.carrier,
-            policy.policyholder,
-            policy.effective_date,
-            policy.expiration_date,
-            policy.premium_amount,
-            policy.coverage_amount,
-            policy.summary,
-            now,
-            used_key
-        ))
+        """,
+            (
+                policy.policy_number,
+                policy.policy_type,
+                policy.carrier,
+                policy.policyholder,
+                policy.effective_date,
+                policy.expiration_date,
+                policy.premium_amount,
+                policy.coverage_amount,
+                policy.summary,
+                now,
+                used_key,
+            ),
+        )
         conn.commit()
         policy_id = cursor.lastrowid
 
@@ -213,8 +228,9 @@ def create_policy(policy: Policy, request: Request):
         "premium_amount": policy.premium_amount,
         "coverage_amount": policy.coverage_amount,
         "summary": policy.summary,
-        "created_at": now
+        "created_at": now,
     }
+
 
 @app.get("/pp/policies/{policy_id}")
 def get_policy(policy_id: int):
@@ -226,6 +242,7 @@ def get_policy(policy_id: int):
     if row:
         return dict(row)
     return {"error": "Policy not found"}, 404
+
 
 @app.post("/pp/policies/ingest")
 def ingest_policy(data: PolicyIngest):
@@ -250,20 +267,23 @@ def ingest_policy(data: PolicyIngest):
 
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO policies (
                 policy_number, policy_type, carrier, policyholder,
                 effective_date, expiration_date, created_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (
-            policy_number,
-            policy_type,
-            carrier,
-            policyholder,
-            effective_date,
-            expiration_date,
-            now
-        ))
+        """,
+            (
+                policy_number,
+                policy_type,
+                carrier,
+                policyholder,
+                effective_date,
+                expiration_date,
+                now,
+            ),
+        )
         conn.commit()
         policy_id = cursor.lastrowid
 
@@ -275,10 +295,11 @@ def ingest_policy(data: PolicyIngest):
         "policyholder": policyholder,
         "effective_date": effective_date,
         "expiration_date": expiration_date,
-        "created_at": now
+        "created_at": now,
     }
 
     return {"status": "ingested", "policy": policy}
+
 
 @app.get("/pp/policies/search")
 def search_policies(query: str = ""):
@@ -289,14 +310,18 @@ def search_policies(query: str = ""):
             cursor.execute("SELECT * FROM policies ORDER BY created_at DESC")
         else:
             query_pattern = f"%{query}%"
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT * FROM policies
                 WHERE policy_number LIKE ? OR carrier LIKE ? OR policyholder LIKE ?
                 ORDER BY created_at DESC
-            """, (query_pattern, query_pattern, query_pattern))
+            """,
+                (query_pattern, query_pattern, query_pattern),
+            )
 
         rows = cursor.fetchall()
         return [dict(row) for row in rows]
+
 
 @app.post("/ai/action")
 def ai_action(request: AIActionRequest):
@@ -326,8 +351,7 @@ def ai_action(request: AIActionRequest):
         with get_db() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "UPDATE policies SET summary = ? WHERE id = ?",
-                (summary, request.policy_id)
+                "UPDATE policies SET summary = ? WHERE id = ?", (summary, request.policy_id)
             )
             conn.commit()
 
@@ -360,8 +384,7 @@ def ai_action(request: AIActionRequest):
             cursor = conn.cursor()
             placeholders = ",".join("?" * len(request.policy_ids))
             cursor.execute(
-                f"SELECT * FROM policies WHERE id IN ({placeholders})",
-                request.policy_ids
+                f"SELECT * FROM policies WHERE id IN ({placeholders})", request.policy_ids
             )
             rows = cursor.fetchall()
 
@@ -376,8 +399,8 @@ def ai_action(request: AIActionRequest):
             "differences": {
                 "carriers": list(set(p.get("carrier") for p in policies_to_compare)),
                 "types": list(set(p.get("policy_type") for p in policies_to_compare)),
-                "coverage_amounts": [p.get("coverage_amount") for p in policies_to_compare]
-            }
+                "coverage_amounts": [p.get("coverage_amount") for p in policies_to_compare],
+            },
         }
 
         return comparison
@@ -385,19 +408,17 @@ def ai_action(request: AIActionRequest):
     else:
         return {"error": f"Unknown action: {action}"}, 400
 
+
 @app.get("/stats")
 def get_pp_stats():
     """Operational stats for PolicyPal AI."""
-    today = datetime.now(timezone.utc).date().isoformat()
+    today = datetime.now(UTC).date().isoformat()
 
     with get_db() as conn:
-        total_policies = conn.execute(
-            "SELECT COUNT(*) FROM policies"
-        ).fetchone()[0]
+        total_policies = conn.execute("SELECT COUNT(*) FROM policies").fetchone()[0]
 
         policies_today = conn.execute(
-            "SELECT COUNT(*) FROM policies WHERE created_at >= ?",
-            (today,)
+            "SELECT COUNT(*) FROM policies WHERE created_at >= ?", (today,)
         ).fetchone()[0]
 
         # optional: count expiring in next 30 days
@@ -412,14 +433,14 @@ def get_pp_stats():
 
         # Attribution: last created by key and top creators
         last_created_by_key = conn.execute("""
-            SELECT created_by_key FROM policies 
-            WHERE created_by_key IS NOT NULL 
+            SELECT created_by_key FROM policies
+            WHERE created_by_key IS NOT NULL
             ORDER BY created_at DESC LIMIT 1
         """).fetchone()
 
         top_creator_keys = conn.execute("""
-            SELECT created_by_key, COUNT(*) as count FROM policies 
-            WHERE created_by_key IS NOT NULL 
+            SELECT created_by_key, COUNT(*) as count FROM policies
+            WHERE created_by_key IS NOT NULL
             GROUP BY created_by_key ORDER BY count DESC LIMIT 3
         """).fetchall()
 
@@ -427,7 +448,7 @@ def get_pp_stats():
     attribution = {}
     if last_created_by_key and last_created_by_key[0]:
         attribution["last_created_by_key"] = last_created_by_key[0]
-    
+
     if top_creator_keys:
         attribution["top_creator_keys"] = [
             {"key": row[0], "count": row[1]} for row in top_creator_keys
@@ -443,9 +464,10 @@ def get_pp_stats():
         "policies": total_policies,
         "policies_today": policies_today,
         "expiring_soon": expiring_soon,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "attribution": attribution,
     }
+
 
 @app.get("/keys")
 def get_configured_keys():
@@ -453,15 +475,18 @@ def get_configured_keys():
     return {
         "service": "policypal-ai",
         "keys": list(VALID_KEYS),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
+
 
 @app.get("/metrics")
 def metrics():
     """Prometheus metrics endpoint."""
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
+
 if __name__ == "__main__":
     import uvicorn
+
     port = int(os.getenv("PORT", 8023))
     uvicorn.run(app, host="0.0.0.0", port=port)

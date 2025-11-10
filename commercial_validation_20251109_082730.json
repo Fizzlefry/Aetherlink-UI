@@ -1,0 +1,141 @@
+{
+  "summary": {
+    "total_tests": 13,
+    "passed": 10,
+    "failed": 3,
+    "success_rate": 0.7692307692307693,
+    "duration_seconds": 4.191737651824951
+  },
+  "results": [
+    {
+      "test": "Tenant Creation - Starter",
+      "success": false,
+      "message": "Failed to create starter tenant: TenantProvisioningService.provision_tenant() got an unexpected keyword argument 'tenant_id'",
+      "timestamp": "2025-11-09T08:27:26.640512",
+      "details": {}
+    },
+    {
+      "test": "Tenant Creation - Enterprise",
+      "success": false,
+      "message": "Failed to create enterprise tenant: TenantProvisioningService.provision_tenant() got an unexpected keyword argument 'tenant_id'",
+      "timestamp": "2025-11-09T08:27:26.640512",
+      "details": {}
+    },
+    {
+      "test": "Billing Subscription",
+      "success": true,
+      "message": "Created subscription",
+      "timestamp": "2025-11-09T08:27:26.641548",
+      "details": {
+        "subscription_id": "sub_1",
+        "customer_id": "cus_1",
+        "plan_id": "starter",
+        "status": "active",
+        "current_period_end": "2025-12-09T08:27:26.640512"
+      }
+    },
+    {
+      "test": "Usage Recording",
+      "success": true,
+      "message": "Recorded usage metrics",
+      "timestamp": "2025-11-09T08:27:26.642620",
+      "details": {}
+    },
+    {
+      "test": "Usage Summary",
+      "success": true,
+      "message": "Retrieved usage summary",
+      "timestamp": "2025-11-09T08:27:26.642620",
+      "details": {
+        "plan_id": "starter",
+        "current_period_start": "2025-11-09T08:27:26.640512",
+        "current_period_end": "2025-12-09T08:27:26.640512",
+        "usage": {
+          "operations": 500,
+          "ai_actions": 50,
+          "api_calls": 0,
+          "storage_used_gb": 0
+        },
+        "limits": {
+          "operations": 10000,
+          "ai_actions": 1000
+        },
+        "overage": {},
+        "estimated_cost": 499.0
+      }
+    },
+    {
+      "test": "Invoice Generation",
+      "success": true,
+      "message": "Generated invoice",
+      "timestamp": "2025-11-09T08:27:26.642620",
+      "details": {
+        "invoice_id": "inv_VALIDATION_STARTER_20251109_082726",
+        "tenant_id": "VALIDATION_STARTER",
+        "period_start": "2025-11-09T08:27:26.640512",
+        "period_end": "2025-12-09T08:27:26.640512",
+        "plan_id": "starter",
+        "base_cost": 499.0,
+        "usage": {
+          "operations": 500,
+          "ai_actions": 50,
+          "api_calls": 0,
+          "storage_used_gb": 0
+        },
+        "overage": {},
+        "total_cost": 499.0,
+        "status": "pending",
+        "generated_at": "2025-11-09T08:27:26.642620"
+      }
+    },
+    {
+      "test": "API Health Check",
+      "success": false,
+      "message": "API health check failed: HTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /health (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000277D2A861D0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+      "timestamp": "2025-11-09T08:27:30.740481",
+      "details": {}
+    },
+    {
+      "test": "Documentation - COMMERCIAL_LICENSING.md",
+      "success": true,
+      "message": "Documentation exists (7500 bytes)",
+      "timestamp": "2025-11-09T08:27:30.740481",
+      "details": {}
+    },
+    {
+      "test": "Documentation - ENTERPRISE_SUPPORT_PLAN.md",
+      "success": true,
+      "message": "Documentation exists (8749 bytes)",
+      "timestamp": "2025-11-09T08:27:30.740481",
+      "details": {}
+    },
+    {
+      "test": "Documentation - COMMERCIAL_PRESENTATION.md",
+      "success": true,
+      "message": "Documentation exists (12053 bytes)",
+      "timestamp": "2025-11-09T08:27:30.741584",
+      "details": {}
+    },
+    {
+      "test": "Documentation - README.md",
+      "success": true,
+      "message": "Documentation exists (14629 bytes)",
+      "timestamp": "2025-11-09T08:27:30.741584",
+      "details": {}
+    },
+    {
+      "test": "Script Validation - provisioning/tenant_provisioning.py",
+      "success": true,
+      "message": "Script compiles successfully",
+      "timestamp": "2025-11-09T08:27:30.787493",
+      "details": {}
+    },
+    {
+      "test": "Script Validation - provisioning/billing_integration.py",
+      "success": true,
+      "message": "Script compiles successfully",
+      "timestamp": "2025-11-09T08:27:30.832249",
+      "details": {}
+    }
+  ]
+}

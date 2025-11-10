@@ -1,0 +1,1497 @@
+{
+  "alerts": [
+    {
+      "id": "alert_24429df7b3c1422d",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-02T09:00:22.222458",
+      "category": "infrastructure",
+      "type": "Backup Failures",
+      "severity": "medium",
+      "status": "acknowledged",
+      "title": "Backup Failures alert",
+      "description": "Detailed information for Backup Failures alert.",
+      "source": "system_3",
+      "tags": [
+        "platform",
+        "infrastructure",
+        "infra",
+        "backup_failures"
+      ],
+      "metrics": {
+        "value": 99.39452892755426
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7798264692145601,
+        "predicted_impact": "medium",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 1229,
+        "similar_incidents": 3
+      },
+      "resolution_time": null,
+      "assigned_to": "noc_team"
+    },
+    {
+      "id": "alert_9ea34e122061437b",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-02T13:28:08.222458",
+      "category": "security",
+      "type": "Failed Login Attempts",
+      "severity": "critical",
+      "status": "resolved",
+      "title": "CRITICAL: Failed Login Attempts alert",
+      "description": "Detailed information for Failed Login Attempts alert.",
+      "source": "system_8",
+      "tags": [
+        "security",
+        "compliance",
+        "failed_login_attempts"
+      ],
+      "metrics": {
+        "value": 44.53557867761779
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8426782027366547,
+        "predicted_impact": "critical",
+        "recommended_action": "send_notification",
+        "estimated_resolution_time": 794,
+        "similar_incidents": 1
+      },
+      "resolution_time": 2348,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_36a1c4f4ff924dcb",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-02T15:04:21.222458",
+      "category": "security",
+      "type": "Access Violations",
+      "severity": "medium",
+      "status": "auto_resolved",
+      "title": "Access Violations alert",
+      "description": "Detailed information for Access Violations alert.",
+      "source": "system_7",
+      "tags": [
+        "access_violations",
+        "security",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 20.455176423668163
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9654852085969466,
+        "predicted_impact": "medium",
+        "recommended_action": "clear_cache",
+        "estimated_resolution_time": 805,
+        "similar_incidents": 1
+      },
+      "resolution_time": 1853,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_15b8815efd724e1c",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-02T19:37:52.222458",
+      "category": "application",
+      "type": "Cache Hit Rate",
+      "severity": "low",
+      "status": "acknowledged",
+      "title": "Cache Hit Rate alert",
+      "description": "Detailed information for Cache Hit Rate alert.",
+      "source": "system_7",
+      "tags": [
+        "service",
+        "cache_hit_rate",
+        "app",
+        "application"
+      ],
+      "metrics": {
+        "value": 51.974171554400904
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9343540643385515,
+        "predicted_impact": "low",
+        "recommended_action": "clear_cache",
+        "estimated_resolution_time": 808,
+        "similar_incidents": 3
+      },
+      "resolution_time": null,
+      "assigned_to": "auto_escalated"
+    },
+    {
+      "id": "alert_19b9a46348ec4893",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-02T20:36:05.222458",
+      "category": "system",
+      "type": "CPU Usage",
+      "severity": "medium",
+      "status": "active",
+      "title": "High CPU usage detected on CPU Usage",
+      "description": "System CPU utilization has exceeded normal thresholds, potentially impacting performance.",
+      "source": "system_6",
+      "tags": [
+        "infrastructure",
+        "system",
+        "performance",
+        "cpu_usage"
+      ],
+      "metrics": {
+        "cpu_percent": 89.55516221128285,
+        "load_average": 9.428239489381696
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7483158733409018,
+        "predicted_impact": "medium",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 1109,
+        "similar_incidents": 3
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_aed26d02e5d4437f",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-02T22:10:58.222458",
+      "category": "infrastructure",
+      "type": "Database Replication",
+      "severity": "medium",
+      "status": "acknowledged",
+      "title": "Database Replication alert",
+      "description": "Detailed information for Database Replication alert.",
+      "source": "system_3",
+      "tags": [
+        "platform",
+        "infrastructure",
+        "infra",
+        "database_replication"
+      ],
+      "metrics": {
+        "value": 47.056332223988285
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7300430953865357,
+        "predicted_impact": "medium",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 1656,
+        "similar_incidents": 3
+      },
+      "resolution_time": null,
+      "assigned_to": "ai_system"
+    },
+    {
+      "id": "alert_6ea781dad56b4d8e",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-03T08:52:46.222458",
+      "category": "application",
+      "type": "Throughput",
+      "severity": "low",
+      "status": "auto_resolved",
+      "title": "Throughput alert",
+      "description": "Detailed information for Throughput alert.",
+      "source": "system_8",
+      "tags": [
+        "service",
+        "app",
+        "throughput",
+        "application"
+      ],
+      "metrics": {
+        "value": 44.79755400853812
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9665341258321132,
+        "predicted_impact": "low",
+        "recommended_action": "auto_restart_service",
+        "estimated_resolution_time": 1149,
+        "similar_incidents": 5
+      },
+      "resolution_time": 2917,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_d7991b5869a34407",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-03T19:31:41.222458",
+      "category": "security",
+      "type": "Suspicious Activity",
+      "severity": "medium",
+      "status": "active",
+      "title": "Suspicious Activity alert",
+      "description": "Detailed information for Suspicious Activity alert.",
+      "source": "system_1",
+      "tags": [
+        "security",
+        "compliance",
+        "suspicious_activity"
+      ],
+      "metrics": {
+        "value": 95.39815453857533
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8922183201714262,
+        "predicted_impact": "medium",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 455,
+        "similar_incidents": 5
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_993fcc7732f7402e",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-03T22:23:31.222458",
+      "category": "infrastructure",
+      "type": "Server Unreachable",
+      "severity": "low",
+      "status": "resolved",
+      "title": "Server Unreachable alert",
+      "description": "Detailed information for Server Unreachable alert.",
+      "source": "system_7",
+      "tags": [
+        "server_unreachable",
+        "infrastructure",
+        "infra",
+        "platform"
+      ],
+      "metrics": {
+        "value": 18.01869892166862
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8710494381869652,
+        "predicted_impact": "low",
+        "recommended_action": "scale_resources",
+        "estimated_resolution_time": 1475,
+        "similar_incidents": 1
+      },
+      "resolution_time": 123,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_f96d68e5c7a04a08",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-04T00:00:30.222458",
+      "category": "security",
+      "type": "Failed Login Attempts",
+      "severity": "medium",
+      "status": "acknowledged",
+      "title": "Failed Login Attempts alert",
+      "description": "Detailed information for Failed Login Attempts alert.",
+      "source": "system_3",
+      "tags": [
+        "security",
+        "compliance",
+        "failed_login_attempts"
+      ],
+      "metrics": {
+        "value": 9.980530387498899
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8992868009213851,
+        "predicted_impact": "medium",
+        "recommended_action": "rollback_deployment",
+        "estimated_resolution_time": 1257,
+        "similar_incidents": 1
+      },
+      "resolution_time": null,
+      "assigned_to": "auto_escalated"
+    },
+    {
+      "id": "alert_a646da934ae74aa3",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-04T01:04:33.222458",
+      "category": "security",
+      "type": "Suspicious Activity",
+      "severity": "low",
+      "status": "resolved",
+      "title": "Suspicious Activity alert",
+      "description": "Detailed information for Suspicious Activity alert.",
+      "source": "system_5",
+      "tags": [
+        "security",
+        "compliance",
+        "suspicious_activity"
+      ],
+      "metrics": {
+        "value": 23.891157387219586
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9262265547496128,
+        "predicted_impact": "low",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 867,
+        "similar_incidents": 0
+      },
+      "resolution_time": 3140,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_686df632075847ee",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-04T05:24:04.222458",
+      "category": "system",
+      "type": "Network Latency",
+      "severity": "medium",
+      "status": "resolved",
+      "title": "Network latency increased",
+      "description": "Network response times have increased significantly.",
+      "source": "system_9",
+      "tags": [
+        "infrastructure",
+        "system",
+        "performance",
+        "network_latency"
+      ],
+      "metrics": {
+        "latency_ms": 305.59629875991845,
+        "packet_loss": 2.4093570130892306
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7679963786325009,
+        "predicted_impact": "medium",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 1157,
+        "similar_incidents": 3
+      },
+      "resolution_time": 530,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_a5edc756c28b45e9",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-04T18:00:31.222458",
+      "category": "application",
+      "type": "Response Time",
+      "severity": "medium",
+      "status": "active",
+      "title": "Slow response times",
+      "description": "Application response times are slower than expected.",
+      "source": "system_8",
+      "tags": [
+        "service",
+        "response_time",
+        "app",
+        "application"
+      ],
+      "metrics": {
+        "response_time_ms": 5504.623583200428,
+        "requests_per_second": 31.60092675721102
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9346580915641363,
+        "predicted_impact": "medium",
+        "recommended_action": "reroute_traffic",
+        "estimated_resolution_time": 1382,
+        "similar_incidents": 0
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_7a8c6a3f3a3e4a4b",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-04T19:08:55.222458",
+      "category": "infrastructure",
+      "type": "Load Balancer Issues",
+      "severity": "low",
+      "status": "auto_resolved",
+      "title": "Load Balancer Issues alert",
+      "description": "Detailed information for Load Balancer Issues alert.",
+      "source": "system_8",
+      "tags": [
+        "platform",
+        "infrastructure",
+        "infra",
+        "load_balancer_issues"
+      ],
+      "metrics": {
+        "value": 19.595177946188436
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9161299832698986,
+        "predicted_impact": "low",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 677,
+        "similar_incidents": 5
+      },
+      "resolution_time": 3319,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_73b04fc93b0649be",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-04T22:08:57.222458",
+      "category": "application",
+      "type": "Cache Hit Rate",
+      "severity": "low",
+      "status": "resolved",
+      "title": "Cache Hit Rate alert",
+      "description": "Detailed information for Cache Hit Rate alert.",
+      "source": "system_6",
+      "tags": [
+        "service",
+        "cache_hit_rate",
+        "app",
+        "application"
+      ],
+      "metrics": {
+        "value": 10.664987237023771
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8903611123950637,
+        "predicted_impact": "low",
+        "recommended_action": "apply_config_change",
+        "estimated_resolution_time": 1503,
+        "similar_incidents": 0
+      },
+      "resolution_time": 768,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_7a6b42547aa649d9",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-05T02:36:17.222458",
+      "category": "security",
+      "type": "Suspicious Activity",
+      "severity": "medium",
+      "status": "resolved",
+      "title": "Suspicious Activity alert",
+      "description": "Detailed information for Suspicious Activity alert.",
+      "source": "system_3",
+      "tags": [
+        "security",
+        "compliance",
+        "suspicious_activity"
+      ],
+      "metrics": {
+        "value": 0.5561497562430961
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8083984911766697,
+        "predicted_impact": "medium",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 1467,
+        "similar_incidents": 3
+      },
+      "resolution_time": 339,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_b2bed26cc578481d",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-05T07:22:46.222458",
+      "category": "infrastructure",
+      "type": "Backup Failures",
+      "severity": "low",
+      "status": "auto_resolved",
+      "title": "Backup Failures alert",
+      "description": "Detailed information for Backup Failures alert.",
+      "source": "system_4",
+      "tags": [
+        "platform",
+        "infrastructure",
+        "infra",
+        "backup_failures"
+      ],
+      "metrics": {
+        "value": 17.466175746466572
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9592767022028792,
+        "predicted_impact": "low",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 1471,
+        "similar_incidents": 2
+      },
+      "resolution_time": 1273,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_cd7b46a93ebb4af6",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-05T07:39:04.222458",
+      "category": "application",
+      "type": "Error Rate",
+      "severity": "low",
+      "status": "auto_resolved",
+      "title": "Error rate spike detected",
+      "description": "Application error rate has spiked above acceptable levels.",
+      "source": "system_9",
+      "tags": [
+        "service",
+        "error_rate",
+        "app",
+        "application"
+      ],
+      "metrics": {
+        "value": 93.2054209068975
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9035443876093955,
+        "predicted_impact": "low",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 1554,
+        "similar_incidents": 3
+      },
+      "resolution_time": 192,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_4aee0b95d1b5491e",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-05T07:51:32.222458",
+      "category": "system",
+      "type": "Disk Space",
+      "severity": "medium",
+      "status": "active",
+      "title": "Disk space running low",
+      "description": "Available disk space is below recommended thresholds.",
+      "source": "system_5",
+      "tags": [
+        "infrastructure",
+        "system",
+        "disk_space",
+        "performance"
+      ],
+      "metrics": {
+        "disk_percent": 85.26927130327518,
+        "available_gb": 8.552805079073586
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8503639219731877,
+        "predicted_impact": "medium",
+        "recommended_action": "auto_restart_service",
+        "estimated_resolution_time": 797,
+        "similar_incidents": 5
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_0cb7e42311b94826",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-05T10:51:33.222458",
+      "category": "application",
+      "type": "Error Rate",
+      "severity": "low",
+      "status": "resolved",
+      "title": "Error rate spike detected",
+      "description": "Application error rate has spiked above acceptable levels.",
+      "source": "system_7",
+      "tags": [
+        "service",
+        "error_rate",
+        "app",
+        "application"
+      ],
+      "metrics": {
+        "value": 75.17803957685459
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8050558376331514,
+        "predicted_impact": "low",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 367,
+        "similar_incidents": 4
+      },
+      "resolution_time": 853,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_56ddb0050e934814",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-05T15:04:47.222458",
+      "category": "infrastructure",
+      "type": "Backup Failures",
+      "severity": "high",
+      "status": "acknowledged",
+      "title": "HIGH: Backup Failures alert",
+      "description": "Detailed information for Backup Failures alert.",
+      "source": "system_10",
+      "tags": [
+        "platform",
+        "infrastructure",
+        "infra",
+        "backup_failures"
+      ],
+      "metrics": {
+        "value": 40.66548502832886
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7765780073291274,
+        "predicted_impact": "high",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 939,
+        "similar_incidents": 5
+      },
+      "resolution_time": null,
+      "assigned_to": "auto_escalated"
+    },
+    {
+      "id": "alert_3ba8b36b36234ff7",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-05T15:08:48.222458",
+      "category": "system",
+      "type": "CPU Usage",
+      "severity": "medium",
+      "status": "active",
+      "title": "High CPU usage detected on CPU Usage",
+      "description": "System CPU utilization has exceeded normal thresholds, potentially impacting performance.",
+      "source": "system_2",
+      "tags": [
+        "infrastructure",
+        "system",
+        "performance",
+        "cpu_usage"
+      ],
+      "metrics": {
+        "cpu_percent": 88.23620425902865,
+        "load_average": 7.397451218580336
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8786662098953992,
+        "predicted_impact": "medium",
+        "recommended_action": "create_ticket",
+        "estimated_resolution_time": 1651,
+        "similar_incidents": 4
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_16b4befe605b4bf4",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-05T16:13:52.222458",
+      "category": "infrastructure",
+      "type": "Database Replication",
+      "severity": "critical",
+      "status": "acknowledged",
+      "title": "CRITICAL: Database Replication alert",
+      "description": "Detailed information for Database Replication alert.",
+      "source": "system_1",
+      "tags": [
+        "platform",
+        "infrastructure",
+        "infra",
+        "database_replication"
+      ],
+      "metrics": {
+        "value": 69.20999697226321
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7807511744013217,
+        "predicted_impact": "critical",
+        "recommended_action": "apply_config_change",
+        "estimated_resolution_time": 1461,
+        "similar_incidents": 5
+      },
+      "resolution_time": null,
+      "assigned_to": "auto_escalated"
+    },
+    {
+      "id": "alert_d48524d9b4094412",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-05T19:58:56.222458",
+      "category": "security",
+      "type": "Suspicious Activity",
+      "severity": "medium",
+      "status": "acknowledged",
+      "title": "Suspicious Activity alert",
+      "description": "Detailed information for Suspicious Activity alert.",
+      "source": "system_2",
+      "tags": [
+        "security",
+        "compliance",
+        "suspicious_activity"
+      ],
+      "metrics": {
+        "value": 48.697279405068194
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7514535689306576,
+        "predicted_impact": "medium",
+        "recommended_action": "clear_cache",
+        "estimated_resolution_time": 1174,
+        "similar_incidents": 5
+      },
+      "resolution_time": null,
+      "assigned_to": "noc_team"
+    },
+    {
+      "id": "alert_159766a3b00642f8",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-05T23:53:55.222458",
+      "category": "security",
+      "type": "Suspicious Activity",
+      "severity": "critical",
+      "status": "active",
+      "title": "CRITICAL: Suspicious Activity alert",
+      "description": "Detailed information for Suspicious Activity alert.",
+      "source": "system_10",
+      "tags": [
+        "security",
+        "compliance",
+        "suspicious_activity"
+      ],
+      "metrics": {
+        "value": 97.68974349419977
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7231986246657277,
+        "predicted_impact": "critical",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 626,
+        "similar_incidents": 3
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_096fe291f1414f03",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-06T01:47:35.222458",
+      "category": "application",
+      "type": "Database Connections",
+      "severity": "high",
+      "status": "active",
+      "title": "HIGH: Database connection pool exhausted",
+      "description": "Database connection pool is at maximum capacity.",
+      "source": "system_10",
+      "tags": [
+        "service",
+        "app",
+        "database_connections",
+        "application"
+      ],
+      "metrics": {
+        "value": 27.138440501667805
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8308166934601745,
+        "predicted_impact": "high",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 1589,
+        "similar_incidents": 0
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_7cadf118d30b48e0",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-06T02:59:38.222458",
+      "category": "application",
+      "type": "Error Rate",
+      "severity": "low",
+      "status": "auto_resolved",
+      "title": "Error rate spike detected",
+      "description": "Application error rate has spiked above acceptable levels.",
+      "source": "system_8",
+      "tags": [
+        "service",
+        "error_rate",
+        "app",
+        "application"
+      ],
+      "metrics": {
+        "value": 77.02726670123737
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8736911709737029,
+        "predicted_impact": "low",
+        "recommended_action": "send_notification",
+        "estimated_resolution_time": 786,
+        "similar_incidents": 1
+      },
+      "resolution_time": 2229,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_f8dfc2da50b7445f",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-06T07:44:09.222458",
+      "category": "system",
+      "type": "Network Latency",
+      "severity": "medium",
+      "status": "auto_resolved",
+      "title": "Network latency increased",
+      "description": "Network response times have increased significantly.",
+      "source": "system_4",
+      "tags": [
+        "infrastructure",
+        "system",
+        "performance",
+        "network_latency"
+      ],
+      "metrics": {
+        "latency_ms": 156.44711110115895,
+        "packet_loss": 3.7446259197956557
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9724881223509235,
+        "predicted_impact": "medium",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 1412,
+        "similar_incidents": 5
+      },
+      "resolution_time": 2661,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_f04b369c79e64f60",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-06T11:02:25.222458",
+      "category": "application",
+      "type": "Cache Hit Rate",
+      "severity": "low",
+      "status": "acknowledged",
+      "title": "Cache Hit Rate alert",
+      "description": "Detailed information for Cache Hit Rate alert.",
+      "source": "system_1",
+      "tags": [
+        "service",
+        "cache_hit_rate",
+        "app",
+        "application"
+      ],
+      "metrics": {
+        "value": 22.285173955861058
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8161427677371965,
+        "predicted_impact": "low",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 1013,
+        "similar_incidents": 1
+      },
+      "resolution_time": null,
+      "assigned_to": "ai_system"
+    },
+    {
+      "id": "alert_97fe1df06a1b42fe",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-06T13:31:19.222458",
+      "category": "application",
+      "type": "Response Time",
+      "severity": "medium",
+      "status": "acknowledged",
+      "title": "Slow response times",
+      "description": "Application response times are slower than expected.",
+      "source": "system_9",
+      "tags": [
+        "service",
+        "response_time",
+        "app",
+        "application"
+      ],
+      "metrics": {
+        "response_time_ms": 2942.7880055765695,
+        "requests_per_second": 74.01105587596435
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7281647342707293,
+        "predicted_impact": "medium",
+        "recommended_action": "clear_cache",
+        "estimated_resolution_time": 885,
+        "similar_incidents": 2
+      },
+      "resolution_time": null,
+      "assigned_to": "noc_team"
+    },
+    {
+      "id": "alert_6e3495086db84029",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-06T15:44:29.222458",
+      "category": "system",
+      "type": "Network Latency",
+      "severity": "low",
+      "status": "acknowledged",
+      "title": "Network latency increased",
+      "description": "Network response times have increased significantly.",
+      "source": "system_5",
+      "tags": [
+        "infrastructure",
+        "system",
+        "performance",
+        "network_latency"
+      ],
+      "metrics": {
+        "latency_ms": 121.47313052554165,
+        "packet_loss": 4.533417637118347
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8808179871775141,
+        "predicted_impact": "low",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 837,
+        "similar_incidents": 1
+      },
+      "resolution_time": null,
+      "assigned_to": "ai_system"
+    },
+    {
+      "id": "alert_d14880f3414f4fa4",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-06T16:40:15.222458",
+      "category": "application",
+      "type": "Error Rate",
+      "severity": "low",
+      "status": "auto_resolved",
+      "title": "Error rate spike detected",
+      "description": "Application error rate has spiked above acceptable levels.",
+      "source": "system_2",
+      "tags": [
+        "service",
+        "error_rate",
+        "app",
+        "application"
+      ],
+      "metrics": {
+        "value": 34.62746854723622
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8871886865822324,
+        "predicted_impact": "low",
+        "recommended_action": "scale_resources",
+        "estimated_resolution_time": 1070,
+        "similar_incidents": 0
+      },
+      "resolution_time": 2732,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_efafda1ae3374a1b",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-06T23:57:38.222458",
+      "category": "system",
+      "type": "Disk Space",
+      "severity": "medium",
+      "status": "acknowledged",
+      "title": "Disk space running low",
+      "description": "Available disk space is below recommended thresholds.",
+      "source": "system_10",
+      "tags": [
+        "infrastructure",
+        "system",
+        "disk_space",
+        "performance"
+      ],
+      "metrics": {
+        "disk_percent": 88.27199065027295,
+        "available_gb": 7.257297596365969
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8904903900765037,
+        "predicted_impact": "medium",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 1575,
+        "similar_incidents": 1
+      },
+      "resolution_time": null,
+      "assigned_to": "ai_system"
+    },
+    {
+      "id": "alert_bc74b47a39aa47c7",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-07T03:24:31.222458",
+      "category": "security",
+      "type": "Access Violations",
+      "severity": "low",
+      "status": "resolved",
+      "title": "Access Violations alert",
+      "description": "Detailed information for Access Violations alert.",
+      "source": "system_4",
+      "tags": [
+        "access_violations",
+        "security",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 80.25339574286568
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8149481492746646,
+        "predicted_impact": "low",
+        "recommended_action": "auto_restart_service",
+        "estimated_resolution_time": 758,
+        "similar_incidents": 0
+      },
+      "resolution_time": 456,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_90f4703d04724906",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-07T04:09:22.222458",
+      "category": "security",
+      "type": "Access Violations",
+      "severity": "low",
+      "status": "auto_resolved",
+      "title": "Access Violations alert",
+      "description": "Detailed information for Access Violations alert.",
+      "source": "system_10",
+      "tags": [
+        "access_violations",
+        "security",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 82.59934140455654
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8893890198966644,
+        "predicted_impact": "low",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 944,
+        "similar_incidents": 4
+      },
+      "resolution_time": 1834,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_23680145cd7e4d2f",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-07T05:24:30.222458",
+      "category": "security",
+      "type": "Access Violations",
+      "severity": "medium",
+      "status": "auto_resolved",
+      "title": "Access Violations alert",
+      "description": "Detailed information for Access Violations alert.",
+      "source": "system_3",
+      "tags": [
+        "access_violations",
+        "security",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 86.71898550102684
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9158964887785492,
+        "predicted_impact": "medium",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 429,
+        "similar_incidents": 3
+      },
+      "resolution_time": 3598,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_b21dd894373c4355",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-07T10:45:48.222458",
+      "category": "application",
+      "type": "Database Connections",
+      "severity": "low",
+      "status": "resolved",
+      "title": "Database connection pool exhausted",
+      "description": "Database connection pool is at maximum capacity.",
+      "source": "system_7",
+      "tags": [
+        "service",
+        "app",
+        "database_connections",
+        "application"
+      ],
+      "metrics": {
+        "value": 60.667562276032214
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8883986676994279,
+        "predicted_impact": "low",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 1225,
+        "similar_incidents": 2
+      },
+      "resolution_time": 889,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_c9c380707b51420a",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-07T11:28:54.222458",
+      "category": "security",
+      "type": "Access Violations",
+      "severity": "low",
+      "status": "auto_resolved",
+      "title": "Access Violations alert",
+      "description": "Detailed information for Access Violations alert.",
+      "source": "system_2",
+      "tags": [
+        "access_violations",
+        "security",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 4.016912509047543
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9268807476650998,
+        "predicted_impact": "low",
+        "recommended_action": "reroute_traffic",
+        "estimated_resolution_time": 501,
+        "similar_incidents": 3
+      },
+      "resolution_time": 932,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_f14e24a2e7cb4a3e",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-07T19:23:03.222458",
+      "category": "security",
+      "type": "Access Violations",
+      "severity": "medium",
+      "status": "auto_resolved",
+      "title": "Access Violations alert",
+      "description": "Detailed information for Access Violations alert.",
+      "source": "system_3",
+      "tags": [
+        "access_violations",
+        "security",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 91.52880273580118
+      },
+      "ai_analysis": {
+        "confidence_score": 0.953741711030393,
+        "predicted_impact": "medium",
+        "recommended_action": "reroute_traffic",
+        "estimated_resolution_time": 1389,
+        "similar_incidents": 3
+      },
+      "resolution_time": 3062,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_e81aab6453cd4ff8",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-07T20:28:00.222458",
+      "category": "security",
+      "type": "Suspicious Activity",
+      "severity": "low",
+      "status": "acknowledged",
+      "title": "Suspicious Activity alert",
+      "description": "Detailed information for Suspicious Activity alert.",
+      "source": "system_4",
+      "tags": [
+        "security",
+        "compliance",
+        "suspicious_activity"
+      ],
+      "metrics": {
+        "value": 47.510730609055095
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7286931935542605,
+        "predicted_impact": "low",
+        "recommended_action": "scale_resources",
+        "estimated_resolution_time": 564,
+        "similar_incidents": 2
+      },
+      "resolution_time": null,
+      "assigned_to": "ai_system"
+    },
+    {
+      "id": "alert_84a6decbef914ebf",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-08T02:23:33.222458",
+      "category": "application",
+      "type": "Cache Hit Rate",
+      "severity": "low",
+      "status": "active",
+      "title": "Cache Hit Rate alert",
+      "description": "Detailed information for Cache Hit Rate alert.",
+      "source": "system_5",
+      "tags": [
+        "service",
+        "cache_hit_rate",
+        "app",
+        "application"
+      ],
+      "metrics": {
+        "value": 60.23633624777903
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8496936736030734,
+        "predicted_impact": "low",
+        "recommended_action": "auto_restart_service",
+        "estimated_resolution_time": 1327,
+        "similar_incidents": 1
+      },
+      "resolution_time": null,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_7f332995bcee47a1",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-08T03:26:32.222458",
+      "category": "application",
+      "type": "Database Connections",
+      "severity": "medium",
+      "status": "acknowledged",
+      "title": "Database connection pool exhausted",
+      "description": "Database connection pool is at maximum capacity.",
+      "source": "system_10",
+      "tags": [
+        "service",
+        "app",
+        "database_connections",
+        "application"
+      ],
+      "metrics": {
+        "value": 87.45470770347697
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7127261161899309,
+        "predicted_impact": "medium",
+        "recommended_action": "scale_resources",
+        "estimated_resolution_time": 668,
+        "similar_incidents": 5
+      },
+      "resolution_time": null,
+      "assigned_to": "noc_team"
+    },
+    {
+      "id": "alert_ae9ff773d40e45c6",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-08T08:17:18.222458",
+      "category": "application",
+      "type": "Database Connections",
+      "severity": "low",
+      "status": "resolved",
+      "title": "Database connection pool exhausted",
+      "description": "Database connection pool is at maximum capacity.",
+      "source": "system_4",
+      "tags": [
+        "service",
+        "app",
+        "database_connections",
+        "application"
+      ],
+      "metrics": {
+        "value": 58.82967150725504
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8109878407080924,
+        "predicted_impact": "low",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 1677,
+        "similar_incidents": 2
+      },
+      "resolution_time": 495,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_49748c44cfb24186",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-08T16:52:23.222458",
+      "category": "infrastructure",
+      "type": "Server Unreachable",
+      "severity": "medium",
+      "status": "acknowledged",
+      "title": "Server Unreachable alert",
+      "description": "Detailed information for Server Unreachable alert.",
+      "source": "system_5",
+      "tags": [
+        "server_unreachable",
+        "infrastructure",
+        "infra",
+        "platform"
+      ],
+      "metrics": {
+        "value": 60.024920733453854
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7550393109594984,
+        "predicted_impact": "medium",
+        "recommended_action": "scale_resources",
+        "estimated_resolution_time": 587,
+        "similar_incidents": 4
+      },
+      "resolution_time": null,
+      "assigned_to": "auto_escalated"
+    },
+    {
+      "id": "alert_44af45967dde4cf4",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-08T20:50:57.222458",
+      "category": "application",
+      "type": "Database Connections",
+      "severity": "medium",
+      "status": "auto_resolved",
+      "title": "Database connection pool exhausted",
+      "description": "Database connection pool is at maximum capacity.",
+      "source": "system_10",
+      "tags": [
+        "service",
+        "app",
+        "database_connections",
+        "application"
+      ],
+      "metrics": {
+        "value": 44.968555042683874
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8511629686969479,
+        "predicted_impact": "medium",
+        "recommended_action": "rollback_deployment",
+        "estimated_resolution_time": 1321,
+        "similar_incidents": 5
+      },
+      "resolution_time": 3391,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_4526aebb6ad34287",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-08T21:07:27.222458",
+      "category": "application",
+      "type": "Throughput",
+      "severity": "medium",
+      "status": "acknowledged",
+      "title": "Throughput alert",
+      "description": "Detailed information for Throughput alert.",
+      "source": "system_4",
+      "tags": [
+        "service",
+        "app",
+        "throughput",
+        "application"
+      ],
+      "metrics": {
+        "value": 29.584373709308732
+      },
+      "ai_analysis": {
+        "confidence_score": 0.7873215224152318,
+        "predicted_impact": "medium",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 894,
+        "similar_incidents": 5
+      },
+      "resolution_time": null,
+      "assigned_to": "ai_system"
+    },
+    {
+      "id": "alert_26bd77b4ffe34395",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-08T22:28:33.222458",
+      "category": "security",
+      "type": "Access Violations",
+      "severity": "medium",
+      "status": "auto_resolved",
+      "title": "Access Violations alert",
+      "description": "Detailed information for Access Violations alert.",
+      "source": "system_4",
+      "tags": [
+        "access_violations",
+        "security",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 46.47644580020048
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9538553465210301,
+        "predicted_impact": "medium",
+        "recommended_action": "clear_cache",
+        "estimated_resolution_time": 435,
+        "similar_incidents": 5
+      },
+      "resolution_time": 1146,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_d7a218e75e8b4b05",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-08T22:51:43.222458",
+      "category": "security",
+      "type": "Failed Login Attempts",
+      "severity": "low",
+      "status": "auto_resolved",
+      "title": "Failed Login Attempts alert",
+      "description": "Detailed information for Failed Login Attempts alert.",
+      "source": "system_8",
+      "tags": [
+        "security",
+        "compliance",
+        "failed_login_attempts"
+      ],
+      "metrics": {
+        "value": 48.074549060963825
+      },
+      "ai_analysis": {
+        "confidence_score": 0.9032644383077063,
+        "predicted_impact": "low",
+        "recommended_action": "clear_cache",
+        "estimated_resolution_time": 1710,
+        "similar_incidents": 2
+      },
+      "resolution_time": 1374,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_bd0cd954150c4eeb",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-08T23:36:52.222458",
+      "category": "security",
+      "type": "Access Violations",
+      "severity": "medium",
+      "status": "auto_resolved",
+      "title": "Access Violations alert",
+      "description": "Detailed information for Access Violations alert.",
+      "source": "system_7",
+      "tags": [
+        "access_violations",
+        "security",
+        "compliance"
+      ],
+      "metrics": {
+        "value": 39.287694897825446
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8950163710189013,
+        "predicted_impact": "medium",
+        "recommended_action": "run_diagnostic",
+        "estimated_resolution_time": 1385,
+        "similar_incidents": 4
+      },
+      "resolution_time": 1808,
+      "assigned_to": null
+    },
+    {
+      "id": "alert_82a646a7a5404c4a",
+      "tenant_id": "TEST_TENANT",
+      "timestamp": "2025-11-09T07:58:28.222458",
+      "category": "system",
+      "type": "Network Latency",
+      "severity": "medium",
+      "status": "resolved",
+      "title": "Network latency increased",
+      "description": "Network response times have increased significantly.",
+      "source": "system_9",
+      "tags": [
+        "infrastructure",
+        "system",
+        "performance",
+        "network_latency"
+      ],
+      "metrics": {
+        "latency_ms": 252.596866600604,
+        "packet_loss": 3.4457534456394012
+      },
+      "ai_analysis": {
+        "confidence_score": 0.8383428283182859,
+        "predicted_impact": "medium",
+        "recommended_action": "kill_process",
+        "estimated_resolution_time": 1595,
+        "similar_incidents": 1
+      },
+      "resolution_time": 2740,
+      "assigned_to": null
+    }
+  ]
+}

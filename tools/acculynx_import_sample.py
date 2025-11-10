@@ -6,12 +6,12 @@ This script demonstrates how to import data from AccuLynx into AetherLink CRM.
 Run this to populate your CRM with sample data for testing.
 """
 
-import json
-import requests
-import time
+import os
 import subprocess
 import sys
-import os
+import time
+
+import requests
 
 # Sample AccuLynx data - replace with your actual export
 SAMPLE_ACCULYNX_DATA = {
@@ -43,6 +43,7 @@ SAMPLE_ACCULYNX_DATA = {
     ],
 }
 
+
 def check_server_running():
     """Check if the Command Center server is running."""
     try:
@@ -51,15 +52,16 @@ def check_server_running():
     except:
         return False
 
+
 def start_server():
     """Start the Command Center server."""
     print("🚀 Starting Command Center server...")
     server_dir = os.path.join(os.path.dirname(__file__), "..", "services", "command-center")
     cmd = [sys.executable, "-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8000"]
-    
+
     # Start server in background
     process = subprocess.Popen(cmd, cwd=server_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    
+
     # Wait for server to start
     print("⏳ Waiting for server to start...")
     for i in range(10):
@@ -71,9 +73,10 @@ def start_server():
             stdout, stderr = process.communicate()
             print(f"❌ Server failed to start: {stderr.decode()}")
             return None
-    
+
     print("❌ Server didn't respond within 10 seconds")
     return None
+
 
 def import_acculynx_data():
     """Import sample AccuLynx data into AetherLink CRM."""
@@ -91,13 +94,10 @@ def import_acculynx_data():
     # Command Center URL - adjust if running on different port
     url = "http://localhost:8000/api/crm/import/acculynx"
 
-    headers = {
-        "Content-Type": "application/json",
-        "x-tenant": "the-expert-co"
-    }
+    headers = {"Content-Type": "application/json", "x-tenant": "the-expert-co"}
 
     print("🚀 Importing AccuLynx data into AetherLink CRM...")
-    print(f"📊 Data to import:")
+    print("📊 Data to import:")
     print(f"   • {len(SAMPLE_ACCULYNX_DATA['jobs'])} jobs")
     print(f"   • {len(SAMPLE_ACCULYNX_DATA['contacts'])} contacts")
     print(f"   • {len(SAMPLE_ACCULYNX_DATA['files'])} files")
@@ -109,9 +109,13 @@ def import_acculynx_data():
         if response.status_code == 200:
             result = response.json()
             print("✅ Import successful!")
-            stats = result['stats']
-            print(f"� Stats: {stats['records_created']} records created, {stats['records_updated']} updated")
-            print(f"   {stats['customers_created']} customers created, {stats['customers_updated']} updated")
+            stats = result["stats"]
+            print(
+                f"� Stats: {stats['records_created']} records created, {stats['records_updated']} updated"
+            )
+            print(
+                f"   {stats['customers_created']} customers created, {stats['customers_updated']} updated"
+            )
             print(f"   {stats['files_created']} files created, {stats['files_updated']} updated")
             print()
             print("🎯 Next steps:")
@@ -125,9 +129,12 @@ def import_acculynx_data():
 
     except requests.exceptions.ConnectionError:
         print("❌ Connection failed. Is Command Center running on http://localhost:8000?")
-        print("   Try: cd services/command-center && $env:PYTHONPATH = 'services/command-center'; python -m uvicorn services.command-center.main:app --host 127.0.0.1 --port 8000")
+        print(
+            "   Try: cd services/command-center && $env:PYTHONPATH = 'services/command-center'; python -m uvicorn services.command-center.main:app --host 127.0.0.1 --port 8000"
+        )
     except Exception as e:
         print(f"❌ Error: {e}")
+
 
 if __name__ == "__main__":
     import_acculynx_data()

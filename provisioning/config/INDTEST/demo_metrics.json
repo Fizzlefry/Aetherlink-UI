@@ -1,0 +1,25 @@
+{
+  "tenant_id": "INDTEST",
+  "period_start": "2025-11-02T08:53:47.548612",
+  "period_end": "2025-11-09T08:53:47.548612",
+  "summary": {
+    "total_alerts": 25,
+    "total_incidents": 3,
+    "auto_resolved_percentage": 0.12,
+    "average_resolution_time": 1728.2222222222222,
+    "ai_actions_taken": 11,
+    "system_uptime": 0.955088044121228
+  },
+  "performance": {
+    "cpu_usage_avg": 0.4074746333309884,
+    "memory_usage_avg": 0.7539305500928559,
+    "disk_usage_avg": 0.21196420082858888,
+    "network_latency_avg": 11.61883066603625
+  },
+  "ai_insights": {
+    "learning_iterations": 322,
+    "model_accuracy": 0.8843916097206673,
+    "false_positive_rate": 0.07501088719763549,
+    "prediction_accuracy": 0.8991028096511449
+  }
+}

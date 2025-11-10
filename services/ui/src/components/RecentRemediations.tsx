@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { makeRemediationWS } from "../lib/ws";
 
 type RemediationEvent = {
     id: number;
@@ -15,12 +16,16 @@ type RemediationHistory = {
     total: number;
 };
 
+type RemediationSocketMessage = {
+    type: string;
+    payload: RemediationEvent;
+};
+
 type RecentRemediationsProps = {
     userRoles: string;
     selectedTenant?: string;
     onSelectTenant?: (tenant: string) => void;
 };
-
 export const RecentRemediations: React.FC<RecentRemediationsProps> = ({
     userRoles,
     selectedTenant: externalTenant,
@@ -63,6 +68,27 @@ export const RecentRemediations: React.FC<RecentRemediationsProps> = ({
         const interval = setInterval(fetchHistory, 15000); // refresh every 15s
         return () => clearInterval(interval);
     }, [userRoles]);
+
+    useEffect(() => {
+        const teardown = makeRemediationWS((msg: RemediationSocketMessage) => {
+            if (msg?.type !== "remediation_event" || !msg.payload) {
+                return;
+            }
+
+            setData((prev) => {
+                if (!prev) {
+                    return prev;
+                }
+                const updatedItems = [msg.payload, ...prev.items].slice(0, 10);
+                return {
+                    ...prev,
+                    items: updatedItems,
+                    total: updatedItems.length,
+                };
+            });
+        });
+        return teardown;
+    }, []);
 
     if (loading) {
         return (
