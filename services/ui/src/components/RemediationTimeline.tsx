@@ -56,6 +56,7 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
   const [lastWsUpdate, setLastWsUpdate] = useState<string | null>(null);
   const [lastFullRefresh, setLastFullRefresh] = useState<string | null>(null);
+  const [wsStale, setWsStale] = useState(false);
 
   const fetchTimeline = useCallback(async () => {
     setLoading(true);
@@ -97,7 +98,7 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
 
   // WebSocket: smart incremental update for new remediation events
   useEffect(() => {
-    const teardown = makeRemediationWS((msg) => {
+    const wsConnection = makeRemediationWS((msg) => {
       if (msg?.type !== "remediation_event") return;
 
       // Tenant-aware filtering: ignore events from other tenants
@@ -165,8 +166,51 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
       }
     });
 
-    return teardown;
+    // Phase XX M9: Send heartbeat every 15 seconds to keep connection alive
+    const heartbeatInterval = setInterval(() => {
+      const ws = wsConnection.getSocket();
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(
+            JSON.stringify({
+              type: "heartbeat",
+              tenant: selectedTenant && selectedTenant !== "all" ? selectedTenant : "unknown",
+            })
+          );
+        } catch (err) {
+          console.warn("[timeline] heartbeat send failed", err);
+        }
+      }
+    }, 15000); // 15 seconds
+
+    return () => {
+      clearInterval(heartbeatInterval);
+      wsConnection.teardown();
+    };
   }, [fetchTimeline, selectedTenant]);
+
+  // Phase XX M9: Check for stale connection (no WS update for 35+ seconds)
+  useEffect(() => {
+    const checkStale = () => {
+      if (!lastWsUpdate) {
+        setWsStale(false);
+        return;
+      }
+
+      const now = Date.now();
+      const lastUpdate = new Date(lastWsUpdate).getTime();
+      const ageSeconds = (now - lastUpdate) / 1000;
+
+      // Mark stale if no update for 35+ seconds
+      setWsStale(ageSeconds > 35);
+    };
+
+    // Check every 5 seconds
+    const staleCheckInterval = setInterval(checkStale, 5000);
+    checkStale(); // Initial check
+
+    return () => clearInterval(staleCheckInterval);
+  }, [lastWsUpdate]);
 
   return (
     <div style={{ marginTop: "2rem" }}>
@@ -335,6 +379,12 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
             {lastFullRefresh && (
               <span>
                 Last full refresh: {new Date(lastFullRefresh).toLocaleTimeString()}
+              </span>
+            )}
+            {/* Phase XX M9: Stale connection warning */}
+            {wsStale && (
+              <span style={{ color: "#f59e0b", fontWeight: 600 }}>
+                ⚠️ WS stale (no updates 35s+)
               </span>
             )}
           </div>

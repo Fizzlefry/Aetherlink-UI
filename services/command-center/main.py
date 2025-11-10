@@ -1354,10 +1354,26 @@ async def get_remediation_timeline_anomalies(
 
 @app.websocket("/ws/remediations")
 async def ws_remediations(websocket: WebSocket):
+    """WebSocket endpoint for live remediation timeline events.
+
+    Phase XX M9: Now bidirectional - accepts heartbeat messages from clients.
+    """
     await remediation_ws_manager.connect(websocket)
     try:
         while True:
-            await websocket.receive_text()
+            msg_text = await websocket.receive_text()
+            # Phase XX M9: Handle heartbeat messages
+            try:
+                msg = json.loads(msg_text)
+                if msg.get("type") == "heartbeat":
+                    # Extract tenant from heartbeat payload if available
+                    tenant = msg.get("tenant", "unknown")
+                    remediation_ws_manager.record_heartbeat(websocket, tenant=tenant)
+                    # Send pong response
+                    await websocket.send_text(json.dumps({"type": "pong"}))
+            except (json.JSONDecodeError, KeyError):
+                # Ignore malformed messages
+                pass
     except WebSocketDisconnect:
         remediation_ws_manager.disconnect(websocket)
     except Exception:

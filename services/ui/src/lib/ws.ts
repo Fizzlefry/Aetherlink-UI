@@ -3,7 +3,7 @@
  * @param path - WebSocket endpoint path (e.g., "/ws/remediations")
  * @param onMessage - Callback for incoming messages
  * @param retryMs - Reconnection delay in milliseconds (default: 2000)
- * @returns Teardown function to close the connection
+ * @returns Object with teardown function and getSocket accessor
  */
 export function makeWS(
   path: string,
@@ -43,14 +43,19 @@ export function makeWS(
 
   connect();
 
-  return () => {
-    closedByUser = true;
-    ws?.close();
+  // Phase XX M9: Return object with teardown and socket accessor
+  return {
+    teardown: () => {
+      closedByUser = true;
+      ws?.close();
+    },
+    getSocket: () => ws,
   };
 }
 
 /**
- * WebSocket helper for remediation events (backward compatibility)
+ * WebSocket helper for remediation events
+ * Phase XX M9: Returns object with teardown and getSocket for heartbeat support
  */
 export function makeRemediationWS(onMessage: (msg: any) => void) {
   return makeWS("/ws/remediations", onMessage);
