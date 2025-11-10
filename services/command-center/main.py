@@ -1260,6 +1260,77 @@ async def get_remediation_timeline(
         conn.close()
 
 
+@app.get("/ops/remediations/timeline/anomalies")
+async def get_remediation_timeline_anomalies(
+    tenant: str | None = Query(default=None),
+    window_minutes: int = Query(default=1440, ge=5, le=2880),
+    bucket_minutes: int = Query(default=15, ge=1, le=60),
+    multiplier: float = Query(default=2.0, ge=1.0, le=10.0),
+    min_count: int = Query(default=3, ge=1, le=100),
+):
+    """
+    Return anomaly and quiet period markers for remediation timeline.
+
+    Anomaly detection: rolling baseline using window_size buckets.
+    Anomaly rule: count >= min_count AND count > avg * multiplier
+    Quiet period: count == 0
+    """
+    # Reuse existing timeline logic
+    base = await get_remediation_timeline(
+        tenant=tenant,
+        window_minutes=window_minutes,
+        bucket_minutes=bucket_minutes,
+    )
+    timeline = base["timeline"]
+
+    anomalies: list[dict[str, Any]] = []
+    quiet: list[dict[str, Any]] = []
+
+    # Rolling baseline configuration
+    window_size = 4  # Look back 4 buckets for baseline
+
+    for i, point in enumerate(timeline):
+        ts = point["ts"]
+        count = int(point["count"])  # Ensure integer type
+
+        # Identify quiet periods (count == 0)
+        if count == 0:
+            quiet.append({"ts": ts, "count": count})
+            continue
+
+        # Calculate rolling baseline (average of previous window_size buckets)
+        if i < window_size:
+            # Not enough history, use what we have
+            baseline_counts = [int(p["count"]) for p in timeline[:i]]
+        else:
+            baseline_counts = [int(timeline[j]["count"]) for j in range(i - window_size, i)]
+
+        if not baseline_counts:
+            # First bucket, no baseline yet
+            continue
+
+        avg = sum(baseline_counts) / len(baseline_counts)
+
+        # Anomaly detection: count >= min_count AND count > avg * multiplier
+        if count >= min_count and count > avg * multiplier:
+            anomalies.append({
+                "ts": ts,
+                "count": count,
+                "baseline": round(avg, 2),
+                "factor": round(count / avg, 2) if avg > 0 else float(count),
+            })
+
+    return {
+        "anomalies": anomalies,
+        "quiet": quiet,
+        "params": {
+            "multiplier": multiplier,
+            "min_count": min_count,
+            "window_size": window_size,
+        },
+    }
+
+
 @app.websocket("/ws/remediations")
 async def ws_remediations(websocket: WebSocket):
     await remediation_ws_manager.connect(websocket)

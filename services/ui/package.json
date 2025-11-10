@@ -15,7 +15,8 @@
         "keycloak-js": "^23.0.0",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
-        "react-hot-toast": "^2.6.0"
+        "react-hot-toast": "^2.6.0",
+        "recharts": "^3.3.0"
     },
     "devDependencies": {
         "@playwright/test": "^1.40.0",
