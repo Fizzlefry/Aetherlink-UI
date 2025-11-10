@@ -77,7 +77,7 @@ pytest==8.3.3
     #   pytest-asyncio
 pytest-asyncio==0.23.8
     # via -r requirements.txt
-python-dotenv==1.0.1
+python-dotenv==1.2.1
     # via
     #   -r requirements.txt
     #   pydantic-settings
