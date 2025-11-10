@@ -4,6 +4,8 @@ WebSocket connection managers for Command Center live updates.
 Supports multiple channels:
 - Remediation events (alerts being auto-healed)
 - Operator activity (audit trail of operator actions)
+
+Phase XX M8: Added Prometheus metrics for timeline WS event observability
 """
 
 from __future__ import annotations
@@ -12,6 +14,14 @@ import json
 from typing import Any
 
 from fastapi import WebSocket
+from prometheus_client import Counter
+
+# Prometheus metric for timeline WS events
+timeline_ws_events_total = Counter(
+    "aetherlink_timeline_ws_events_total",
+    "Total WebSocket timeline events broadcast",
+    ["tenant"],
+)
 
 
 class BaseWSManager:

@@ -15,7 +15,14 @@ from typing import Any
 # import alert_store
 # import event_store
 import httpx
-from fastapi import FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    Query,
+    Request,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from ops_insight_analyzer import OpsInsightAnalyzer
 from prometheus_client import Gauge as PrometheusGauge
@@ -25,13 +32,21 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 # Import WebSocket managers for live updates
 try:
-    from ws_manager import operator_activity_ws_manager, remediation_ws_manager
+    from ws_manager import (
+        operator_activity_ws_manager,
+        remediation_ws_manager,
+        timeline_ws_events_total,
+    )
 except ImportError:
     # Fallback if running from different directory
     import sys
 
     sys.path.insert(0, str(Path(__file__).parent))
-    from ws_manager import operator_activity_ws_manager, remediation_ws_manager
+    from ws_manager import (
+        operator_activity_ws_manager,
+        remediation_ws_manager,
+        timeline_ws_events_total,
+    )
 
 RECOVERY_DB = Path("monitoring/recovery_events.sqlite")
 
@@ -82,6 +97,9 @@ def record_remediation_event(
     finally:
         conn.close()
     if row_id is not None:
+        # Track timeline WS event metrics (Phase XX M8)
+        timeline_ws_events_total.labels(tenant=tenant or "unknown").inc()
+
         asyncio.create_task(
             remediation_ws_manager.broadcast(
                 {
@@ -94,6 +112,7 @@ def record_remediation_event(
                         "action": action,
                         "status": status,
                         "details": details[:500],
+                        "occurred_at": occurred_at,  # Include for WS handler
                     },
                 }
             )
@@ -1313,12 +1332,14 @@ async def get_remediation_timeline_anomalies(
 
         # Anomaly detection: count >= min_count AND count > avg * multiplier
         if count >= min_count and count > avg * multiplier:
-            anomalies.append({
-                "ts": ts,
-                "count": count,
-                "baseline": round(avg, 2),
-                "factor": round(count / avg, 2) if avg > 0 else float(count),
-            })
+            anomalies.append(
+                {
+                    "ts": ts,
+                    "count": count,
+                    "baseline": round(avg, 2),
+                    "factor": round(count / avg, 2) if avg > 0 else float(count),
+                }
+            )
 
     return {
         "anomalies": anomalies,

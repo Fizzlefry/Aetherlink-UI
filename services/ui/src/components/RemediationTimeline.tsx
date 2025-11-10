@@ -54,6 +54,8 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
   const [quiet, setQuiet] = useState<TimelinePoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
+  const [lastWsUpdate, setLastWsUpdate] = useState<string | null>(null);
+  const [lastFullRefresh, setLastFullRefresh] = useState<string | null>(null);
 
   const fetchTimeline = useCallback(async () => {
     setLoading(true);
@@ -78,6 +80,9 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
       setData(timelineJson.timeline ?? []);
       setAnomalies(anomalyJson.anomalies ?? []);
       setQuiet(anomalyJson.quiet ?? []);
+
+      // Track full refresh timestamp
+      setLastFullRefresh(new Date().toISOString());
     } catch (err) {
       console.error("timeline fetch failed", err);
     } finally {
@@ -107,7 +112,7 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
       const occurredAt = msg.payload?.occurred_at || msg.payload?.ts;
       if (!occurredAt) {
         // No timestamp available → fallback to full refresh
-        console.log("remediation_event without timestamp, doing full refresh");
+        console.warn("[timeline] missing timestamp → full refresh");
         fetchTimeline();
         return;
       }
@@ -135,10 +140,13 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
       if (!bucketUpdated) {
         // Bucket not found (event outside 24h window or timezone mismatch)
         // Fallback to full refresh
-        console.log(`bucket ${bucketIso} not found, doing full refresh`);
+        console.warn(`[timeline] bucket ${bucketIso} not found → full refresh`);
         fetchTimeline();
       } else {
         // Successfully updated bucket → refresh anomaly overlay
+        // Track WS update timestamp
+        setLastWsUpdate(new Date().toISOString());
+
         // This keeps red dots accurate without refetching timeline
         const params = new URLSearchParams();
         if (selectedTenant && selectedTenant !== "all") {
@@ -307,6 +315,30 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
             </ComposedChart>
           </ResponsiveContainer>
         </div>
+
+        {/* Freshness indicators */}
+        {(lastWsUpdate || lastFullRefresh) && (
+          <div
+            style={{
+              marginTop: "0.5rem",
+              display: "flex",
+              gap: "1rem",
+              fontSize: "0.65rem",
+              color: "#9ca3af",
+            }}
+          >
+            {lastWsUpdate && (
+              <span>
+                Last WS update: {new Date(lastWsUpdate).toLocaleTimeString()}
+              </span>
+            )}
+            {lastFullRefresh && (
+              <span>
+                Last full refresh: {new Date(lastFullRefresh).toLocaleTimeString()}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
