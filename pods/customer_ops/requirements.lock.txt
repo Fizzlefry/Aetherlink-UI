@@ -60,7 +60,7 @@ prometheus-client==0.20.0
     # via -r requirements.txt
 psycopg2-binary==2.9.9
     # via -r requirements.txt
-pydantic==2.9.2
+pydantic==2.12.4
     # via
     #   -r requirements.txt
     #   fastapi
