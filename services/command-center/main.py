@@ -15,7 +15,23 @@ from typing import Any
 # import alert_store
 # import event_store
 import httpx
+from fastapi import FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from ops_insight_analyzer import OpsInsightAnalyzer
+from prometheus_client import Gauge as PrometheusGauge
+from prometheus_client import make_asgi_app
+from pydantic import BaseModel
+from starlette.middleware.base import BaseHTTPMiddleware
+
+# Import WebSocket managers for live updates
+try:
+    from ws_manager import operator_activity_ws_manager, remediation_ws_manager
+except ImportError:
+    # Fallback if running from different directory
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).parent))
+    from ws_manager import operator_activity_ws_manager, remediation_ws_manager
 
 RECOVERY_DB = Path("monitoring/recovery_events.sqlite")
 
@@ -67,7 +83,7 @@ def record_remediation_event(
         conn.close()
     if row_id is not None:
         asyncio.create_task(
-            ws_manager.broadcast(
+            remediation_ws_manager.broadcast(
                 {
                     "type": "remediation_event",
                     "payload": {
@@ -85,14 +101,7 @@ def record_remediation_event(
 
 
 # from audit import audit_middleware, get_audit_stats
-from fastapi import FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
-from prometheus_client import Gauge as PrometheusGauge
-from prometheus_client import make_asgi_app
-from pydantic import BaseModel
-
 # from routers import alert_templates, alerts, delivery_history, events, operator_audit_router
-from starlette.middleware.base import BaseHTTPMiddleware
 
 # Phase XVII-B: Persistence backends
 try:
@@ -1068,30 +1077,9 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="AetherLink Command Center", version="0.2.0", lifespan=lifespan)
 
 
-class RemediationWebSocketManager:
-    def __init__(self) -> None:
-        self.active_connections: list[WebSocket] = []
-
-    async def connect(self, websocket: WebSocket) -> None:
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket) -> None:
-        if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
-
-    async def broadcast(self, message: dict[str, Any]) -> None:
-        to_remove: list[WebSocket] = []
-        for ws in self.active_connections:
-            try:
-                await ws.send_text(json.dumps(message))
-            except Exception:
-                to_remove.append(ws)
-        for ws in to_remove:
-            self.disconnect(ws)
-
-
-ws_manager = RemediationWebSocketManager()
+# WebSocket managers are now imported from ws_manager module
+# This maintains backward compatibility for existing code that references ws_manager
+ws_manager = remediation_ws_manager
 
 # CORS middleware for UI integration
 origins = [
@@ -1193,12 +1181,28 @@ async def get_ops_insights():
 
 @app.websocket("/ws/remediations")
 async def ws_remediations(websocket: WebSocket):
-    await ws_manager.connect(websocket)
+    await remediation_ws_manager.connect(websocket)
     try:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-        ws_manager.disconnect(websocket)
+        remediation_ws_manager.disconnect(websocket)
+    except Exception:
+        remediation_ws_manager.disconnect(websocket)
+
+
+@app.websocket("/ws/operator-activity")
+async def ws_operator_activity(websocket: WebSocket):
+    """WebSocket endpoint for live operator activity stream."""
+    await operator_activity_ws_manager.connect(websocket)
+    try:
+        while True:
+            # Keep connection alive, we don't expect client messages
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        operator_activity_ws_manager.disconnect(websocket)
+    except Exception:
+        operator_activity_ws_manager.disconnect(websocket)
 
 
 # Phase VII M3: Add tenant context middleware

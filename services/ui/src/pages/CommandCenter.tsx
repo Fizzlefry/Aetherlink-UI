@@ -5,6 +5,7 @@ import { useLocalStorage } from "../hooks/useLocalStorage";
 import { MediaStatsBadge } from "../components/MediaStatsBadge";
 import { RecentRemediations } from "../components/RecentRemediations";
 import { OperatorInsights } from "../components/OperatorInsights";
+import { OperatorActivity } from "../components/OperatorActivity";
 
 type ServiceStatus = {
     status: string;
@@ -539,6 +540,9 @@ const CommandCenter: React.FC = () => {
                 selectedTenant={selectedTenant}
                 onSelectTenant={setSelectedTenant}
             />
+
+            {/* Operator Activity Stream */}
+            <OperatorActivity selectedTenant={selectedTenant} />
 
             {/* Footer Info */}
             <div style={{ marginTop: "3rem", padding: "1.5rem", background: "white", borderRadius: "12px", border: "1px solid #e5e7eb" }}>

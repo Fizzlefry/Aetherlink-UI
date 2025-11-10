@@ -1,9 +1,18 @@
-// WebSocket helper for live remediation updates
-// Auto-reconnects if backend restarts during development
-export function makeRemediationWS(onMessage: (msg: any) => void) {
+/**
+ * Generic WebSocket helper with auto-reconnect support
+ * @param path - WebSocket endpoint path (e.g., "/ws/remediations")
+ * @param onMessage - Callback for incoming messages
+ * @param retryMs - Reconnection delay in milliseconds (default: 2000)
+ * @returns Teardown function to close the connection
+ */
+export function makeWS(
+  path: string,
+  onMessage: (msg: any) => void,
+  retryMs = 2000
+) {
   // @ts-ignore - Vite injects import.meta.env at build time
   const base = (import.meta.env?.VITE_WS_BASE as string | undefined) ?? "ws://localhost:8010";
-  const url = base.replace(/\/$/, "") + "/ws/remediations";
+  const url = base.replace(/\/$/, "") + path;
 
   let ws: WebSocket | null = null;
   let closedByUser = false;
@@ -16,20 +25,18 @@ export function makeRemediationWS(onMessage: (msg: any) => void) {
         const parsed = JSON.parse(event.data);
         onMessage(parsed);
       } catch (err) {
-        console.error("remediation ws: bad payload", err);
+        console.error(`ws(${path}): bad payload`, err);
       }
     };
 
     ws.onclose = () => {
       if (!closedByUser) {
-        // retry after 2s if backend restarted
-        console.log("remediation ws: disconnected, retrying in 2s...");
-        setTimeout(connect, 2000);
+        console.log(`ws(${path}): disconnected, retrying in ${retryMs}ms...`);
+        setTimeout(connect, retryMs);
       }
     };
 
     ws.onerror = () => {
-      // let onclose handle the retry
       ws?.close();
     };
   };
@@ -40,4 +47,18 @@ export function makeRemediationWS(onMessage: (msg: any) => void) {
     closedByUser = true;
     ws?.close();
   };
+}
+
+/**
+ * WebSocket helper for remediation events (backward compatibility)
+ */
+export function makeRemediationWS(onMessage: (msg: any) => void) {
+  return makeWS("/ws/remediations", onMessage);
+}
+
+/**
+ * WebSocket helper for operator activity events
+ */
+export function makeOperatorActivityWS(onMessage: (msg: any) => void) {
+  return makeWS("/ws/operator-activity", onMessage);
 }
