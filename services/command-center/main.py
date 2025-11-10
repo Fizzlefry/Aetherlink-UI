@@ -1179,6 +1179,87 @@ async def get_ops_insights():
     return analyzer.build_insight_payload()
 
 
+@app.get("/ops/remediations/timeline")
+async def get_remediation_timeline(
+    tenant: str | None = Query(default=None),
+    window_minutes: int = Query(default=1440, ge=5, le=2880),  # last 24h default, max 48h
+    bucket_minutes: int = Query(default=15, ge=1, le=60),
+):
+    """
+    Return time-bucketed remediation counts for timeline charts.
+    Used by RemediationTimeline component for visual trend analysis.
+    """
+    from datetime import timedelta
+
+    now = datetime.now(UTC)
+    start = now - timedelta(minutes=window_minutes)
+
+    db_path = RECOVERY_DB
+    if not db_path.exists():
+        return {"timeline": []}
+
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    try:
+        params: list[Any] = [start.isoformat().replace("+00:00", "Z")]
+        tenant_clause = ""
+        if tenant and tenant != "all":
+            tenant_clause = "AND tenant = ?"
+            params.append(tenant)
+
+        cur.execute(
+            f"""
+            SELECT ts, tenant
+            FROM remediation_events
+            WHERE datetime(ts) >= datetime(?)
+            {tenant_clause}
+            ORDER BY ts ASC
+            """,
+            params,
+        )
+        rows = cur.fetchall()
+
+        # Build time buckets
+        buckets: dict[str, int] = {}
+        step = timedelta(minutes=bucket_minutes)
+
+        # Normalize start to bucket boundary (round down to nearest bucket)
+        bucket_start = start.replace(second=0, microsecond=0)
+        minutes_offset = bucket_start.minute % bucket_minutes
+        bucket_start = bucket_start - timedelta(minutes=minutes_offset)
+
+        # Create all buckets from start to now
+        cursor = bucket_start
+        while cursor <= now:
+            buckets[cursor.isoformat().replace("+00:00", "Z")] = 0
+            cursor += step
+
+        # Fill buckets with actual counts
+        for r in rows:
+            ts_str = r["ts"]
+            # Parse timestamp (handle both with and without timezone)
+            ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=UTC)
+
+            # Snap to bucket
+            elapsed = (ts - bucket_start).total_seconds()
+            offset = int(elapsed // (bucket_minutes * 60))
+            b_time = bucket_start + offset * step
+            key = b_time.isoformat().replace("+00:00", "Z")
+
+            if key in buckets:
+                buckets[key] += 1
+
+        # Return as ordered list
+        timeline = [{"ts": k, "count": buckets[k]} for k in sorted(buckets.keys())]
+        return {"timeline": timeline}
+    finally:
+        conn.close()
+
+
 @app.websocket("/ws/remediations")
 async def ws_remediations(websocket: WebSocket):
     await remediation_ws_manager.connect(websocket)

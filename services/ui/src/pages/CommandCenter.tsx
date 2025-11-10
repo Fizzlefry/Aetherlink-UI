@@ -6,6 +6,7 @@ import { MediaStatsBadge } from "../components/MediaStatsBadge";
 import { RecentRemediations } from "../components/RecentRemediations";
 import { OperatorInsights } from "../components/OperatorInsights";
 import { OperatorActivity } from "../components/OperatorActivity";
+import { RemediationTimeline } from "../components/RemediationTimeline";
 
 type ServiceStatus = {
     status: string;
@@ -543,6 +544,9 @@ const CommandCenter: React.FC = () => {
 
             {/* Operator Activity Stream */}
             <OperatorActivity selectedTenant={selectedTenant} />
+
+            {/* Remediation Timeline Graph */}
+            <RemediationTimeline selectedTenant={selectedTenant} />
 
             {/* Footer Info */}
             <div style={{ marginTop: "3rem", padding: "1.5rem", background: "white", borderRadius: "12px", border: "1px solid #e5e7eb" }}>
