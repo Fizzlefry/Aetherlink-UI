@@ -16,6 +16,7 @@ from typing import Any
 # import event_store
 import httpx
 from fastapi import (
+    Body,
     FastAPI,
     HTTPException,
     Query,
@@ -1350,6 +1351,38 @@ async def get_remediation_timeline_anomalies(
             "window_size": window_size,
         },
     }
+
+
+@app.post("/ops/telemetry/frontend")
+async def telemetry_frontend(payload: dict = Body(...)):
+    """
+    Phase XX M11:
+    Accepts lightweight telemetry from UI components.
+
+    Expected payload:
+    {
+        "component": "RemediationTimeline",
+        "event": "degraded" | "ws_stale" | "http_refresh_failed" | "recovered",
+        "tenant": "acme-corp"
+    }
+    """
+    from ws_manager import frontend_timeline_events_total
+
+    component = payload.get("component", "unknown")
+    event = payload.get("event", "unknown")
+    tenant = payload.get("tenant", "unknown")
+
+    try:
+        frontend_timeline_events_total.labels(
+            tenant=tenant,
+            event=event,
+            component=component,
+        ).inc()
+    except Exception:
+        # don't ever break UI telemetry
+        pass
+
+    return {"status": "ok"}
 
 
 @app.websocket("/ws/remediations")

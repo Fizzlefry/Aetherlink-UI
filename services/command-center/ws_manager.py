@@ -38,6 +38,13 @@ timeline_ws_stale_connections = Gauge(
     ["tenant"],
 )
 
+# Phase XX M11: frontend telemetry events
+frontend_timeline_events_total = Counter(
+    "aetherlink_frontend_timeline_events_total",
+    "Frontend-reported timeline UI events (stale, degraded, recovered)",
+    ["tenant", "event", "component"],
+)
+
 
 class BaseWSManager:
     """Base WebSocket connection manager with broadcast capability.

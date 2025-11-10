@@ -11,6 +11,7 @@ import {
   ComposedChart,
 } from "recharts";
 import { makeRemediationWS } from "../lib/ws";
+import { sendFrontendTelemetry } from "../lib/telemetry";
 
 type TimelinePoint = {
   ts: string;
@@ -88,12 +89,20 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
       setQuiet(anomalyJson.quiet ?? []);
 
       // Track full refresh timestamp
-      setLastFullRefresh(new Date().toISOString());
+      const recoveredAt = new Date().toISOString();
+      setLastFullRefresh(recoveredAt);
 
       // Phase XX M10: clear degraded on successful HTTP refresh
       setDegraded(false);
       setDegradedReason(null);
-      setLastRecoveredAt(new Date().toISOString());
+      setLastRecoveredAt(recoveredAt);
+
+      // Phase XX M11: report recovered via HTTP
+      sendFrontendTelemetry({
+        component: "RemediationTimeline",
+        event: "recovered",
+        tenant: selectedTenant && selectedTenant !== "all" ? selectedTenant : "unknown",
+      });
 
       return true;
     } catch (err) {
@@ -165,7 +174,15 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
         setWsStale(false);
         setDegraded(false);
         setDegradedReason(null);
-        setLastRecoveredAt(new Date().toISOString());
+        const recoveredAt = new Date().toISOString();
+        setLastRecoveredAt(recoveredAt);
+
+        // Phase XX M11: report recovered via WS
+        sendFrontendTelemetry({
+          component: "RemediationTimeline",
+          event: "recovered",
+          tenant: selectedTenant && selectedTenant !== "all" ? selectedTenant : "unknown",
+        });
 
         // This keeps red dots accurate without refetching timeline
         const params = new URLSearchParams();
@@ -221,7 +238,17 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
       const ageSeconds = (now - lastUpdate) / 1000;
 
       // Mark stale if no update for 35+ seconds
-      setWsStale(ageSeconds > 35);
+      if (ageSeconds > 35) {
+        setWsStale(true);
+        // Phase XX M11: report WS stale
+        sendFrontendTelemetry({
+          component: "RemediationTimeline",
+          event: "ws_stale",
+          tenant: selectedTenant && selectedTenant !== "all" ? selectedTenant : "unknown",
+        });
+      } else {
+        setWsStale(false);
+      }
     };
 
     // Check every 5 seconds
@@ -229,7 +256,7 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
     checkStale(); // Initial check
 
     return () => clearInterval(staleCheckInterval);
-  }, [lastWsUpdate]);
+  }, [lastWsUpdate, selectedTenant]);
 
   // Phase XX M10: WS degradation ladder
   useEffect(() => {
@@ -247,13 +274,20 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
         // 2) mark UI as degraded
         setDegraded(true);
         setDegradedReason("WebSocket stale and HTTP refresh failed");
+
+        // Phase XX M11: report degraded
+        sendFrontendTelemetry({
+          component: "RemediationTimeline",
+          event: "degraded",
+          tenant: selectedTenant && selectedTenant !== "all" ? selectedTenant : "unknown",
+        });
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [wsStale, fetchTimeline]);
+  }, [wsStale, fetchTimeline, selectedTenant]);
 
   return (
     <div style={{ marginTop: "2rem" }}>
