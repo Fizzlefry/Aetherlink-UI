@@ -9,6 +9,11 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: check-yaml
+        exclude: |
+          (?x)^(
+            helm/.*|
+            k8s/.*
+          )$
       - id: check-toml
       - id: check-json
       - id: mixed-line-ending
