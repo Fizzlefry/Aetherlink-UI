@@ -99,7 +99,7 @@ sortedcontainers==2.4.0
     # via fakeredis
 sqlalchemy==2.0.34
     # via -r requirements.txt
-starlette==0.41.2
+starlette==0.50.0
     # via
     #   -r requirements.txt
     #   fastapi
