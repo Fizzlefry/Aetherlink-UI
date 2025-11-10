@@ -30,6 +30,22 @@ type RemediationTimelineProps = {
   selectedTenant?: string;
 };
 
+// Configuration constants
+const BUCKET_MINUTES = 15; // Keep in sync with backend default
+
+/**
+ * Snap ISO timestamp to the start of its time bucket.
+ * Example: "2025-01-09T11:23:45Z" with 15-min buckets → "2025-01-09T11:15:00Z"
+ */
+function snapToBucket(isoTs: string, bucketMinutes: number): string {
+  const d = new Date(isoTs);
+  d.setSeconds(0, 0);
+  const minutes = d.getMinutes();
+  const snappedMinutes = minutes - (minutes % bucketMinutes);
+  d.setMinutes(snappedMinutes);
+  return d.toISOString();
+}
+
 export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
   selectedTenant,
 }) => {
@@ -74,15 +90,75 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
     fetchTimeline();
   }, [fetchTimeline]);
 
-  // WebSocket: refresh on new remediation event
+  // WebSocket: smart incremental update for new remediation events
   useEffect(() => {
     const teardown = makeRemediationWS((msg) => {
-      if (msg?.type === "remediation_event") {
+      if (msg?.type !== "remediation_event") return;
+
+      // Tenant-aware filtering: ignore events from other tenants
+      if (selectedTenant && selectedTenant !== "all") {
+        const eventTenant = msg.payload?.tenant;
+        if (eventTenant && eventTenant !== selectedTenant) {
+          return; // Event is for different tenant, skip update
+        }
+      }
+
+      // Extract timestamp from event payload
+      const occurredAt = msg.payload?.occurred_at || msg.payload?.ts;
+      if (!occurredAt) {
+        // No timestamp available → fallback to full refresh
+        console.log("remediation_event without timestamp, doing full refresh");
         fetchTimeline();
+        return;
+      }
+
+      // Snap timestamp to bucket boundary
+      const bucketIso = snapToBucket(occurredAt, BUCKET_MINUTES);
+
+      // Try to increment the matching bucket in memory
+      let bucketUpdated = false;
+      setData((prev) => {
+        if (!prev || prev.length === 0) return prev;
+
+        // Create a shallow copy and find matching bucket
+        const next = prev.map((p) => ({ ...p }));
+        for (const point of next) {
+          if (point.ts === bucketIso) {
+            point.count = (point.count ?? 0) + 1;
+            bucketUpdated = true;
+            break;
+          }
+        }
+        return next;
+      });
+
+      if (!bucketUpdated) {
+        // Bucket not found (event outside 24h window or timezone mismatch)
+        // Fallback to full refresh
+        console.log(`bucket ${bucketIso} not found, doing full refresh`);
+        fetchTimeline();
+      } else {
+        // Successfully updated bucket → refresh anomaly overlay
+        // This keeps red dots accurate without refetching timeline
+        const params = new URLSearchParams();
+        if (selectedTenant && selectedTenant !== "all") {
+          params.set("tenant", selectedTenant);
+        }
+        params.set("window_minutes", "1440");
+        params.set("bucket_minutes", "15");
+
+        fetch(`http://localhost:8010/ops/remediations/timeline/anomalies?${params.toString()}`)
+          .then((res) => res.json())
+          .then((json) => {
+            setAnomalies(json.anomalies ?? []);
+            setQuiet(json.quiet ?? []);
+          })
+          .catch((err) => console.warn("anomaly refresh failed", err));
       }
     });
+
     return teardown;
-  }, [fetchTimeline]);
+  }, [fetchTimeline, selectedTenant]);
 
   return (
     <div style={{ marginTop: "2rem" }}>
