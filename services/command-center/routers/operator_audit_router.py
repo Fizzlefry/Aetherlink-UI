@@ -12,7 +12,6 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, Query
-
 from operator_audit import get_audit_stats, get_operator_audit_log
 
 router = APIRouter(prefix="/audit/operator", tags=["audit"])

@@ -30,6 +30,8 @@ def record_remediation_event(
     """Record a remediation event to SQLite for Grafana recovery timeline."""
     RECOVERY_DB.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(RECOVERY_DB)
+    occurred_at = datetime.utcnow().isoformat() + "Z"
+    row_id: int | None = None
     try:
         cur = conn.cursor()
         cur.execute(
@@ -51,7 +53,7 @@ def record_remediation_event(
             VALUES (?, ?, ?, ?, ?, ?)
             """,
             (
-                datetime.utcnow().isoformat() + "Z",
+                occurred_at,
                 alertname,
                 tenant,
                 action,
@@ -60,12 +62,30 @@ def record_remediation_event(
             ),
         )
         conn.commit()
+        row_id = cur.lastrowid
     finally:
         conn.close()
+    if row_id is not None:
+        asyncio.create_task(
+            ws_manager.broadcast(
+                {
+                    "type": "remediation_event",
+                    "payload": {
+                        "id": row_id,
+                        "ts": occurred_at,
+                        "alertname": alertname,
+                        "tenant": tenant,
+                        "action": action,
+                        "status": status,
+                        "details": details[:500],
+                    },
+                }
+            )
+        )
 
 
 # from audit import audit_middleware, get_audit_stats
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import Gauge as PrometheusGauge
 from prometheus_client import make_asgi_app
@@ -1047,6 +1067,32 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AetherLink Command Center", version="0.2.0", lifespan=lifespan)
 
+
+class RemediationWebSocketManager:
+    def __init__(self) -> None:
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket) -> None:
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket) -> None:
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict[str, Any]) -> None:
+        to_remove: list[WebSocket] = []
+        for ws in self.active_connections:
+            try:
+                await ws.send_text(json.dumps(message))
+            except Exception:
+                to_remove.append(ws)
+        for ws in to_remove:
+            self.disconnect(ws)
+
+
+ws_manager = RemediationWebSocketManager()
+
 # CORS middleware for UI integration
 origins = [
     "http://localhost:5173",
@@ -1143,6 +1189,16 @@ async def get_ops_insights():
     """
     analyzer = OpsInsightAnalyzer()
     return analyzer.build_insight_payload()
+
+
+@app.websocket("/ws/remediations")
+async def ws_remediations(websocket: WebSocket):
+    await ws_manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket)
 
 
 # Phase VII M3: Add tenant context middleware

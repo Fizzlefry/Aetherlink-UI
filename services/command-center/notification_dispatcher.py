@@ -6,17 +6,15 @@ Supports Slack, Teams, Discord, and generic HTTP endpoints.
 """
 
 import os
-import json
-import httpx
-from typing import List, Dict, Any
-from datetime import datetime
+from typing import Any
 
+import httpx
 
 # Environment-based webhook configuration
 DEFAULT_WEBHOOKS = os.getenv("ALERT_WEBHOOKS", "")
 
 
-def get_configured_webhooks() -> List[str]:
+def get_configured_webhooks() -> list[str]:
     """
     Get list of webhook URLs from environment.
     
@@ -32,7 +30,7 @@ def get_configured_webhooks() -> List[str]:
     return webhooks
 
 
-def _to_slack_friendly(alert_event: Dict[str, Any]) -> Dict[str, Any]:
+def _to_slack_friendly(alert_event: dict[str, Any]) -> dict[str, Any]:
     """
     Convert alert event to Slack-friendly webhook payload.
     
@@ -60,12 +58,12 @@ def _to_slack_friendly(alert_event: Dict[str, Any]) -> Dict[str, Any]:
     filter_severity = filters.get("severity", "any")
     
     # Build human-readable message
-    text = f":rotating_light: *AetherLink Alert Triggered*\n\n"
+    text = ":rotating_light: *AetherLink Alert Triggered*\n\n"
     text += f"*Rule:* `{rule_name}`\n"
     text += f"*Severity:* `{severity.upper()}`\n"
     text += f"*Source:* `{source}`\n"
     text += f"*Threshold:* {matched_count}/{threshold} events in {window_seconds}s\n\n"
-    text += f"*Filters:*\n"
+    text += "*Filters:*\n"
     text += f"  • Event Type: `{event_type}`\n"
     text += f"  • Source: `{filter_source}`\n"
     text += f"  • Severity: `{filter_severity}`\n\n"
@@ -74,7 +72,7 @@ def _to_slack_friendly(alert_event: Dict[str, Any]) -> Dict[str, Any]:
     return {"text": text}
 
 
-async def dispatch_alert(alert_event: Dict[str, Any]) -> Dict[str, Any]:
+async def dispatch_alert(alert_event: dict[str, Any]) -> dict[str, Any]:
     """
     Dispatch alert event to all configured webhooks.
     
@@ -141,7 +139,7 @@ async def dispatch_alert(alert_event: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def format_alert_for_testing(alert_event: Dict[str, Any]) -> str:
+def format_alert_for_testing(alert_event: dict[str, Any]) -> str:
     """
     Format alert event as human-readable string for testing.
     

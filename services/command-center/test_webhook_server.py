@@ -3,9 +3,10 @@ Simple webhook receiver for testing Phase VII M1 notifications.
 Receives POST requests and logs the payload.
 """
 
-from fastapi import FastAPI, Request
-import uvicorn
 from datetime import datetime
+
+import uvicorn
+from fastapi import FastAPI, Request
 
 app = FastAPI(title="Webhook Test Server")
 

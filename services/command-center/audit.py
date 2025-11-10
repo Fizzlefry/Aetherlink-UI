@@ -19,7 +19,7 @@ This provides operational visibility into:
 import json
 import logging
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any
 
 from fastapi import Request
 
@@ -28,7 +28,7 @@ logger = logging.getLogger("aether.audit")
 logging.basicConfig(level=logging.INFO)
 
 # In-memory audit statistics (per-service)
-audit_stats: Dict[str, Any] = {
+audit_stats: dict[str, Any] = {
     "total": 0,
     "denied_401": 0,
     "denied_403": 0,
@@ -88,7 +88,7 @@ async def audit_middleware(request: Request, call_next):
     return response
 
 
-def get_audit_stats() -> Dict[str, Any]:
+def get_audit_stats() -> dict[str, Any]:
     """
     Get current audit statistics.
     
