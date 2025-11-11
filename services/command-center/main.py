@@ -49,6 +49,9 @@ except ImportError:
         timeline_ws_events_total,
     )
 
+# Phase XXXV: Anomaly History & Insights
+from anomaly_history import append_anomaly_record
+
 RECOVERY_DB = Path("monitoring/recovery_events.sqlite")
 
 
@@ -100,6 +103,21 @@ def record_remediation_event(
     if row_id is not None:
         # Track timeline WS event metrics (Phase XX M8)
         timeline_ws_events_total.labels(tenant=tenant or "unknown").inc()
+
+        # Phase XXXV: Record anomaly/remediation event in history
+        append_anomaly_record(
+            {
+                "tenant": tenant or "unknown",
+                "kind": "remediation_event",
+                "occurred_at": occurred_at,
+                "id": row_id,
+                "alertname": alertname,
+                "action": action,
+                "status": status,
+                "severity": "unknown",  # Could be enhanced to include actual severity
+                "source": "timeline_ws",
+            }
+        )
 
         asyncio.create_task(
             remediation_ws_manager.broadcast(
@@ -1383,6 +1401,26 @@ async def telemetry_frontend(payload: dict = Body(...)):
         pass
 
     return {"status": "ok"}
+
+
+@app.get("/ops/anomaly-history")
+async def get_anomaly_history(
+    tenant: str | None = Query(default=None),
+    since_seconds: int | None = Query(default=3600),
+    limit: int = Query(default=500),
+):
+    """
+    Phase XXXV: return recent anomaly/remediation events, optionally scoped to a tenant.
+    """
+    from anomaly_history import read_anomaly_records
+    import time
+
+    since_ts = None
+    if since_seconds:
+        since_ts = time.time() - since_seconds
+
+    items = read_anomaly_records(tenant=tenant, since_ts=since_ts, limit=limit)
+    return {"items": items}
 
 
 @app.websocket("/ws/remediations")
