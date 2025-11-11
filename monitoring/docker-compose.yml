@@ -70,6 +70,9 @@ services:
       - ./grafana-datasource.yml:/etc/grafana/provisioning/datasources/legacy-prometheus.yml:ro
       # New datasource provisioning
       - ./grafana/provisioning/datasources/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      # Auto-provisioned dashboards from monitoring/grafana/dashboards/
+      - ./grafana/dashboards:/var/lib/grafana/dashboards/aetherlink
+      - ./grafana/provisioning/dashboards/provider.yml:/etc/grafana/provisioning/dashboards/provider.yml:ro
       - grafana-data:/var/lib/grafana
     depends_on:
       - prometheus

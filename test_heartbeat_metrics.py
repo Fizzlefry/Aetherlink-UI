@@ -94,11 +94,11 @@ def test_stale_detection_logic():
         print(f"  Threshold: {stale_threshold} seconds")
         print(f"  Is stale: {is_stale}")
 
-        assert is_stale == scenario["expected_stale"], (
-            f"Stale detection mismatch: got {is_stale}, expected {scenario['expected_stale']}"
-        )
+        assert (
+            is_stale == scenario["expected_stale"]
+        ), f"Stale detection mismatch: got {is_stale}, expected {scenario['expected_stale']}"
 
-        print(f"  [PASS] Stale detection correct")
+        print("  [PASS] Stale detection correct")
 
     print("\n[PASS] Stale connection detection logic validated!")
 
@@ -126,15 +126,15 @@ def test_heartbeat_tracking_persistence():
 
     # Connection 1: Recent heartbeat
     connections[ws1] = time.time()
-    print(f"[WS-1] Heartbeat received at t=0")
+    print("[WS-1] Heartbeat received at t=0")
 
     # Connection 2: Heartbeat 20 seconds ago
     connections[ws2] = time.time() - 20.0
-    print(f"[WS-2] Heartbeat received at t=-20s")
+    print("[WS-2] Heartbeat received at t=-20s")
 
     # Connection 3: Heartbeat 40 seconds ago (stale)
     connections[ws3] = time.time() - 40.0
-    print(f"[WS-3] Heartbeat received at t=-40s")
+    print("[WS-3] Heartbeat received at t=-40s")
 
     # Check staleness
     now = time.time()
@@ -158,7 +158,7 @@ def test_heartbeat_tracking_persistence():
     # Simulate disconnection cleanup
     print("\nSimulating disconnection cleanup:")
     del connections[ws2]
-    print(f"  [WS-2] Disconnected -> removed from tracking")
+    print("  [WS-2] Disconnected -> removed from tracking")
     assert ws2 not in connections
     print("[PASS] Heartbeat tracking cleaned up on disconnect")
 
@@ -218,9 +218,9 @@ def test_ui_stale_indicator_logic():
         print(f"  Should show stale: {case['should_show_stale']}")
         print(f"  Actual stale flag: {ws_stale}")
 
-        assert ws_stale == case["should_show_stale"], (
-            f"UI stale logic mismatch: got {ws_stale}, expected {case['should_show_stale']}"
-        )
+        assert (
+            ws_stale == case["should_show_stale"]
+        ), f"UI stale logic mismatch: got {ws_stale}, expected {case['should_show_stale']}"
 
         if ws_stale:
             print("  [PASS] Stale indicator visible (orange warning)")

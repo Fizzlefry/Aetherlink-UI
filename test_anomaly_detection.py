@@ -4,8 +4,6 @@ Quick smoke test for anomaly detection endpoint.
 This simulates timeline data with known anomalies to verify the detector works.
 """
 
-import json
-
 
 def simulate_timeline_with_anomaly():
     """Create mock timeline data with clear anomaly pattern."""
@@ -21,8 +19,8 @@ def simulate_timeline_with_anomaly():
         {"ts": "2025-01-09T11:00:00Z", "count": 10},  # ANOMALY: 10 vs baseline ~2.5
         {"ts": "2025-01-09T11:15:00Z", "count": 2},
         {"ts": "2025-01-09T11:30:00Z", "count": 3},
-        {"ts": "2025-01-09T11:45:00Z", "count": 0},   # QUIET
-        {"ts": "2025-01-09T12:00:00Z", "count": 0},   # QUIET
+        {"ts": "2025-01-09T11:45:00Z", "count": 0},  # QUIET
+        {"ts": "2025-01-09T12:00:00Z", "count": 0},  # QUIET
         {"ts": "2025-01-09T12:15:00Z", "count": 2},
     ]
 
@@ -60,12 +58,14 @@ def detect_anomalies(timeline, multiplier=2.0, min_count=3, window_size=4):
 
         # Detect anomaly
         if count >= min_count and count > avg * multiplier:
-            anomalies.append({
-                "ts": ts,
-                "count": count,
-                "baseline": round(avg, 2),
-                "factor": round(count / avg, 2) if avg > 0 else count,
-            })
+            anomalies.append(
+                {
+                    "ts": ts,
+                    "count": count,
+                    "baseline": round(avg, 2),
+                    "factor": round(count / avg, 2) if avg > 0 else count,
+                }
+            )
 
     return anomalies, quiet
 
@@ -83,7 +83,9 @@ def test_anomaly_detection():
 
     print(f"\nDetected Anomalies: {len(anomalies)}")
     for a in anomalies:
-        print(f"  {a['ts'][11:16]}: count={a['count']}, baseline={a['baseline']}, {a['factor']}x spike")
+        print(
+            f"  {a['ts'][11:16]}: count={a['count']}, baseline={a['baseline']}, {a['factor']}x spike"
+        )
 
     print(f"\nDetected Quiet Periods: {len(quiet)}")
     for q in quiet:
@@ -95,11 +97,11 @@ def test_anomaly_detection():
     assert len(quiet) == 2, f"Expected 2 quiet periods, got {len(quiet)}"
 
     print("\n[PASS] All assertions passed!")
-    print(f"\nSummary:")
-    print(f"  - Baseline avg: ~2.5 remediations")
-    print(f"  - Spike detected: 10 remediations (4x baseline)")
-    print(f"  - Quiet periods: 2 buckets with 0 activity")
-    print(f"  - Detection threshold: 2.0x multiplier, min 3 events")
+    print("\nSummary:")
+    print("  - Baseline avg: ~2.5 remediations")
+    print("  - Spike detected: 10 remediations (4x baseline)")
+    print("  - Quiet periods: 2 buckets with 0 activity")
+    print("  - Detection threshold: 2.0x multiplier, min 3 events")
 
 
 if __name__ == "__main__":

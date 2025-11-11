@@ -27,6 +27,7 @@ from fastapi import (
 from fastapi.middleware.cors import CORSMiddleware
 from ops_insight_analyzer import OpsInsightAnalyzer
 from prometheus_client import Gauge as PrometheusGauge
+from prometheus_client import Histogram
 from prometheus_client import make_asgi_app
 from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -118,6 +119,9 @@ def record_remediation_event(
                 "source": "timeline_ws",
             }
         )
+
+        # Increment anomaly events counter for correlation dashboard
+        anomaly_events_total.labels(tenant=tenant or "unknown").inc()
 
         asyncio.create_task(
             remediation_ws_manager.broadcast(
@@ -1412,15 +1416,50 @@ async def get_anomaly_history(
     """
     Phase XXXV: return recent anomaly/remediation events, optionally scoped to a tenant.
     """
-    from anomaly_history import read_anomaly_records
     import time
+    start_time = time.time()
+    
+    from anomaly_history import read_anomaly_records
 
     since_ts = None
     if since_seconds:
         since_ts = time.time() - since_seconds
 
     items = read_anomaly_records(tenant=tenant, since_ts=since_ts, limit=limit)
+    
+    # Record API latency
+    duration = time.time() - start_time
+    anomaly_api_latency_seconds.labels(endpoint="/ops/anomaly-history", method="GET").observe(duration)
+    
     return {"items": items}
+
+
+@app.get("/ops/anomaly/{anomaly_id}")
+async def get_anomaly_detail(anomaly_id: int):
+    """
+    Return details for a specific anomaly by ID.
+    Used for Grafana drilldowns from the anomaly table.
+    """
+    import time
+    start_time = time.time()
+    
+    from anomaly_history import read_anomaly_records
+    
+    # Read all recent records and find the one with matching ID
+    items = read_anomaly_records(limit=1000)  # Get enough records to find the ID
+    for item in items:
+        if item.get("id") == anomaly_id:
+            # Record API latency
+            duration = time.time() - start_time
+            anomaly_api_latency_seconds.labels(endpoint="/ops/anomaly/{id}", method="GET").observe(duration)
+            return item
+    
+    # Record API latency for not found case too
+    duration = time.time() - start_time
+    anomaly_api_latency_seconds.labels(endpoint="/ops/anomaly/{id}", method="GET").observe(duration)
+    
+    # If not found in recent history, return 404
+    return {"error": "Anomaly not found", "id": anomaly_id}, 404
 
 
 @app.websocket("/ws/remediations")
@@ -1608,6 +1647,12 @@ remediation_actions_total_gauge = PrometheusGauge(
 )
 
 # Phase XXXV: Anomaly History & Insights metrics
+anomaly_events_total = Counter(
+    "aetherlink_anomaly_events_total",
+    "Total anomaly events detected and recorded",
+    ["tenant"],
+)
+
 anomaly_events_total_gauge = PrometheusGauge(
     "aetherlink_anomaly_events_total",
     "Total number of anomaly events detected",
@@ -1620,6 +1665,14 @@ recovery_mttr_seconds_gauge = PrometheusGauge(
 
 anomaly_resolution_rate_gauge = PrometheusGauge(
     "aetherlink_anomaly_resolution_rate", "Rate of anomaly resolution (0-1)", ["tenant"]
+)
+
+# Phase XXXV: Anomaly API latency histogram
+anomaly_api_latency_seconds = Histogram(
+    "aetherlink_anomaly_api_latency_seconds",
+    "Latency of anomaly API requests",
+    ["endpoint", "method"],
+    buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0]
 )
 
 
