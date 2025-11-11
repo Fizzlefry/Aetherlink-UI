@@ -274,6 +274,56 @@
                     }
                 }
             ]
+        },
+        {
+            "id": 4,
+            "title": "Frontend Issues Without Anomalies",
+            "type": "stat",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 16
+            },
+            "targets": [
+                {
+                    "expr": "sum(increase(aetherlink_frontend_timeline_events_total{tenant=\"$tenant\", event=~\"degraded|ws_stale|http_refresh_failed\"}[$__range]))",
+                    "refId": "A",
+                    "legendFormat": "__auto"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 1
+                            }
+                        ]
+                    },
+                    "unit": "none"
+                },
+                "overrides": []
+            },
+            "options": {
+                "orientation": "auto",
+                "textMode": "auto",
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto"
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Count of frontend degradation events (degraded, ws_stale, http_refresh_failed). Red indicates potential frontend issues that may not have corresponding backend anomalies."
         }
     ],
     "refresh": "30s",
