@@ -275,11 +275,21 @@ export const RemediationTimeline: React.FC<RemediationTimelineProps> = ({
         setDegraded(true);
         setDegradedReason("WebSocket stale and HTTP refresh failed");
 
-        // Phase XX M11: report degraded
+        const tenantLabel =
+          selectedTenant && selectedTenant !== "all" ? selectedTenant : "unknown";
+
+        // M12: first, say HTTP was the thing that failed
+        sendFrontendTelemetry({
+          component: "RemediationTimeline",
+          event: "http_refresh_failed",
+          tenant: tenantLabel,
+        });
+
+        // then, say we actually ended up degraded
         sendFrontendTelemetry({
           component: "RemediationTimeline",
           event: "degraded",
-          tenant: selectedTenant && selectedTenant !== "all" ? selectedTenant : "unknown",
+          tenant: tenantLabel,
         });
       }
     })();
