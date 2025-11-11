@@ -3,9 +3,14 @@ Phase M12 - Split HTTP vs Degraded Telemetry
 Validates we can record http_refresh_failed separately from degraded.
 """
 
+
 def test_m12_event_labels():
     print("Testing M12 telemetry labels\n")
-    from services.command_center.ws_manager import frontend_timeline_events_total
+    import os
+    import sys
+
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "services", "command-center"))
+    from ws_manager import frontend_timeline_events_total  # type: ignore
 
     # simulate http refresh failed
     frontend_timeline_events_total.labels(
