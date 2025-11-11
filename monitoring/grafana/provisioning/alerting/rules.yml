@@ -1,0 +1,96 @@
+apiVersion: 1
+groups:
+  - name: aetherlink-observability
+    interval: 30s
+    rules:
+      - uid: frontend-vs-anomalies
+        title: "Frontend issues not backed by anomalies"
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 5m
+              to: 0m
+            model:
+              refId: A
+              expr: |
+                (
+                  sum by (tenant) (rate(aetherlink_frontend_timeline_events_total{event=~"degraded|ws_stale|http_refresh_failed"}[5m]))
+                )
+                -
+                (
+                  sum by (tenant) (rate(aetherlink_anomaly_events_total[5m]))
+                )
+              interval: ""
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              settings:
+                mode: dropNN
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+                  operator:
+                    type: and
+                  reducer:
+                    type: last
+                  type: query
+        annotations:
+          summary: "Frontend is reporting degradation for {{ $labels.tenant }} but backend has no matching anomalies."
+        labels:
+          severity: warning
+          service: aetherlink-frontend
+          subsystem: observability
+      - uid: anomaly-api-latency
+        title: "Anomaly API p90 > 2s"
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 5m
+              to: 0m
+            model:
+              refId: A
+              expr: |
+                histogram_quantile(
+                  0.9,
+                  sum by (le) (rate(aetherlink_anomaly_api_latency_seconds_bucket[5m]))
+                )
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              settings:
+                mode: dropNN
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [2]
+                  operator:
+                    type: and
+                  reducer:
+                    type: last
+                  type: query
+        labels:
+          severity: warning
+          service: command-center
+        annotations:
+          summary: "Anomaly API is slow (p90 > 2s). Dashboard table may go blank."
