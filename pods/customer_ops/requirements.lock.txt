@@ -27,7 +27,7 @@ colorama==0.4.6
     #   uvicorn
 fakeredis==2.23.0
     # via -r requirements.txt
-fastapi==0.115.5
+fastapi==0.121.1
     # via
     #   -r requirements.txt
     #   fastapi-limiter
